@@ -1,0 +1,36 @@
+{
+  "name": "intentos",
+  "version": "1.0.0",
+  "description": "AI-powered DeFi operating system on Initia — converts financial goals into executable on-chain strategies",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "ai-engine",
+    "simulation-engine",
+    "agent-orchestrator",
+    "execution-engine"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace=backend run dev",
+    "dev:frontend": "npm --workspace=frontend run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "npm --workspace=backend run build",
+    "build:frontend": "npm --workspace=frontend run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "install:all": "npm install --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "license": "MIT",
+  "author": "IntentOS Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/intentos/intentos"
+  }
+}

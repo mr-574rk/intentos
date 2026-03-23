@@ -1,0 +1,33 @@
+{
+  "project": "IntentOS",
+  "tagline": "AI-powered DeFi operating system on Initia",
+  "description": "IntentOS converts natural language financial goals into simulated and executable DeFi strategies on Initia. Users interact through an AI intent engine that generates strategy bundles, simulates outcomes, and autonomously executes transactions via session-based permissions.",
+  "category": "DeFi / AI / Infrastructure",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": "https://github.com/intentos/intentos",
+  "demo": "http://localhost:3000",
+  "integrations": [
+    "InterwovenKit (@initia/interwovenkit-react)",
+    ".init usernames",
+    "Session-based transaction execution",
+    "Initia testnet RPC"
+  ],
+  "interactionModel": "User Intent → AI Interpreter → Strategy Generator → Simulation → Approval → Agent Orchestrator → Execution Engine → Initia Contracts",
+  "modules": [
+    "frontend",
+    "backend",
+    "ai-engine",
+    "simulation-engine",
+    "agent-orchestrator",
+    "execution-engine",
+    "contracts"
+  ],
+  "team": [
+    {
+      "name": "IntentOS Team",
+      "role": "Full Stack / Web3 / AI"
+    }
+  ],
+  "submittedAt": "2026-03-23"
+}
