@@ -6,7 +6,7 @@ import IntentInput from "@/components/IntentInput";
 import AgentTimeline from "@/components/AgentTimeline";
 import type { ApiResponse, Strategy, AgentTimeline as TimelineType } from "@/types";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "https://1492-197-210-77-187.ngrok-free.app";
 
 export default function IntentPage() {
   const router = useRouter();
@@ -23,7 +23,10 @@ export default function IntentPage() {
       // Call the agent pipeline
       const res = await fetch(`${API}/api/execute/intent`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "69420" 
+        },
         body: JSON.stringify({ text }),
       });
       const data: ApiResponse<Strategy> = await res.json();
@@ -32,7 +35,9 @@ export default function IntentPage() {
       const strategy = data.data;
 
       // Fetch the timeline
-      const tlRes = await fetch(`${API}/api/agent/timeline/${strategy.id}`);
+      const tlRes = await fetch(`${API}/api/agent/timeline/${strategy.id}`, {
+        headers: { "ngrok-skip-browser-warning": "69420" }
+      });
       const tlData: ApiResponse<TimelineType> = await tlRes.json();
       if (tlData.success && tlData.data) setTimeline(tlData.data);
 

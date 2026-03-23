@@ -6,7 +6,7 @@ import AgentTimeline from "@/components/AgentTimeline";
 import ExecuteButton from "@/components/ExecuteButton";
 import type { Strategy, ApiResponse, ExecutionResult, AgentTimeline as TimelineType } from "@/types";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "https://1492-197-210-77-187.ngrok-free.app";
 
 export default function ExecutePage() {
   const router = useRouter();
@@ -21,7 +21,9 @@ export default function ExecutePage() {
       const s = JSON.parse(stored) as Strategy;
       setStrategy(s);
       // Fetch existing timeline
-      fetch(`${API}/api/agent/timeline/${s.id}`)
+      fetch(`${API}/api/agent/timeline/${s.id}`, {
+        headers: { "ngrok-skip-browser-warning": "69420" }
+      })
         .then((r) => r.json())
         .then((d: ApiResponse<TimelineType>) => { if (d.data) setTimeline(d.data); })
         .catch(() => undefined);
@@ -34,7 +36,10 @@ export default function ExecutePage() {
     try {
       const res = await fetch(`${API}/api/execute/${strategy.id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "69420" 
+        },
         body: JSON.stringify({ sessionKey: "" }),
       });
       const data: ApiResponse<ExecutionResult> = await res.json();
@@ -42,7 +47,9 @@ export default function ExecutePage() {
       setResult(data.data);
 
       // Refresh timeline
-      const tlRes = await fetch(`${API}/api/agent/timeline/${strategy.id}`);
+      const tlRes = await fetch(`${API}/api/agent/timeline/${strategy.id}`, {
+        headers: { "ngrok-skip-browser-warning": "69420" }
+      });
       const tlData: ApiResponse<TimelineType> = await tlRes.json();
       if (tlData.data) setTimeline(tlData.data);
     } catch (err) {

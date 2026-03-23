@@ -13,20 +13,29 @@ const NAV_ITEMS = [
   { href: "/app/history",   icon: "📜", label: "History" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 flex-shrink-0 h-screen sticky top-0 flex flex-col border-r border-border-default bg-bg-secondary">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-border-default flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center text-bg-primary font-black text-sm">
-          IO
+    <aside className="w-64 flex-shrink-0 h-screen flex flex-col border-r border-border-default bg-bg-secondary shadow-2xl md:shadow-none">
+      {/* Logo & Mobile Close */}
+      <div className="px-5 py-5 border-b border-border-default flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center text-bg-primary font-black text-sm">
+            IO
+          </div>
+          <div>
+            <p className="font-bold text-sm text-text-primary">IntentOS</p>
+            <p className="text-xs text-text-muted">AI DeFi OS</p>
+          </div>
         </div>
-        <div>
-          <p className="font-bold text-sm text-text-primary">IntentOS</p>
-          <p className="text-xs text-text-muted">AI DeFi OS</p>
-        </div>
+        {/* Mobile close button */}
+        <button 
+          className="md:hidden text-text-muted hover:text-text-primary p-1"
+          onClick={onClose}
+        >
+          ✕
+        </button>
       </div>
 
       {/* Nav */}
@@ -37,6 +46,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={clsx(
                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                 isActive

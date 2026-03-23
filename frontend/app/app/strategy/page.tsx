@@ -7,7 +7,7 @@ import SimulationPanel from "@/components/SimulationPanel";
 import ExecuteButton from "@/components/ExecuteButton";
 import type { Strategy, ApiResponse, ExecutionResult } from "@/types";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "https://1492-197-210-77-187.ngrok-free.app";
 
 export default function StrategyPage() {
   const router = useRouter();
@@ -28,7 +28,10 @@ export default function StrategyPage() {
     try {
       const res = await fetch(`${API}/api/execute/${strategy.id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "69420" 
+        },
         body: JSON.stringify({ sessionKey: "" }), // populated with InterwovenKit session
       });
       const data: ApiResponse<ExecutionResult> = await res.json();
