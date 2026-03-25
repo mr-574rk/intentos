@@ -1,15 +1,17 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { processIntent, executeStrategy } from "../../../agent-orchestrator/src/agentController";
+import { checkAmbiguity } from "../../../agent-orchestrator/src/intentWorkflow";
 import { saveHistory } from "../db/historyRepo";
-import type { ApiResponse, Strategy, ExecutionResult } from "../../../types";
+import type { ApiResponse, Strategy, ExecutionResult, AmbiguityResponse } from "../../../types";
 
 const router = Router();
 
 /**
  * POST /api/execute/intent
  * Body: { text: string }
- * Runs full AI pipeline → returns strategy for user review (SIMULATED state)
+ * Runs full AI pipeline → returns strategy for user review (SIMULATED state).
+ * If input is ambiguous, returns { ambiguous: true, question, options } instead.
  */
 router.post("/intent", async (req: Request, res: Response) => {
   const { text } = req.body as { text?: string };
@@ -20,6 +22,16 @@ router.post("/intent", async (req: Request, res: Response) => {
       error: "Provide a non-empty `text` field",
       timestamp: new Date().toISOString(),
     } as ApiResponse<null>);
+  }
+
+  // Check for ambiguity first — if vague, return options for the user to clarify
+  const ambiguity = checkAmbiguity(text.trim());
+  if (ambiguity) {
+    return res.json({
+      success: true,
+      data: ambiguity,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<AmbiguityResponse>);
   }
 
   try {

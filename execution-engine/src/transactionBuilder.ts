@@ -11,8 +11,9 @@ export function buildTransactions(bundle: StrategyBundle): TransactionObject[] {
       type: `intentos/${step.action}`,
       payload: {
         action: step.action,
-        from: step.from ?? null,
-        to: step.to ?? null,
+        from: step.from ?? "USDC",
+        to: step.to ?? step.recipient ?? "INIT",
+        amount: step.amount ?? 0,
         protocol: step.protocol ?? "Initia",
         bundleId: bundle.id,
         stepIndex: step.index,

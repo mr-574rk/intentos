@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import type { Strategy, ApiResponse, ExecutionResult } from "@/types";
 import SuccessModal from "@/components/SuccessModal";
+import StrategyReasoning from "@/components/StrategyReasoning";
 
 import { API_URL, API_HEADERS } from "@/lib/config";
 
@@ -50,9 +51,9 @@ function RingChart({ pct, label, sublabel, color }: {
           style={{ transformOrigin: "50% 50%", rotate: "-90deg" }}
         />
         <text x="50" y="47" textAnchor="middle" fontSize="15" fontWeight="800"
-              fill="#F0F4FF" fontFamily="-apple-system, sans-serif">{label}</text>
+          fill="#F0F4FF" fontFamily="-apple-system, sans-serif">{label}</text>
         <text x="50" y="61" textAnchor="middle" fontSize="9" fill="#828A9E"
-              fontFamily="-apple-system, sans-serif">{sublabel}</text>
+          fontFamily="-apple-system, sans-serif">{sublabel}</text>
       </svg>
     </div>
   );
@@ -98,10 +99,10 @@ function ExecuteButton({ onExecute, disabled, execState }: {
         "w-full py-4 font-bold text-sm uppercase tracking-widest transition-all duration-200",
         execState === "idle" || execState === "executing" ? "btn-primary" : "",
         execState === "success" && "bg-emerald-500 text-black shadow-[0_4px_20px_rgba(0,245,212,0.3)]",
-        execState === "failed"  && "bg-red-500/80 text-white",
+        execState === "failed" && "bg-red-500/80 text-white",
       )}
       whileHover={!disabled && execState === "idle" ? { scale: 1.01 } : undefined}
-      whileTap={!disabled && execState === "idle"   ? { scale: 0.99 } : undefined}
+      whileTap={!disabled && execState === "idle" ? { scale: 0.99 } : undefined}
     >
       {execState === "executing" && (
         <span className="flex items-center justify-center gap-3">
@@ -109,9 +110,9 @@ function ExecuteButton({ onExecute, disabled, execState }: {
           Executing on Initia…
         </span>
       )}
-      {execState === "idle"    && <span className="flex items-center justify-center gap-2">Execute Strategy <ArrowRight className="w-4 h-4"/></span>}
-      {execState === "success" && <span className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4"/> Strategy Executed</span>}
-      {execState === "failed"  && <span className="flex items-center justify-center gap-2"><XCircle className="w-4 h-4"/> Execution Failed — Retry</span>}
+      {execState === "idle" && <span className="flex items-center justify-center gap-2">Execute Strategy <ArrowRight className="w-4 h-4" /></span>}
+      {execState === "success" && <span className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> Strategy Executed</span>}
+      {execState === "failed" && <span className="flex items-center justify-center gap-2"><XCircle className="w-4 h-4" /> Execution Failed — Retry</span>}
     </motion.button>
   );
 }
@@ -134,6 +135,7 @@ export default function StrategyPage() {
   }, []);
 
   const sim = strategy?.simulation;
+
   const riskScore = sim?.riskScoreNumeric ?? 5;
   const projectedApy = sim?.projectedAPY ?? 0;
   const apyPct = Math.min(Math.round(projectedApy * 100), 100);
@@ -167,7 +169,7 @@ export default function StrategyPage() {
         <p className="text-lg font-bold text-text-primary tracking-tight">No strategy yet</p>
         <p className="text-sm text-text-muted">Start by entering your financial goal.</p>
         <button onClick={() => router.push("/app/intent")} className="btn-primary mx-auto mt-2 flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4"/> New Intent
+          <ArrowLeft className="w-4 h-4" /> New Intent
         </button>
       </div>
     );
@@ -182,140 +184,145 @@ export default function StrategyPage() {
         onClose={() => { setShowSuccess(false); router.push("/app/portfolio"); }}
       />
       <div className="max-w-2xl mx-auto flex flex-col min-h-full px-1 pb-32">
-      {/* Header */}
-      <div className="flex items-center justify-between pt-2 pb-4">
-        <div>
-          <h1 className="text-2xl font-black text-text-primary tracking-tight">Strategy Ready</h1>
-          <p className="text-sm text-text-muted mt-0.5">Review the simulation, then execute.</p>
-        </div>
-        <button onClick={() => router.push("/app/intent")} className="btn-secondary text-xs px-4 py-2 flex items-center gap-1">
-          <ArrowLeft className="w-3 h-3"/> New Intent
-        </button>
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-4">
-
-        {/* Strategy Steps */}
-        <motion.div
-          className="bg-bg-elevated border border-border-default p-5 flex-1 space-y-3 bg-gradient-to-b from-white/[0.03] to-transparent shadow-2xl"
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-        >
-          <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
-            Execution Plan · {strategy.bundle.steps.length} steps
-          </p>
-          {strategy.bundle.steps.map((step, i) => (
-            <motion.div
-              key={step.action}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07 }}
-              className="flex items-start gap-3 p-3 rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
-            >
-              <span className="w-6 h-6 rounded-full bg-[rgba(0,245,212,0.1)] text-[#00F5D4]
-                               text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                {i + 1}
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-text-primary capitalize">
-                  {step.action.replace(/_/g, " ")}
-                </p>
-                <p className="text-xs text-text-muted">
-                  {step.protocol ? `${step.protocol} · ` : ""}{step.from ? `${step.from} → ${step.to}` : step.description}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Before → After Simulation */}
-        <motion.div
-          className="bg-bg-elevated border border-border-default p-5 space-y-5 md:w-64 flex-shrink-0 bg-gradient-to-b from-white/[0.03] to-transparent shadow-2xl"
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
-            Simulation
-          </p>
-
-          {/* Before / After derived from projectedAPY */}
-          {sim && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="text-center space-y-0.5">
-                <p className="text-xs text-text-muted">Input</p>
-                <p className="text-lg font-black text-text-primary">$1,000</p>
-              </div>
-              <span className="text-[#00F5D4] text-xl">→</span>
-              <div className="text-center space-y-0.5">
-                <p className="text-xs text-text-muted">Projected</p>
-                <p className="text-lg font-black text-emerald-400">
-                  ${(1000 * (1 + sim.projectedAPY)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Ring chart: APY */}
-          <div className="flex justify-center">
-            <RingChart
-              pct={apyPct}
-              label={`${(projectedApy * 100).toFixed(1)}%`}
-              sublabel="Proj. APY"
-              color="#00F5D4"
-            />
+        {/* Header */}
+        <div className="flex items-center justify-between pt-2 pb-4">
+          <div>
+            <h1 className="text-2xl font-black text-text-primary tracking-tight">Strategy Ready</h1>
+            <p className="text-sm text-text-muted mt-0.5">Review the simulation, then execute.</p>
           </div>
+          <button onClick={() => router.push("/app/intent")} className="btn-secondary text-xs px-4 py-2 flex items-center gap-1">
+            <ArrowLeft className="w-3 h-3" /> New Intent
+          </button>
+        </div>
 
-          {/* Risk bar */}
-          {sim && <RiskBar score={riskScore} />}
-        </motion.div>
-      </div>
+        <div className="flex flex-col md:flex-row gap-4">
 
-      {/* ── GEMINI FIX: Blocked state shows why ── */}
-      <AnimatePresence>
-        {blocked && (
+          {/* Strategy Steps */}
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-5 py-4 space-y-1"
+            className="bg-bg-elevated border border-border-default p-5 flex-1 space-y-3 bg-gradient-to-b from-white/[0.03] to-transparent shadow-2xl"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
           >
-            <p className="text-sm font-semibold text-amber-400">
-              ⚠ Strategy execution blocked
+            <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
+              Execution Plan · {strategy.bundle.steps.length} steps
             </p>
-            <p className="text-xs text-amber-400/75">
-              {sim?.warnings?.[0] ??
-                `Risk score (${riskScore}/10) exceeds the safe threshold. The AI blocked execution to protect your funds. Try a lower-risk intent.`}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Execute CTA — sticky on mobile, normal on desktop */}
-      <div className="fixed md:static bottom-0 left-0 right-0 z-40 md:z-auto p-4 md:p-0 md:mt-4"
-           style={{ background: "linear-gradient(to top, #000 60%, transparent)" }}>
-        <div className="max-w-2xl mx-auto space-y-2">
-          <ExecuteButton
-            onExecute={handleExecute}
-            disabled={!!blocked || execState === "success"}
-            execState={execState}
-          />
-          <AnimatePresence>
-            {errorReason && execState === "failed" && (
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-xs text-red-400 text-center pb-2"
+            {strategy.bundle.steps.map((step, i) => (
+              <motion.div
+                key={step.action}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07 }}
+                className="flex items-start gap-3 p-3 rounded-2xl"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
               >
-                {errorReason}
-              </motion.p>
+                <span className="w-6 h-6 rounded-full bg-[rgba(0,245,212,0.1)] text-[#00F5D4]
+                               text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-text-primary capitalize">
+                    {step.action.replace(/_/g, " ")}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {step.protocol ? `${step.protocol} · ` : ""}{step.from ? `${step.from} → ${step.to}` : step.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Before → After Simulation */}
+          <motion.div
+            className="bg-bg-elevated border border-border-default p-5 space-y-5 md:w-64 flex-shrink-0 bg-gradient-to-b from-white/[0.03] to-transparent shadow-2xl"
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
+              Simulation
+            </p>
+
+            {/* Before / After derived from projectedAPY */}
+            {sim && (
+              <div className="flex items-center justify-between text-sm">
+                <div className="text-center space-y-0.5">
+                  <p className="text-xs text-text-muted">Input</p>
+                  <p className="text-lg font-black text-text-primary">$1,000</p>
+                </div>
+                <span className="text-[#00F5D4] text-xl">→</span>
+                <div className="text-center space-y-0.5">
+                  <p className="text-xs text-text-muted">Projected</p>
+                  <p className="text-lg font-black text-emerald-400">
+                    ${(1000 * (1 + sim.projectedAPY)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+              </div>
             )}
-          </AnimatePresence>
+
+            {/* Ring chart: APY */}
+            <div className="flex justify-center">
+              <RingChart
+                pct={apyPct}
+                label={`${(projectedApy * 100).toFixed(1)}%`}
+                sublabel="Proj. APY"
+                color="#00F5D4"
+              />
+            </div>
+
+            {/* Risk bar */}
+            {sim && <RiskBar score={riskScore} />}
+          </motion.div>
+        </div>
+
+        {/* Why This Strategy — reasoning card */}
+        {strategy.bundle.reasoning && strategy.bundle.reasoning.length > 0 && (
+          <StrategyReasoning reasoning={strategy.bundle.reasoning} />
+        )}
+
+        {/* ── GEMINI FIX: Blocked state shows why ── */}
+        <AnimatePresence>
+          {blocked && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-5 py-4 space-y-1"
+            >
+              <p className="text-sm font-semibold text-amber-400">
+                ⚠ Strategy execution blocked
+              </p>
+              <p className="text-xs text-amber-400/75">
+                {sim?.warnings?.[0] ??
+                  `Risk score (${riskScore}/10) exceeds the safe threshold. The AI blocked execution to protect your funds. Try a lower-risk intent.`}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Execute CTA — sticky on mobile, normal on desktop */}
+        <div className="fixed md:static bottom-0 left-0 right-0 z-40 md:z-auto p-4 md:p-0 md:mt-4"
+          style={{ background: "linear-gradient(to top, #000 60%, transparent)" }}>
+          <div className="max-w-2xl mx-auto space-y-2">
+            <ExecuteButton
+              onExecute={handleExecute}
+              disabled={!!blocked || execState === "success"}
+              execState={execState}
+            />
+            <AnimatePresence>
+              {errorReason && execState === "failed" && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="text-xs text-red-400 text-center pb-2"
+                >
+                  {errorReason}
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

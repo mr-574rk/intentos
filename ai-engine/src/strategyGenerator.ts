@@ -1,7 +1,14 @@
 import { v4 as uuidv4 } from "uuid";
-import type { StructuredIntent, StrategyBundle, StrategyStep, GoalType, RiskTolerance } from "../../types";
+import type {
+  StructuredIntent,
+  StrategyBundle,
+  StrategyStep,
+  GoalType,
+  RiskTolerance,
+  ParsedIntent,
+} from "../../types";
 
-// ── Strategy Templates ───────────────────────────────────────
+// ── Existing Goal-based Templates ────────────────────────────
 
 type StrategyTemplate = {
   steps: Omit<StrategyStep, "index">[];
@@ -18,9 +25,8 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "provide_liquidity", from: "USDC", description: "Deposit USDC into stablecoin yield pool", protocol: "Initia Liquidity" },
         { action: "stake_lp", description: "Stake LP tokens to earn protocol rewards", protocol: "Initia Staking" },
       ],
-      estimatedYield: 12,
-      riskScoreNumeric: 3,
-      explanation: "Stablecoin pools minimize volatility while LP staking rewards provide consistent yield above market rate. This is a conservative, time-tested DeFi strategy.",
+      estimatedYield: 12, riskScoreNumeric: 3,
+      explanation: "Stablecoin pools minimize volatility while LP staking rewards provide consistent yield above market rate.",
     },
     medium: {
       steps: [
@@ -28,9 +34,8 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "provide_liquidity", from: "INIT", to: "USDC", description: "Add INIT/USDC liquidity to earn trading fees", protocol: "Initia AMM" },
         { action: "stake_lp", description: "Stake LP tokens for additional incentives", protocol: "Initia Staking" },
       ],
-      estimatedYield: 18,
-      riskScoreNumeric: 5,
-      explanation: "A balanced split between INIT staking and liquidity provision captures both staking rewards and trading fee income, delivering above-average yield with moderate risk.",
+      estimatedYield: 18, riskScoreNumeric: 5,
+      explanation: "A balanced split between INIT staking and liquidity provision captures both staking rewards and trading fee income.",
     },
     high: {
       steps: [
@@ -38,8 +43,7 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "provide_liquidity", from: "INIT", to: "ETH", description: "Provide INIT/ETH liquidity for high fee income", protocol: "Initia AMM" },
         { action: "compound", description: "Auto-compound rewards back into strategy", protocol: "Initia" },
       ],
-      estimatedYield: 35,
-      riskScoreNumeric: 8,
+      estimatedYield: 35, riskScoreNumeric: 8,
       explanation: "Leveraged staking and volatile pair liquidity maximizes yield but exposes the portfolio to impermanent loss and liquidation risk.",
     },
   },
@@ -49,26 +53,23 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "dca_buy", to: "INIT", description: "Gradually accumulate INIT over time", protocol: "Initia DEX" },
         { action: "stake", from: "INIT", description: "Stake accumulated INIT for compounding growth", protocol: "Initia Staking" },
       ],
-      estimatedYield: 10,
-      riskScoreNumeric: 3,
-      explanation: "Dollar-cost averaging into INIT and auto-staking builds a growing position steadily while avoiding timing the market.",
+      estimatedYield: 10, riskScoreNumeric: 3,
+      explanation: "Dollar-cost averaging into INIT and auto-staking builds a growing position steadily.",
     },
     medium: {
       steps: [
         { action: "swap", from: "USDC", to: "INIT", description: "Convert stablecoins to INIT for growth exposure", protocol: "Initia DEX" },
         { action: "stake", from: "INIT", description: "Stake INIT to compound growth over time", protocol: "Initia Staking" },
       ],
-      estimatedYield: 20,
-      riskScoreNumeric: 5,
-      explanation: "Full INIT exposure with staking rewards compounds price appreciation with protocol incentives for strong medium-term growth.",
+      estimatedYield: 20, riskScoreNumeric: 5,
+      explanation: "Full INIT exposure with staking rewards compounds price appreciation with protocol incentives.",
     },
     high: {
       steps: [
         { action: "swap_all", to: "INIT", description: "Convert full portfolio to INIT", protocol: "Initia DEX" },
         { action: "leverage_long", from: "INIT", description: "Use borrowed liquidity to amplify INIT position", protocol: "Initia Lending" },
       ],
-      estimatedYield: 50,
-      riskScoreNumeric: 9,
+      estimatedYield: 50, riskScoreNumeric: 9,
       explanation: "Maximum INIT exposure with leverage creates the highest growth potential but also the highest liquidation risk.",
     },
   },
@@ -78,27 +79,24 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "swap", from: "INIT", to: "USDC", description: "Convert to stablecoins for income generation", protocol: "Initia DEX" },
         { action: "lend", from: "USDC", description: "Lend USDC to earn stable interest income", protocol: "Initia Lending" },
       ],
-      estimatedYield: 8,
-      riskScoreNumeric: 2,
-      explanation: "Lending stablecoins generates predictable interest income with near-zero volatility risk — ideal for consistent cash flow.",
+      estimatedYield: 8, riskScoreNumeric: 2,
+      explanation: "Lending stablecoins generates predictable interest income with near-zero volatility risk.",
     },
     medium: {
       steps: [
         { action: "provide_liquidity", from: "INIT", to: "USDC", description: "LP position generates trading fee income", protocol: "Initia AMM" },
         { action: "stake_lp", description: "Stake LP for additional income stream", protocol: "Initia Staking" },
       ],
-      estimatedYield: 16,
-      riskScoreNumeric: 5,
-      explanation: "Dual income from trading fees and LP staking rewards creates a diversified income stream with moderate risk.",
+      estimatedYield: 16, riskScoreNumeric: 5,
+      explanation: "Dual income from trading fees and LP staking rewards creates a diversified income stream.",
     },
     high: {
       steps: [
         { action: "provide_liquidity", from: "INIT", to: "ETH", description: "High-volume pair for maximum fee income", protocol: "Initia AMM" },
         { action: "leverage_lend", description: "Borrow to amplify liquidity position", protocol: "Initia Lending" },
       ],
-      estimatedYield: 40,
-      riskScoreNumeric: 8,
-      explanation: "Leveraged liquidity in high-volume trading pairs maximizes fee income but introduces impermanent loss and liquidation exposure.",
+      estimatedYield: 40, riskScoreNumeric: 8,
+      explanation: "Leveraged liquidity in high-volume trading pairs maximizes fee income but introduces impermanent loss risk.",
     },
   },
   stable: {
@@ -107,27 +105,24 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "swap", from: "INIT", to: "USDC", description: "Convert to USDC for capital preservation", protocol: "Initia DEX" },
         { action: "lend", from: "USDC", description: "Earn stable yield on preserved capital", protocol: "Initia Lending" },
       ],
-      estimatedYield: 6,
-      riskScoreNumeric: 1,
-      explanation: "Pure stablecoin strategy prioritizes capital preservation while earning a small, risk-free yield from USDC lending.",
+      estimatedYield: 6, riskScoreNumeric: 1,
+      explanation: "Pure stablecoin strategy prioritizes capital preservation while earning a small, risk-free yield.",
     },
     medium: {
       steps: [
         { action: "swap", from: "INIT", to: "USDC", description: "50% convert to USDC for stability", protocol: "Initia DEX" },
         { action: "provide_liquidity", from: "USDC", description: "Stablecoin LP for yield with low volatility", protocol: "Initia AMM" },
       ],
-      estimatedYield: 9,
-      riskScoreNumeric: 3,
-      explanation: "Partial stablecoin conversion with stablecoin LP balances preservation and modest yield without significant risk.",
+      estimatedYield: 9, riskScoreNumeric: 3,
+      explanation: "Partial stablecoin conversion with stablecoin LP balances preservation and modest yield.",
     },
     high: {
       steps: [
         { action: "swap", from: "INIT", to: "USDC", description: "Stable base position", protocol: "Initia DEX" },
         { action: "yield_farm", from: "USDC", description: "Farm USDC yield with protocol leverage", protocol: "Initia Farming" },
       ],
-      estimatedYield: 15,
-      riskScoreNumeric: 5,
-      explanation: "Stablecoin farming with protocol leverage extracts higher yield from a stable base — moderate execution risk only.",
+      estimatedYield: 15, riskScoreNumeric: 5,
+      explanation: "Stablecoin farming with protocol leverage extracts higher yield from a stable base.",
     },
   },
   diversify: {
@@ -137,9 +132,8 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "stake", from: "INIT", description: "Stake 40% INIT for protocol rewards", protocol: "Initia Staking" },
         { action: "lend", from: "USDC", description: "Lend 20% USDC for base yield", protocol: "Initia Lending" },
       ],
-      estimatedYield: 10,
-      riskScoreNumeric: 3,
-      explanation: "A 40/40/20 split across staking, stablecoins, and lending creates a diversified low-risk position with multiple income sources.",
+      estimatedYield: 10, riskScoreNumeric: 3,
+      explanation: "A 40/40/20 split across staking, stablecoins, and lending creates a diversified low-risk position.",
     },
     medium: {
       steps: [
@@ -147,9 +141,8 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "provide_liquidity", from: "INIT", to: "USDC", description: "33% in INIT/USDC LP pool", protocol: "Initia AMM" },
         { action: "lend", from: "USDC", description: "33% USDC lending for stable income", protocol: "Initia Lending" },
       ],
-      estimatedYield: 16,
-      riskScoreNumeric: 5,
-      explanation: "Equal-weight diversification across staking, liquidity, and lending maximizes risk-adjusted returns across market conditions.",
+      estimatedYield: 16, riskScoreNumeric: 5,
+      explanation: "Equal-weight diversification across staking, liquidity, and lending maximizes risk-adjusted returns.",
     },
     high: {
       steps: [
@@ -157,31 +150,142 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
         { action: "stake", from: "INIT", description: "Leveraged staking for amplified rewards", protocol: "Initia Staking" },
         { action: "leverage_long", from: "INIT", description: "Long INIT exposure for capital growth", protocol: "Initia Lending" },
       ],
-      estimatedYield: 45,
-      riskScoreNumeric: 8,
-      explanation: "Aggressive diversification across volatile LP, leveraged staking, and leveraged long positions maximizes yield with high risk exposure.",
+      estimatedYield: 45, riskScoreNumeric: 8,
+      explanation: "Aggressive diversification across volatile LP, leveraged staking, and leveraged long positions.",
     },
   },
 };
 
-// ── Generator ────────────────────────────────────────────────
+// ── Intent-specific step generators ──────────────────────────
+
+function buildSwapSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
+  const from = intent.tokenIn ?? "INIT";
+  const to = intent.tokenOut ?? "USDC";
+  return [
+    { action: "swap", from, to, description: `Swap ${from} → ${to}`, protocol: "Initia DEX" },
+  ];
+}
+
+function buildTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
+  const token = intent.token ?? "USDC";
+  const amount = intent.amount ?? 0;
+  const recipient = intent.recipient ?? "recipient";
+  return [
+    {
+      action: "transfer",
+      from: token,
+      description: `Transfer ${amount > 0 ? amount + " " : ""}${token} to ${recipient.slice(0, 10)}…`,
+      protocol: "Initia Bank",
+      amount,
+      recipient,
+    },
+  ];
+}
+
+function buildBatchTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
+  const token = intent.token ?? "USDC";
+  const amount = intent.amount ?? 0;
+  return (intent.recipients ?? []).map(r => ({
+    action: "transfer",
+    from: token,
+    description: `Transfer ${amount > 0 ? amount + " " : ""}${token} to ${r.slice(0, 10)}…`,
+    protocol: "Initia Bank",
+    amount,
+    recipient: r,
+  }));
+}
+
+function buildStakeSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
+  const token = intent.token ?? "INIT";
+  return [
+    { action: "stake", from: token, description: `Stake ${token} for protocol rewards`, protocol: "Initia Staking" },
+  ];
+}
+
+// ── Multi-Intent Bundle Generator ────────────────────────────
+
+export function generateFromIntents(intents: ParsedIntent[]): StrategyBundle {
+  const allSteps: Omit<StrategyStep, "index">[] = [];
+  let totalRisk = 0;
+  let totalYield = 0;
+  let explanationParts: string[] = [];
+
+  for (const intent of intents) {
+    switch (intent.intentType) {
+      case "swap":
+        allSteps.push(...buildSwapSteps(intent));
+        totalRisk += 2; totalYield += 0;
+        explanationParts.push(`Swap ${intent.tokenIn ?? "token"} → ${intent.tokenOut ?? "token"}`);
+        break;
+      case "transfer":
+        allSteps.push(...buildTransferSteps(intent));
+        totalRisk += 1; totalYield += 0;
+        explanationParts.push(`Transfer ${intent.token ?? "token"} to recipient`);
+        break;
+      case "batch_transfer":
+        allSteps.push(...buildBatchTransferSteps(intent));
+        totalRisk += 1; totalYield += 0;
+        explanationParts.push(`Batch transfer to ${intent.recipients?.length ?? 0} recipients`);
+        break;
+      case "stake":
+        allSteps.push(...buildStakeSteps(intent));
+        totalRisk += 3; totalYield += 12;
+        explanationParts.push(`Stake ${intent.token ?? "INIT"}`);
+        break;
+      case "yield":
+      case "portfolio_allocation":
+      default: {
+        const goal = intent.goal ?? "yield";
+        const risk = intent.riskTolerance ?? "medium";
+        const tpl = STRATEGY_TEMPLATES[goal]?.[risk] ?? STRATEGY_TEMPLATES.yield.medium;
+        allSteps.push(...tpl.steps);
+        totalRisk += tpl.riskScoreNumeric;
+        totalYield += tpl.estimatedYield;
+        explanationParts.push(tpl.explanation);
+        break;
+      }
+    }
+  }
+
+  const avgRisk = Math.round(totalRisk / intents.length);
+  const avgYield = Math.round(totalYield / intents.length);
+  const riskLabel: "low" | "medium" | "high" =
+    avgRisk <= 3 ? "low" : avgRisk <= 6 ? "medium" : "high";
+
+  const steps: StrategyStep[] = allSteps.map((s, i) => ({ index: i + 1, ...s }));
+
+  // Derive a legacy StructuredIntent to keep backward compat
+  const firstYield = intents.find(i => i.intentType === "yield" || i.intentType === "portfolio_allocation");
+  const legacyIntent: StructuredIntent = {
+    goal: firstYield?.goal ?? "yield",
+    riskTolerance: firstYield?.riskTolerance ?? "medium",
+    timeHorizon: firstYield?.timeHorizon ?? "medium",
+    assets: firstYield?.assets ?? ["INIT"],
+    rawText: intents.map(i => i.rawText).join(", "),
+  };
+
+  return {
+    id: uuidv4(),
+    steps,
+    estimatedYield: avgYield,
+    riskScore: riskLabel,
+    riskScoreNumeric: avgRisk,
+    explanation: explanationParts.join(" — "),
+    intent: legacyIntent,
+    parsedIntents: intents,
+    createdAt: new Date().toISOString(),
+  };
+}
+
+// ── Backward-compat single-intent generator ───────────────────
 
 export function generateStrategy(intent: StructuredIntent): StrategyBundle {
   const template =
     STRATEGY_TEMPLATES[intent.goal]?.[intent.riskTolerance] ??
     STRATEGY_TEMPLATES.yield.medium;
 
-  const steps: StrategyStep[] = template.steps.map((step, i) => ({
-    index: i + 1,
-    ...step,
-  }));
-
-  const riskLabel =
-    template.riskScoreNumeric <= 3
-      ? "low"
-      : template.riskScoreNumeric <= 6
-      ? "medium"
-      : "high";
+  const steps: StrategyStep[] = template.steps.map((step, i) => ({ index: i + 1, ...step }));
+  const riskLabel = template.riskScoreNumeric <= 3 ? "low" : template.riskScoreNumeric <= 6 ? "medium" : "high";
 
   return {
     id: uuidv4(),

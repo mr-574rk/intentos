@@ -8,6 +8,7 @@ import simulateRouter from "./routes/simulate";
 import executeRouter from "./routes/execute";
 import historyRouter from "./routes/history";
 import timelineRouter from "./routes/agentTimeline";
+import lcdRouter from "./routes/lcd";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use("/api/simulate", simulateRouter);
 app.use("/api/execute", executeRouter);
 app.use("/api/history", historyRouter);
 app.use("/api/agent", timelineRouter);
+app.use("/api/lcd", lcdRouter);
 
 // ── 404 ──────────────────────────────────────────────────────
 app.use((_req, res) => {

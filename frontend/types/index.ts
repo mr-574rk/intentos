@@ -1,17 +1,15 @@
 // ============================================================
-// IntentOS — Frontend Types
-// Local copy of shared types for Next.js frontend.
-// Keep in sync with /types/index.ts at the monorepo root.
+// IntentOS — Shared Types  (extended with multi-intent support)
 // ============================================================
 
 export type GoalType = "yield" | "growth" | "income" | "stable" | "diversify";
 export type RiskTolerance = "low" | "medium" | "high";
 export type TimeHorizon = "short" | "medium" | "long";
 export type RiskLabel = "low" | "medium" | "high";
-export type ExecutionMode = "mock" | "testnet";
-export type StrategyState = "PENDING" | "SIMULATED" | "APPROVED" | "EXECUTING" | "COMPLETE" | "FAILED";
-export type TimelineStepStatus = "pending" | "active" | "complete" | "failed";
 
+// ── Intent ───────────────────────────────────────────────────
+
+/** Legacy single-goal intent (kept for backward compat) */
 export interface StructuredIntent {
   goal: GoalType;
   riskTolerance: RiskTolerance;
@@ -20,6 +18,45 @@ export interface StructuredIntent {
   rawText: string;
 }
 
+// ── Multi-Intent (new) ───────────────────────────────────────
+
+export type IntentType =
+  | "yield"
+  | "swap"
+  | "transfer"
+  | "batch_transfer"
+  | "stake"
+  | "portfolio_allocation";
+
+export interface ParsedIntent {
+  intentType: IntentType;
+  // goal-based fields (yield / portfolio_allocation)
+  goal?: GoalType;
+  riskTolerance?: RiskTolerance;
+  timeHorizon?: TimeHorizon;
+  assets?: string[];
+  // swap fields
+  tokenIn?: string;
+  tokenOut?: string;
+  // transfer / batch_transfer fields
+  token?: string;
+  amount?: number;
+  recipient?: string;
+  recipients?: string[];
+  // ambiguity
+  ambiguous?: boolean;
+  clarificationOptions?: string[];
+  rawText: string;
+}
+
+export interface AmbiguityResponse {
+  ambiguous: true;
+  question: string;
+  options: string[];
+}
+
+// ── Strategy ─────────────────────────────────────────────────
+
 export interface StrategyStep {
   index: number;
   action: string;
@@ -27,6 +64,8 @@ export interface StrategyStep {
   to?: string;
   description: string;
   protocol?: string;
+  amount?: number;
+  recipient?: string;
 }
 
 export interface StrategyBundle {
@@ -36,9 +75,13 @@ export interface StrategyBundle {
   riskScore: RiskLabel;
   riskScoreNumeric: number;
   explanation: string;
+  reasoning?: string[];        // ← new: "Why this strategy?" bullets
   intent: StructuredIntent;
+  parsedIntents?: ParsedIntent[]; // ← new: full multi-intent array
   createdAt: string;
 }
+
+// ── Simulation ───────────────────────────────────────────────
 
 export interface PortfolioAllocation {
   [asset: string]: number;
@@ -54,6 +97,10 @@ export interface SimulationResult {
   passed: boolean;
   warnings: string[];
 }
+
+// ── Execution ────────────────────────────────────────────────
+
+export type ExecutionMode = "mock" | "testnet";
 
 export interface TransactionObject {
   index: number;
@@ -74,6 +121,16 @@ export interface ExecutionResult {
   error?: string;
 }
 
+// ── Strategy Lifecycle ───────────────────────────────────────
+
+export type StrategyState =
+  | "PENDING"
+  | "SIMULATED"
+  | "APPROVED"
+  | "EXECUTING"
+  | "COMPLETE"
+  | "FAILED";
+
 export interface Strategy {
   id: string;
   intent: StructuredIntent;
@@ -84,6 +141,10 @@ export interface Strategy {
   createdAt: string;
   updatedAt: string;
 }
+
+// ── Agent Timeline ───────────────────────────────────────────
+
+export type TimelineStepStatus = "pending" | "active" | "complete" | "failed";
 
 export interface TimelineStep {
   id: string;
@@ -102,6 +163,8 @@ export interface AgentTimeline {
   completedAt?: string;
 }
 
+// ── History ──────────────────────────────────────────────────
+
 export interface HistoryEntry {
   id: string;
   intentText: string;
@@ -111,6 +174,8 @@ export interface HistoryEntry {
   performance?: string;
   createdAt: string;
 }
+
+// ── Portfolio ────────────────────────────────────────────────
 
 export interface PortfolioAsset {
   symbol: string;
@@ -131,6 +196,8 @@ export interface Portfolio {
   completedStrategies: number;
   lastUpdated: string;
 }
+
+// ── API Responses ────────────────────────────────────────────
 
 export interface ApiResponse<T> {
   success: boolean;

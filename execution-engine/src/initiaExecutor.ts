@@ -31,10 +31,13 @@ export async function initiaExecute(
   //    execute_bundle(bundle_id: vector<u8>, step_actions: vector<vector<u8>>,
   //                   step_from_assets: vector<vector<u8>>, step_to_assets: vector<vector<u8>>,
   //                   step_amounts: vector<u64>, risk_score: u64)
-  const stepActions   = transactions.map((tx) => String(tx.type ?? "execute"));
-  const stepFromAssets = transactions.map(() => "USDC");
-  const stepToAssets  = transactions.map(() => "INIT");
-  const stepAmounts   = transactions.map(() => BigInt(1_000_000));
+  const stepActions   = transactions.map((tx) => String(tx.payload.action ?? tx.type ?? "execute"));
+  const stepFromAssets = transactions.map((tx) => String(tx.payload.from ?? "USDC"));
+  const stepToAssets  = transactions.map((tx) => String(tx.payload.to ?? "INIT"));
+  const stepAmounts   = transactions.map((tx) => {
+    const amt = Number(tx.payload.amount);
+    return BigInt(amt > 0 ? amt * 1000000 : 1000000);
+  });
 
   const args = [
     bcs.string().serialize(strategyId).toBase64(),

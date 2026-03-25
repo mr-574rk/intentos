@@ -1,22 +1,58 @@
 // ============================================================
-// IntentOS — Shared Types
-// Used across: backend, ai-engine, simulation-engine,
-//              agent-orchestrator, execution-engine, frontend
+// IntentOS — Shared Types  (extended with multi-intent support)
 // ============================================================
-
-// ── Intent ──────────────────────────────────────────────────
 
 export type GoalType = "yield" | "growth" | "income" | "stable" | "diversify";
 export type RiskTolerance = "low" | "medium" | "high";
 export type TimeHorizon = "short" | "medium" | "long";
 export type RiskLabel = "low" | "medium" | "high";
 
+// ── Intent ───────────────────────────────────────────────────
+
+/** Legacy single-goal intent (kept for backward compat) */
 export interface StructuredIntent {
   goal: GoalType;
   riskTolerance: RiskTolerance;
   timeHorizon: TimeHorizon;
   assets: string[];
   rawText: string;
+}
+
+// ── Multi-Intent (new) ───────────────────────────────────────
+
+export type IntentType =
+  | "yield"
+  | "swap"
+  | "transfer"
+  | "batch_transfer"
+  | "stake"
+  | "portfolio_allocation";
+
+export interface ParsedIntent {
+  intentType: IntentType;
+  // goal-based fields (yield / portfolio_allocation)
+  goal?: GoalType;
+  riskTolerance?: RiskTolerance;
+  timeHorizon?: TimeHorizon;
+  assets?: string[];
+  // swap fields
+  tokenIn?: string;
+  tokenOut?: string;
+  // transfer / batch_transfer fields
+  token?: string;
+  amount?: number;
+  recipient?: string;
+  recipients?: string[];
+  // ambiguity
+  ambiguous?: boolean;
+  clarificationOptions?: string[];
+  rawText: string;
+}
+
+export interface AmbiguityResponse {
+  ambiguous: true;
+  question: string;
+  options: string[];
 }
 
 // ── Strategy ─────────────────────────────────────────────────
@@ -28,23 +64,27 @@ export interface StrategyStep {
   to?: string;
   description: string;
   protocol?: string;
+  amount?: number;
+  recipient?: string;
 }
 
 export interface StrategyBundle {
   id: string;
   steps: StrategyStep[];
-  estimatedYield: number;       // percentage, e.g. 18
+  estimatedYield: number;
   riskScore: RiskLabel;
-  riskScoreNumeric: number;     // 1–10
-  explanation: string;          // AI-written rationale
+  riskScoreNumeric: number;
+  explanation: string;
+  reasoning?: string[];        // ← new: "Why this strategy?" bullets
   intent: StructuredIntent;
+  parsedIntents?: ParsedIntent[]; // ← new: full multi-intent array
   createdAt: string;
 }
 
 // ── Simulation ───────────────────────────────────────────────
 
 export interface PortfolioAllocation {
-  [asset: string]: number;      // asset → percentage
+  [asset: string]: number;
 }
 
 export interface SimulationResult {
@@ -54,7 +94,7 @@ export interface SimulationResult {
   riskScore: RiskLabel;
   riskScoreNumeric: number;
   explanation: string;
-  passed: boolean;              // false if risk > threshold
+  passed: boolean;
   warnings: string[];
 }
 
@@ -74,7 +114,7 @@ export interface ExecutionResult {
   strategyId: string;
   status: "success" | "failed";
   txHash: string;
-  txHashes?: string[];          // one per bundle step
+  txHashes?: string[];
   result: string;
   mode: ExecutionMode;
   executedAt: string;
@@ -131,7 +171,7 @@ export interface HistoryEntry {
   bundle: StrategyBundle;
   simulation: SimulationResult;
   result: ExecutionResult;
-  performance?: string;         // e.g. "+3.2%"
+  performance?: string;
   createdAt: string;
 }
 
@@ -142,13 +182,13 @@ export interface PortfolioAsset {
   name: string;
   balance: number;
   valueUSD: number;
-  allocation: number;           // percentage
-  change24h: number;            // percentage
+  allocation: number;
+  change24h: number;
 }
 
 export interface Portfolio {
   address: string;
-  username?: string;            // .init username
+  username?: string;
   totalValueUSD: number;
   change24h: number;
   assets: PortfolioAsset[];
