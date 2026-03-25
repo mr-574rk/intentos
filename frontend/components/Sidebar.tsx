@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import WalletConnect from "@/components/WalletConnect";
 
+import { BrainCircuit, ListTree, Zap, PieChart, History } from "lucide-react";
+
 const NAV_ITEMS = [
-  { href: "/app/intent",    icon: "🧠", label: "Intent" },
-  { href: "/app/strategy",  icon: "📋", label: "Strategy" },
-  { href: "/app/execute",   icon: "⚡", label: "Execute" },
-  { href: "/app/portfolio", icon: "📊", label: "Portfolio" },
-  { href: "/app/history",   icon: "📜", label: "History" },
+  { href: "/app/intent",    icon: BrainCircuit, label: "Intent" },
+  { href: "/app/strategy",  icon: ListTree,     label: "Strategy" },
+  { href: "/app/execute",   icon: Zap,          label: "Execute" },
+  { href: "/app/portfolio", icon: PieChart,     label: "Portfolio" },
+  { href: "/app/history",   icon: History,      label: "History" },
 ];
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -21,7 +23,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo & Mobile Close */}
       <div className="px-5 py-5 border-b border-border-default flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center text-bg-primary font-black text-sm">
+          <div className="w-8 h-8 bg-text-primary text-bg-primary flex items-center justify-center font-bold text-xs tracking-wider">
             IO
           </div>
           <div>
@@ -54,10 +56,10 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
                   : "text-text-secondary hover:text-text-primary hover:bg-bg-elevated"
               )}
             >
-              <span className="text-base">{item.icon}</span>
+              <item.icon className="w-[18px] h-[18px]" strokeWidth={2} />
               {item.label}
               {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-accent-cyan" />
+                <div className="ml-auto w-1.5 h-1.5 rounded-none bg-accent-cyan" />
               )}
             </Link>
           );

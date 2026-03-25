@@ -1,79 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useInterwovenKit } from "@initia/interwovenkit-react";
+import { truncate } from "@initia/utils";
 import clsx from "clsx";
 
-interface WalletState {
-  connected: boolean;
-  address?: string;
-  username?: string; // .init username
-}
-
-// Simulated wallet state (replace with real InterwovenKit hooks)
-// import { useWallet } from "@initia/interwovenkit-react";
-
 export default function WalletConnect({ compact = false }: { compact?: boolean }) {
-  const [wallet, setWallet] = useState<WalletState>({ connected: false });
-  const [connecting, setConnecting] = useState(false);
+  const { address, username, openConnect, openWallet } = useInterwovenKit();
 
-  // Mock connection for demo — replace with:
-  // const { connect, disconnect, address, username } = useWallet();
-  const handleConnect = async () => {
-    setConnecting(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setWallet({
-      connected: true,
-      address: "init1abc...def1",
-      username: "demo.init",
-    });
-    setConnecting(false);
-  };
+  const isConnected = !!address;
+  const displayName = username ?? (address ? truncate(address) : null);
 
-  const handleDisconnect = () => {
-    setWallet({ connected: false });
-  };
-
-  if (!wallet.connected) {
+  if (!isConnected) {
     return (
       <button
         id="wallet-connect-btn"
-        onClick={handleConnect}
-        disabled={connecting}
+        onClick={openConnect}
         className={clsx(
           "btn-primary",
-          compact ? "text-xs px-3 py-2 w-full" : "text-sm px-5 py-2.5",
-          connecting && "opacity-60 cursor-wait"
+          compact ? "text-xs px-3 py-2 w-full" : "text-sm px-5 py-2.5"
         )}
       >
-        {connecting ? (
-          <>
-            <span className="animate-spin">◌</span>
-            Connecting…
-          </>
-        ) : (
-          <>🔗 Connect Wallet</>
-        )}
+        CONNECT WALLET
       </button>
     );
   }
 
   return (
-    <div
+    <button
       className={clsx(
-        "flex items-center gap-3 glass-card px-3 py-2 cursor-pointer hover:border-accent-cyan/30 transition-colors",
+        "flex items-center gap-3 bg-bg-elevated border border-border-default px-3 py-2 hover:border-accent-cyan/50 transition-colors text-left shadow-lg",
         compact && "w-full"
       )}
-      onClick={handleDisconnect}
-      title="Click to disconnect"
+      onClick={openWallet}
+      title="Click to manage wallet"
     >
-      <div className="w-7 h-7 rounded-full bg-gradient-accent flex-shrink-0" />
+      <div className="w-7 h-7 bg-text-primary text-bg-primary flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+        IO
+      </div>
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold text-accent-cyan truncate">
-          {wallet.username ?? wallet.address}
+          {displayName}
         </p>
         <p className="text-xs text-text-muted">Connected · Initia</p>
       </div>
       <span className="status-dot active flex-shrink-0" />
-    </div>
+    </button>
   );
 }

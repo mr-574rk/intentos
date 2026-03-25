@@ -1,6 +1,11 @@
+"use client";
+
+import { useWalletGuard } from "@/hooks/useWalletGuard";
 import StrategyHistory from "@/components/StrategyHistory";
 
 export default function HistoryPage() {
+  const { isConnected } = useWalletGuard();
+  if (!isConnected) return null;
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>

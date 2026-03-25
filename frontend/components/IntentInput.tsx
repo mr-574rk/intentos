@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, ArrowUpRight } from "lucide-react";
 
-const EXAMPLE_INTENTS = [
-  "Earn stable yield with low risk",
-  "Maximize my INIT returns over 3 months",
-  "Diversify my portfolio across DeFi protocols",
-  "Generate passive income with medium risk",
+// Max 3 chips — ChatGPT style contextual suggestions
+const SUGGESTIONS = [
+  "Grow my savings safely",
+  "Get the highest returns possible",
+  "Set up a steady passive income",
 ];
 
 interface IntentInputProps {
@@ -17,6 +19,7 @@ interface IntentInputProps {
 
 export default function IntentInput({ onSubmit, loading, disabled }: IntentInputProps) {
   const [text, setText] = useState("");
+  const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
@@ -24,66 +27,95 @@ export default function IntentInput({ onSubmit, loading, disabled }: IntentInput
     onSubmit(text.trim());
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      handleSubmit();
-    }
+  const selectSuggestion = (s: string) => {
+    setText(s);
+    textareaRef.current?.focus();
   };
 
-  return (
-    <div className="glass-card p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">🧠</span>
-        <h2 className="font-semibold text-text-primary">What&apos;s your financial goal?</h2>
-      </div>
+  const canSubmit = !!text.trim() && !loading && !disabled;
 
-      {/* Textarea */}
-      <div className="relative">
+  return (
+    <div className="space-y-3">
+      {/* Main input card */}
+      <div
+        className="bg-bg-elevated border border-border-default transition-all duration-150 relative"
+        style={{
+          borderColor: focused ? "rgba(0,245,212,0.4)" : undefined,
+          boxShadow: focused ? "0 0 0 1px rgba(0,245,212,0.4), 0 8px 30px rgba(0,0,0,0.8)" : undefined,
+        }}
+      >
         <textarea
           ref={textareaRef}
           id="intent-input"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="e.g. Earn stable yield with low risk…"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+          }}
+          placeholder="What's your financial goal? e.g. Earn stable yield with low risk…"
           disabled={loading || disabled}
           rows={3}
-          className="w-full bg-bg-elevated border border-border-default rounded-xl px-4 py-3.5 text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:border-accent-cyan/50 transition-colors text-sm disabled:opacity-50"
+          className="w-full bg-transparent px-5 pt-5 pb-3 text-base text-text-primary
+                     placeholder:text-text-muted resize-none focus:outline-none leading-relaxed"
         />
-        <div className="absolute bottom-3 right-3 text-xs text-text-muted">
-          ⌘↵ to send
+
+        {/* Toolbar row */}
+        <div className="flex items-center justify-between px-4 pb-3 pt-1">
+          <span className="text-xs text-text-muted">⌘↵ to send</span>
+          <motion.button
+            id="intent-submit-btn"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="btn-primary px-5 py-2.5 text-sm"
+            whileHover={canSubmit ? { scale: 1.02 } : undefined}
+            whileTap={canSubmit ? { scale: 0.98 } : undefined}
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Thinking…
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">Generate <Sparkles className="w-4 h-4"/></span>
+            )}
+          </motion.button>
         </div>
       </div>
 
-      {/* Example chips */}
-      <div className="flex flex-wrap gap-2">
-        {EXAMPLE_INTENTS.map((ex) => (
-          <button
-            key={ex}
-            onClick={() => { setText(ex); textareaRef.current?.focus(); }}
-            className="text-xs px-3 py-1.5 bg-bg-elevated border border-border-default rounded-lg text-text-secondary hover:text-accent-cyan hover:border-accent-cyan/30 transition-all"
+      {/* Suggestion chips — max 3, ChatGPT style */}
+      <AnimatePresence>
+        {!loading && (
+          <motion.div
+            className="flex flex-wrap gap-2"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.2 }}
           >
-            {ex}
-          </button>
-        ))}
-      </div>
-
-      {/* Submit */}
-      <button
-        id="intent-submit-btn"
-        onClick={handleSubmit}
-        disabled={!text.trim() || !!loading || !!disabled}
-        className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
-      >
-        {loading ? (
-          <>
-            <span className="animate-spin text-base">◌</span>
-            Processing Intent…
-          </>
-        ) : (
-          <>⚡ Generate Strategy</>
+            {SUGGESTIONS.map((s, i) => (
+              <motion.button
+                key={s}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.06 }}
+                onClick={() => selectSuggestion(s)}
+                className="flex items-center gap-1.5 text-xs px-3.5 py-2 border text-text-secondary
+                           hover:text-[#00F5D4] hover:border-[#00F5D4]/30
+                           bg-bg-secondary hover:bg-[#00F5D4]/5
+                           transition-all duration-150"
+                style={{ borderColor: "rgba(255,255,255,0.1)" }}
+              >
+                {s} <ArrowUpRight className="w-3 h-3 opacity-50" />
+              </motion.button>
+            ))}
+          </motion.div>
         )}
-      </button>
+      </AnimatePresence>
     </div>
   );
 }

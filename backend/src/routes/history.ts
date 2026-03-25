@@ -1,29 +1,25 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { getAllStrategies } from "../../../agent-orchestrator/src/strategyLifecycle";
+import { getAllHistory, type HistoryRow } from "../db/historyRepo";
 import type { ApiResponse, HistoryEntry } from "../../../types";
 
 const router = Router();
 
 /**
  * GET /api/history
- * Returns all completed strategies as history entries.
+ * Returns all completed strategies from the persistent SQLite store.
  */
 router.get("/", (_req: Request, res: Response) => {
-  const strategies = getAllStrategies().filter(
-    (s) => s.state === "COMPLETE" || s.state === "FAILED"
-  );
+  const rows: HistoryRow[] = getAllHistory();
 
-  const history: HistoryEntry[] = strategies.map((s) => ({
-    id: s.id,
-    intentText: s.intent.rawText,
-    bundle: s.bundle,
-    simulation: s.simulation!,
-    result: s.executionResult!,
-    performance: s.state === "COMPLETE"
-      ? `+${(Math.random() * 5).toFixed(1)}%`  // mock performance; replace with real calculation
-      : undefined,
-    createdAt: s.createdAt,
+  const history: HistoryEntry[] = rows.map((row) => ({
+    id: row.id,
+    intentText: row.intentText,
+    bundle: JSON.parse(row.bundle),
+    simulation: JSON.parse(row.simulation),
+    result: JSON.parse(row.result),
+    performance: row.performance ?? undefined,
+    createdAt: row.createdAt,
   }));
 
   const response: ApiResponse<HistoryEntry[]> = {
@@ -36,3 +32,4 @@ router.get("/", (_req: Request, res: Response) => {
 });
 
 export default router;
+

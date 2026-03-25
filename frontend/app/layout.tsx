@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "IntentOS — AI-Powered DeFi on Initia",
@@ -21,8 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-bg-primary text-text-primary min-h-screen">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
 }
+

@@ -3,21 +3,21 @@
  * Override via environment variables for testnet/mainnet deployment.
  */
 export const INITIA_CONFIG = {
-  rpc: process.env.INITIA_RPC || "https://rpc.testnet.initia.xyz",
-  rest: process.env.INITIA_REST || "https://lcd.testnet.initia.xyz",
-  chainId: process.env.CHAIN_ID || "initiation-2",
-  chainName: "Initia Testnet",
-  denom: "uinit",
-  displayDenom: "INIT",
+  rpc: process.env.INITIA_RPC || "http://localhost:26657",
+  rest: process.env.INITIA_REST || "http://localhost:1317",
+  chainId: process.env.CHAIN_ID || "intentos-1",
+  chainName: "IntentOS Local Rollup",
+  denom: "uintos",
+  displayDenom: "UINTOS",
   decimals: 6,
 
   // InterwovenKit
   interwovenKitEndpoint: process.env.INTERWOVENKIT_ENDPOINT || "https://connect.wallet.initia.xyz",
 
-  // Known contract addresses (deploy and update here)
+  // Known contract addresses
   contracts: {
-    strategyExecutor: process.env.CONTRACT_STRATEGY_EXECUTOR || "init1strategy_executor_placeholder",
-    permissionManager: process.env.CONTRACT_PERMISSION_MANAGER || "init1permission_manager_placeholder",
+    strategyExecutor: process.env.CONTRACT_STRATEGY_EXECUTOR || "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3",
+    permissionManager: process.env.CONTRACT_PERMISSION_MANAGER || "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3",
   },
 
   // Known protocol pools (used by simulation engine)

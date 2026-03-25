@@ -52,8 +52,8 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Link href="/app/intent" className="btn-primary text-base px-8 py-4">
-              Launch App →
+            <Link href="/onboarding" className="btn-primary text-base px-8 py-4">
+              Get Started →
             </Link>
             <a
               href="https://github.com/intentos/intentos"

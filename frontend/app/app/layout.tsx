@@ -7,14 +7,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full bg-bg-primary overflow-hidden">
+    <div className="flex h-[100dvh] w-full bg-bg-primary overflow-hidden">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 border-b border-border-default bg-bg-secondary z-50 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 border-b border-border-default bg-bg-primary z-50 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-accent flex items-center justify-center text-bg-primary font-black text-sm">
+          <div className="w-8 h-8 bg-text-primary text-bg-primary flex items-center justify-center font-bold text-xs tracking-wider">
             IO
           </div>
-          <p className="font-bold text-sm text-text-primary">IntentOS</p>
+          <p className="font-bold text-sm text-text-primary tracking-wide">IntentOS</p>
         </div>
         <button 
           className="text-text-primary p-2 text-xl" 
@@ -42,8 +42,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-screen overflow-y-auto pt-20 pb-10 px-4 md:pt-8 md:px-8 w-full relative">
-        <div className="max-w-5xl mx-auto">
+      <main className="flex-1 h-[100dvh] flex flex-col pt-16 md:pt-0 w-full relative">
+        <div className="flex-1 h-full w-full mx-auto md:p-8 overflow-hidden">
           {children}
         </div>
       </main>

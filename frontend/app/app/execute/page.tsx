@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AgentTimeline from "@/components/AgentTimeline";
 import ExecuteButton from "@/components/ExecuteButton";
+import { useWalletGuard } from "@/hooks/useWalletGuard";
 import type { Strategy, ApiResponse, ExecutionResult, AgentTimeline as TimelineType } from "@/types";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "https://1492-197-210-77-187.ngrok-free.app";
+import { API_URL, API_HEADERS } from "@/lib/config";
 
 export default function ExecutePage() {
   const router = useRouter();
+  const { isConnected } = useWalletGuard();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [timeline, setTimeline] = useState<TimelineType | null>(null);
   const [result, setResult] = useState<ExecutionResult | null>(null);
@@ -21,9 +23,7 @@ export default function ExecutePage() {
       const s = JSON.parse(stored) as Strategy;
       setStrategy(s);
       // Fetch existing timeline
-      fetch(`${API}/api/agent/timeline/${s.id}`, {
-        headers: { "ngrok-skip-browser-warning": "69420" }
-      })
+      fetch(`${API_URL}/api/agent/timeline/${s.id}`, { headers: API_HEADERS })
         .then((r) => r.json())
         .then((d: ApiResponse<TimelineType>) => { if (d.data) setTimeline(d.data); })
         .catch(() => undefined);
@@ -34,12 +34,9 @@ export default function ExecutePage() {
     if (!strategy) return;
     setError(null);
     try {
-      const res = await fetch(`${API}/api/execute/${strategy.id}`, {
+      const res = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "69420" 
-        },
+        headers: API_HEADERS,
         body: JSON.stringify({ sessionKey: "" }),
       });
       const data: ApiResponse<ExecutionResult> = await res.json();
@@ -47,8 +44,8 @@ export default function ExecutePage() {
       setResult(data.data);
 
       // Refresh timeline
-      const tlRes = await fetch(`${API}/api/agent/timeline/${strategy.id}`, {
-        headers: { "ngrok-skip-browser-warning": "69420" }
+      const tlRes = await fetch(`${API_URL}/api/agent/timeline/${strategy.id}`, {
+        headers: API_HEADERS,
       });
       const tlData: ApiResponse<TimelineType> = await tlRes.json();
       if (tlData.data) setTimeline(tlData.data);

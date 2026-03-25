@@ -164,3 +164,13 @@ NEXT_PUBLIC_EXECUTION_MODE=mock
 ## License
 
 MIT © 2026 IntentOS
+
+---
+
+## Hackathon Deployment Info
+- **Rollup Chain ID:** `intentos-1`
+- **L1 Network:** `initiation-2` (Initia Testnet)
+- **StrategyExecutor Contract:** `0x3dd7b889be628c573c8a46b0f7657ae8483ebec3`
+- **Deploy Tx Hash:** `D963A0934B5B7A2BAF3AF7C736E3418F6388C598B0700B1CAA67887F1121EFAA`
+- **Rollup Gas Token:** `uintos`
+- **Explorer:** https://scan.testnet.initia.xyz/intentos-1

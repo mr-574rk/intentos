@@ -45,7 +45,7 @@ export async function processIntent(rawText: string): Promise<Strategy> {
  * Phase 2: Execute an approved strategy.
  * Called after the user clicks "Execute Strategy".
  */
-export async function executeStrategy(strategyId: string): Promise<ExecutionResult> {
+export async function executeStrategy(strategyId: string, sessionKey = ""): Promise<ExecutionResult> {
   const strategy = getStrategy(strategyId);
   if (!strategy) throw new Error(`Strategy ${strategyId} not found`);
   if (!strategy.simulation) throw new Error("Strategy has not been simulated");
@@ -66,7 +66,7 @@ export async function executeStrategy(strategyId: string): Promise<ExecutionResu
   updateState(strategyId, "EXECUTING");
 
   try {
-    const result = await executeBundle(strategy.bundle, strategyId);
+    const result = await executeBundle(strategy.bundle, strategyId, sessionKey);
     strategy.executionResult = result;
     updateState(strategyId, "COMPLETE");
 
