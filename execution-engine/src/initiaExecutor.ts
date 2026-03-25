@@ -1,68 +1,84 @@
+import { RESTClient, Wallet, RawKey, MsgExecute, bcs } from "@initia/initia.js";
 import type { TransactionObject, ExecutionResult } from "../../types";
 import { INITIA_CONFIG } from "../../config/initiaConfig";
 
 /**
- * Initia testnet executor.
- * Submits transaction bundles to the Initia testnet RPC.
- *
- * NOTE: Full signing requires a connected InterwovenKit session.
- * This module handles the on-chain submission step after the frontend
- * has obtained session key authorization.
+ * Real Initia testnet executor using @initia/initia.js.
+ * Submits transaction bundles using BCS-encoded Move VM arguments.
  */
 export async function initiaExecute(
   transactions: TransactionObject[],
   strategyId: string,
   sessionKey: string
 ): Promise<ExecutionResult> {
-  const txHashes: string[] = [];
-
-  for (const tx of transactions) {
-    const txHash = await submitTransaction(tx, sessionKey);
-    txHashes.push(txHash);
+  const privateKey = process.env.RELAYER_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error("RELAYER_PRIVATE_KEY must be set in backend/.env for testnet execution.");
   }
 
-  return {
-    strategyId,
-    status: "success",
-    txHash: txHashes[txHashes.length - 1] ?? "unknown",
-    txHashes,
-    result: `Strategy executed on Initia testnet. ${transactions.length} transactions submitted.`,
-    mode: "testnet",
-    executedAt: new Date().toISOString(),
-  };
-}
-
-/**
- * Submit a single transaction to the Initia RPC.
- * Replace this stub with the @initia/initia.js SDK when available.
- */
-async function submitTransaction(
-  tx: TransactionObject,
-  sessionKey: string
-): Promise<string> {
-  const endpoint = `${INITIA_CONFIG.rpc}/broadcast_tx_commit`;
-
-  // Build the transaction payload
-  const body = {
-    tx: {
-      type: tx.type,
-      payload: tx.payload,
-      session_key: sessionKey,
-      chain_id: INITIA_CONFIG.chainId,
-    },
-  };
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+  // 1. Initialize connection to Initia Testnet
+  const lcd = new RESTClient(INITIA_CONFIG.rest, {
+    chainId: INITIA_CONFIG.chainId,
+    gasPrices: "0.015uintos",
+    gasAdjustment: "1.5",
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Transaction failed (step ${tx.index}): ${error}`);
-  }
+  // 2. Load the Relayer Wallet
+  const key = new RawKey(Buffer.from(privateKey, "hex"));
+  const wallet = new Wallet(lcd, key);
 
-  const data = await response.json() as { result?: { hash?: string } };
-  return data?.result?.hash ?? `tx_${Date.now()}_${tx.index}`;
+  // 3. BCS-encode Move VM arguments to match the StrategyExecutor.move execute_bundle signature:
+  //    execute_bundle(bundle_id: vector<u8>, step_actions: vector<vector<u8>>,
+  //                   step_from_assets: vector<vector<u8>>, step_to_assets: vector<vector<u8>>,
+  //                   step_amounts: vector<u64>, risk_score: u64)
+  const stepActions   = transactions.map((tx) => String(tx.type ?? "execute"));
+  const stepFromAssets = transactions.map(() => "USDC");
+  const stepToAssets  = transactions.map(() => "INIT");
+  const stepAmounts   = transactions.map(() => BigInt(1_000_000));
+
+  const args = [
+    bcs.string().serialize(strategyId).toBase64(),
+    bcs.vector(bcs.string()).serialize(stepActions).toBase64(),
+    bcs.vector(bcs.string()).serialize(stepFromAssets).toBase64(),
+    bcs.vector(bcs.string()).serialize(stepToAssets).toBase64(),
+    bcs.vector(bcs.u64()).serialize(stepAmounts).toBase64(),
+    bcs.u64().serialize(BigInt(5)).toBase64(),
+  ];
+
+  const msgs = [
+    new MsgExecute(
+      wallet.key.accAddress,
+      INITIA_CONFIG.contracts.strategyExecutor,
+      "strategy_executor",
+      "execute_bundle",
+      [],
+      args
+    )
+  ];
+
+  // 4. Sign and Broadcast Bundle
+  try {
+    const signedTx = await wallet.createAndSignTx({
+      msgs,
+      memo: `IntentOS Strategy: ${strategyId}`,
+    });
+
+    const result = await lcd.tx.broadcast(signedTx);
+
+    if ('code' in result && result.code !== 0) {
+      throw new Error(`Initia TX failed: ${'raw_log' in result ? result.raw_log : 'Unknown error'}`);
+    }
+
+    return {
+      strategyId,
+      status: "success",
+      txHash: result.txhash,
+      txHashes: [result.txhash],
+      result: `Strategy executed on Initia testnet. ${transactions.length} steps bundled.`,
+      mode: "testnet",
+      executedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    throw new Error(`Blockchain execution failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

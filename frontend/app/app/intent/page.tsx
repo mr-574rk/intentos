@@ -86,7 +86,7 @@ export default function IntentPage() {
 
       {/* ③ Intent Input — always visible, sits below the accordion */}
       <div className="flex-none">
-        <IntentInput onSubmit={handleSubmit} loading={loading} />
+        <IntentInput onSubmit={handleSubmit} loading={loading} disabled={!!timeline} />
       </div>
     </div>
   );
