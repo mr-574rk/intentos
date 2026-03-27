@@ -9,7 +9,8 @@ import { useInterwovenKit } from "@initia/interwovenkit-react";
  * Call this at the top of every /app/* page.
  */
 export function useWalletGuard() {
-  const { address } = useInterwovenKit();
+  const kit = useInterwovenKit();
+  const address = kit.address;
   const router = useRouter();
 
   useEffect(() => {
@@ -18,5 +19,5 @@ export function useWalletGuard() {
     }
   }, [address, router]);
 
-  return { address, isConnected: !!address };
+  return { address, isConnected: !!address, requestTx: kit.requestTxSync };
 }

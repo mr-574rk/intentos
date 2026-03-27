@@ -21,23 +21,7 @@ const wagmiConfig = createConfig({
 const queryClient = new QueryClient();
 
 // Initia testnet chain ID — update this to match your deployed rollup/appchain
-const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID ?? "interwoven-1";
-
-const customLocalChain = {
-  chain_id: CHAIN_ID,
-  chain_name: "intentos-local",
-  pretty_name: "IntentOS Local Rollup",
-  network_type: "testnet",
-  bech32_prefix: "init",
-  fees: {
-    fee_tokens: [{ denom: "uintos", fixed_min_gas_price: 0.15 }],
-  },
-  apis: {
-    rpc: [{ address: "http://localhost:26657" }],
-    rest: [{ address: "http://localhost:1317" }],
-    indexer: [{ address: "http://localhost:6767" }],
-  },
-};
+const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID ?? "initiation-2";
 
 export default function Providers({ children }: PropsWithChildren) {
   useEffect(() => {
@@ -50,7 +34,6 @@ export default function Providers({ children }: PropsWithChildren) {
         <InterwovenKitProvider 
           {...TESTNET}
           defaultChainId={CHAIN_ID}
-          customChain={customLocalChain as any}
         >
           {children}
         </InterwovenKitProvider>

@@ -7,5 +7,5 @@ MinitiaStdlib = { git = "https://github.com/initia-labs/move-natives.git", subdi
 
 [addresses]
 std = "0x1"
-intentos = "_"
+intentos = "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3"
 

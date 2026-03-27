@@ -6,7 +6,7 @@
 /** Backend API base URL — set NEXT_PUBLIC_API_URL in .env.local */
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://1492-197-210-77-187.ngrok-free.app";
-
+export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER;
 /** Initia rollup chain ID — set NEXT_PUBLIC_CHAIN_ID in .env.local */
 export const CHAIN_ID =
   process.env.NEXT_PUBLIC_CHAIN_ID ?? "intentos-1";

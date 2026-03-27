@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { HistoryEntry } from "../types";
+import { API_URL, EXPLORER } from "@/lib/config";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-const EXPLORER = "https://scan.testnet.initia.xyz/intentos-1/txs";
+
 
 export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] }) {
   const [list, setList] = useState<HistoryEntry[]>(entries ?? []);
@@ -61,8 +61,8 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
     <div className="space-y-4">
       {list.map((entry, i) => {
         const success = entry.result.status === "success";
-        const txHash  = entry.result.txHash;
-        const isReal  = txHash && txHash !== "n/a" && !txHash.startsWith("tx_cached") && !txHash.startsWith("mock");
+        const txHash = entry.result.txHash;
+        const isReal = txHash && txHash !== "n/a" && !txHash.startsWith("tx_cached") && !txHash.startsWith("mock");
 
         return (
           <motion.div
@@ -75,11 +75,10 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
-                    success
-                      ? "text-status-success bg-status-success/10 border-status-success/20"
-                      : "text-status-error bg-status-error/10 border-status-error/20"
-                  }`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${success
+                    ? "text-status-success bg-status-success/10 border-status-success/20"
+                    : "text-status-error bg-status-error/10 border-status-error/20"
+                    }`}>
                     {success ? "✓ Success" : "✗ Failed"}
                   </span>
                   <span className="text-xs text-text-muted">

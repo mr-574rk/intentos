@@ -5,13 +5,13 @@ import { motion } from "framer-motion";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import type { Portfolio } from "../types";
+import { API_URL } from "@/lib/config";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 const ASSET_COLORS: Record<string, string> = {
-  INIT:   "#00F5D4",
-  USDC:   "#7C3AED",
-  LP:     "#F59E0B",
+  INIT: "#00F5D4",
+  USDC: "#7C3AED",
+  LP: "#F59E0B",
   uintos: "#00F5D4",
 };
 
@@ -30,8 +30,8 @@ function Sparkline({ data }: { data: { date: string; value: number }[] }) {
         <AreaChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="#00F5D4" stopOpacity={0.18} />
-              <stop offset="95%" stopColor="#00F5D4" stopOpacity={0}    />
+              <stop offset="5%" stopColor="#00F5D4" stopOpacity={0.18} />
+              <stop offset="95%" stopColor="#00F5D4" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis dataKey="date" tick={{ fill: "#828A9E", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -90,10 +90,10 @@ export default function PortfolioDashboard() {
         });
 
         // 2. Fetch strategy count from history API
-        const histRes  = await fetch(`${API_URL}/api/history`);
+        const histRes = await fetch(`${API_URL}/api/history`);
         const histJson = await histRes.json();
         const histEntries = histJson.data ?? [];
-        const completed   = histEntries.filter((e: { result: { status: string } }) => e.result.status === "success").length;
+        const completed = histEntries.filter((e: { result: { status: string } }) => e.result.status === "success").length;
 
         setPortfolio({
           address: address ?? "",

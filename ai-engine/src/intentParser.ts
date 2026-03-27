@@ -4,7 +4,7 @@ import type { ParsedIntent, IntentType, GoalType, RiskTolerance } from "../../ty
 
 const SWAP_PATTERNS = /\b(swap|buy|convert|exchange|turn .{1,20} into|change .{1,20} to)\b/i;
 const TRANSFER_PATTERNS = /\b(send|pay|transfer|give)\b/i;
-const YIELD_PATTERNS = /\b(earn|yield|passive|income|profitable|stake|something from|make money|interest)\b/i;
+const YIELD_PATTERNS = /\b(earn|yield|passive|income|profitable|something from|make money|interest)\b/i;
 const STAKE_PATTERNS = /\b(stake|staking|lock)\b/i;
 const PORTFOLIO_PATTERNS = /\b(allocate|diversify|split|portfolio|balance between|spread)\b/i;
 

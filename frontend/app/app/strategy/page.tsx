@@ -120,7 +120,7 @@ function ExecuteButton({ onExecute, disabled, execState }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function StrategyPage() {
   const router = useRouter();
-  const { address } = useWalletGuard();
+  const { address, requestTx } = useWalletGuard();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
   const [errorReason, setErrorReason] = useState<string | null>(null);
@@ -138,7 +138,8 @@ export default function StrategyPage() {
 
   const riskScore = sim?.riskScoreNumeric ?? 5;
   const projectedApy = sim?.projectedAPY ?? 0;
-  const apyPct = Math.min(Math.round(projectedApy * 100), 100);
+  // Backend sends integer percentages (8 = 8%).
+  const apyPct = Math.min(Math.round(projectedApy), 100);
   const blocked = sim && !sim.passed;
 
   const handleExecute = async () => {
@@ -146,6 +147,95 @@ export default function StrategyPage() {
     setExecState("executing");
     setErrorReason(null);
     try {
+      console.log("[DEBUG] 1. Starting execution flow for strategy:", strategy.id);
+      // 1. Ensure Session Registration Exists On-Chain
+      if (address) {
+        console.log("[DEBUG] 2. Checking session for address:", address);
+        const resSession = await fetch(`https://rest.testnet.initia.xyz/initia/move/v1/accounts/${address}/resources`);
+        const dataSession = await resSession.json();
+        console.log("[DEBUG] 3. Fetched resources count:", dataSession.resources?.length || 0);
+        
+        const sessionResource = dataSession.resources?.find((r: any) => 
+          r.struct_tag?.includes("::permission_manager::SessionPermission") || 
+          r.type?.includes("::permission_manager::SessionPermission") // local mock compat
+        );
+        
+        let needsRegistration = false;
+        let needsRevocation = false;
+
+        if (!sessionResource) {
+          console.log("[DEBUG] 4. No session found.");
+          needsRegistration = true;
+        } else {
+          // Check if session is locked to the current strategy
+          // For Initia REST API, it's sometimes stored loosely encoded under `data` or parsed JSON in `move_resource`.
+          let onChainStrategyId = "";
+          if (sessionResource.data?.strategy_id) onChainStrategyId = sessionResource.data.strategy_id;
+          else if (sessionResource.move_resource) {
+            try { onChainStrategyId = JSON.parse(sessionResource.move_resource).strategy_id || ""; } catch { }
+          }
+          
+          console.log("[DEBUG] 4. Found session on-chain for strategy:", onChainStrategyId);
+          if (onChainStrategyId !== strategy.id) {
+            console.log("[DEBUG] 5. Session is locked to a stale strategy! Overriding...");
+            needsRevocation = true;
+            needsRegistration = true;
+          } else {
+            console.log("[DEBUG] 5. Session already cleanly tied to current strategy. Bypassing.");
+          }
+        }
+
+        if (needsRegistration && requestTx) {
+          const PERMISSION_MANAGER = "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3";
+          
+          const args = [
+            (function bcsVectorU8(str: string) { const b = new TextEncoder().encode(str); return new Uint8Array([b.length, ...b]); })(address),
+            (function bcsVectorU8(str: string) { const b = new TextEncoder().encode(str); return new Uint8Array([b.length, ...b]); })(strategy.id),
+            (function bcsU64(num: number) { const b = new Uint8Array(8); new DataView(b.buffer).setUint32(0, num, true); return b; })(Math.floor(Date.now() / 1000) + 86400 * 30)
+          ];
+
+          const msgs: any[] = [];
+
+          // If a stale session exists, we must atomically revoke it first
+          if (needsRevocation) {
+             msgs.push({
+              typeUrl: "/initia.move.v1.MsgExecute",
+              value: {
+                sender: address,
+                moduleAddress: PERMISSION_MANAGER,
+                moduleName: "permission_manager",
+                functionName: "revoke_session",
+                typeArgs: [],
+                args: []
+              }
+            });
+          }
+
+          msgs.push({
+            typeUrl: "/initia.move.v1.MsgExecute",
+            value: {
+              sender: address,
+              moduleAddress: PERMISSION_MANAGER,
+              moduleName: "permission_manager",
+              functionName: "register_session",
+              typeArgs: [],
+              args
+            }
+          });
+
+          console.log("[DEBUG] 8. Requesting browser signature for messages:", msgs);
+          const txRes = await requestTx({ messages: msgs });
+          console.log("[DEBUG] 9. requestTx resolved! Response:", txRes);
+          await new Promise(r => setTimeout(r, 4000));
+        } else if (!requestTx) {
+          console.error("[DEBUG] requestTx hook is UNDEFINED!");
+        }
+      } else {
+        console.log("[DEBUG] 2. No wallet address found!");
+      }
+
+      console.log("[DEBUG] 11. Dispatching Strategy to Backend Relayer...");
+      // 2. Dispatch Strategy to Backend Relayer
       const res = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
         method: "POST",
         headers: API_HEADERS,
@@ -221,10 +311,12 @@ export default function StrategyPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-text-primary capitalize">
-                    {step.action.replace(/_/g, " ")}
+                    {step.action === "stake" ? `Stake ${step.from || "INIT"}` : step.action.replace(/_/g, " ")}
                   </p>
                   <p className="text-xs text-text-muted">
-                    {step.protocol ? `${step.protocol} · ` : ""}{step.from ? `${step.from} → ${step.to}` : step.description}
+                    {step.action === "stake"
+                      ? (step.protocol || "Initia Network Staking")
+                      : `${step.protocol ? `${step.protocol} · ` : ""}${step.from ? `${step.from} → ${step.to}` : step.description}`}
                   </p>
                 </div>
               </motion.div>
@@ -253,7 +345,7 @@ export default function StrategyPage() {
                 <div className="text-center space-y-0.5">
                   <p className="text-xs text-text-muted">Projected</p>
                   <p className="text-lg font-black text-emerald-400">
-                    ${(1000 * (1 + sim.projectedAPY)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                    ${(1000 * (1 + projectedApy / 100)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                   </p>
                 </div>
               </div>
@@ -263,7 +355,7 @@ export default function StrategyPage() {
             <div className="flex justify-center">
               <RingChart
                 pct={apyPct}
-                label={`${(projectedApy * 100).toFixed(1)}%`}
+                label={`${projectedApy.toFixed(1)}%`}
                 sublabel="Proj. APY"
                 color="#00F5D4"
               />

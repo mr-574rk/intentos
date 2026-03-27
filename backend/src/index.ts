@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 
 import intentRouter from "./routes/intent";
 import strategyRouter from "./routes/strategy";
@@ -9,8 +9,6 @@ import executeRouter from "./routes/execute";
 import historyRouter from "./routes/history";
 import timelineRouter from "./routes/agentTimeline";
 import lcdRouter from "./routes/lcd";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
