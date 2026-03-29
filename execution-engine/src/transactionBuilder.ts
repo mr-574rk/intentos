@@ -13,7 +13,7 @@ export function buildTransactions(bundle: StrategyBundle): TransactionObject[] {
         action: step.action,
         from: step.from ?? "USDC",
         to: step.to ?? step.recipient ?? "INIT",
-        amount: step.amount ?? 0,
+        amount: step.amount,   // undefined for template steps; executor applies safe default
         protocol: step.protocol ?? "Initia",
         bundleId: bundle.id,
         stepIndex: step.index,

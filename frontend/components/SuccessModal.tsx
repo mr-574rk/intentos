@@ -47,8 +47,8 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
   };
 
   const explorerUrl = txHash
-    ? `https://scan.testnet.initia.xyz/intentos-1/txs/${txHash}`
-    : "https://scan.testnet.initia.xyz/intentos-1";
+    ? `https://scan.testnet.initia.xyz/initiation-2/txs/${txHash}`
+    : "https://scan.testnet.initia.xyz/initiation-2";
 
   return (
     <AnimatePresence>

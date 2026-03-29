@@ -7,25 +7,51 @@ const TRANSFER_PATTERNS = /\b(send|pay|transfer|give)\b/i;
 const YIELD_PATTERNS = /\b(earn|yield|passive|income|profitable|something from|make money|interest)\b/i;
 const STAKE_PATTERNS = /\b(stake|staking|lock)\b/i;
 const PORTFOLIO_PATTERNS = /\b(allocate|diversify|split|portfolio|balance between|spread)\b/i;
+const UNSTAKE_PATTERNS = /\b(unstake|undelegate|unbond|withdraw.{0,10}stake|take out.{0,15}staked)\b/i;
+const CLAIM_PATTERNS = /\b(claim|collect|harvest|withdraw).{0,20}(reward|staking reward|earning|yield)\b/i;
+const AUTOPILOT_ENABLE_PATTERNS = /\b(enable|turn on|activate|start).{0,20}(autopilot|auto.?compound|automation|auto)\b/i;
+const AUTOPILOT_DISABLE_PATTERNS = /\b(disable|turn off|deactivate|stop).{0,20}(autopilot|auto.?compound|automation|auto)\b/i;
 
 // Token detection
 const TOKEN_RE = /\b(INIT|USDC|ETH|BTC|USDT|uintos)\b/gi;
-const AMOUNT_RE = /(\d+(?:\.\d+)?)\s*(USDC|INIT|ETH|BTC|USDT|uintos)?/gi;
-const RECIPIENT_RE = /(?:to|for)\s+(0x[a-fA-F0-9]{4,}|[a-z][a-z0-9.]{2,30})/gi;
+// Decodes numbers, fractions ("half", "quarter"), and percentages ("10%", "10 percent")
+const AMOUNT_RE = /\b(half|quarter|third|all|\d+(?:\.\d+)?)\s*(?:%|percent)?\s*(USDC|INIT|ETH|BTC|USDT|uintos)?/gi;
+const RECIPIENT_RE = /(?:to|for)\s+(0x[a-fA-F0-9]{4,}|[a-z][a-z0-9.]{2,60})/gi;
 const TOKEN_PAIR_RE = /\b(INIT|USDC|ETH|BTC|USDT)\s+(?:to|for|into|→)\s+(INIT|USDC|ETH|BTC|USDT)\b/gi;
 const MULTI_SPLIT_RE = /\s+(?:and(?:\s+then)?|then|also|after(?:\s+that)?)\s+/gi;
 
+// Natural-language amount patterns (evaluated in priority order inside extractAmount)
+const FRACTION_WORD_RE = /\b(all|half|quarter|third)\b/i;
+const PERCENT_SYMBOL_RE = /(\d+(?:\.\d+)?)\s*%/;
+// Matches digit-prefixed or English-word-prefixed "percent": "10 percent", "fifty percent"
+const PERCENT_WORD_RE =
+  /\b(zero|ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|\d+(?:\.\d+)?)\s+percent\b/i;
+
+/** Maps fraction-word → raw decimal (e.g. "half" → 0.5) */
+const FRACTION_WORD_MAP: Record<string, number> = {
+  all: 1.0,
+  half: 0.5,
+  quarter: 0.25,
+  third: 1 / 3,   // ≈ 0.333…
+};
+
+/** Maps English number-word → integer, used for "fifty percent" → 50 → 0.50 */
+const PERCENT_NUMBER_WORDS: Record<string, number> = {
+  zero: 0, ten: 10, twenty: 20, thirty: 30, forty: 40,
+  fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, hundred: 100,
+};
+
 const RISK_KEYWORDS: Record<RiskTolerance, string[]> = {
-  low:    ["low risk", "safe", "conservative", "secure", "preserve"],
+  low: ["low risk", "safe", "conservative", "secure", "preserve"],
   medium: ["moderate", "balanced", "medium risk", "some risk"],
-  high:   ["high risk", "aggressive", "max", "risky", "speculative", "degen"],
+  high: ["high risk", "aggressive", "max", "risky", "speculative", "degen"],
 };
 
 const GOAL_KEYWORDS: Record<GoalType, string[]> = {
-  yield:     ["yield", "earn", "interest", "apy", "passive", "income from"],
-  income:    ["income", "cash flow", "dividend", "returns"],
-  growth:    ["grow", "growth", "appreciate", "accumulate", "hodl"],
-  stable:    ["stable", "preserve", "protect", "stablecoin"],
+  yield: ["yield", "earn", "interest", "apy", "passive", "income from"],
+  income: ["income", "cash flow", "dividend", "returns"],
+  growth: ["grow", "growth", "appreciate", "accumulate", "hodl"],
+  stable: ["stable", "preserve", "protect", "stablecoin"],
   diversify: ["diversify", "spread", "allocation", "balanced"],
 };
 
@@ -39,7 +65,46 @@ function extractTokens(text: string): string[] {
   return Array.from(found);
 }
 
+/**
+ * Extract a numeric amount from natural-language text.
+ *
+ * Priority order:
+ *   1. Fraction words  — "half" → 0.5 | "quarter" → 0.25 | "third" → 0.333 | "all" → 1.0
+ *   2. Percent symbol  — "10%"  → 0.10 | "50%"   → 0.50
+ *   3. Percent word    — "ten percent" → 0.10 | "50 percent" → 0.50
+ *   4. Plain numeric   — "0.5 USDC" → 0.5 | "100" → 100  (original behaviour)
+ *
+ * Returns `undefined` when no amount can be detected.
+ */
 function extractAmount(text: string): number | undefined {
+  const lower = text.toLowerCase();
+
+  // ── Tier 1: fraction words ────────────────────────────────
+  FRACTION_WORD_RE.lastIndex = 0;
+  const fracMatch = FRACTION_WORD_RE.exec(lower);
+  if (fracMatch) {
+    return FRACTION_WORD_MAP[fracMatch[1].toLowerCase()];
+  }
+
+  // ── Tier 2: percentage symbol  e.g. "10%", "33.5%" ────────
+  PERCENT_SYMBOL_RE.lastIndex = 0;
+  const pctSymMatch = PERCENT_SYMBOL_RE.exec(lower);
+  if (pctSymMatch) {
+    return parseFloat(pctSymMatch[1]) / 100;
+  }
+
+  // ── Tier 3: percentage word  e.g. "ten percent", "10 percent" ──
+  PERCENT_WORD_RE.lastIndex = 0;
+  const pctWordMatch = PERCENT_WORD_RE.exec(lower);
+  if (pctWordMatch) {
+    const raw = pctWordMatch[1].toLowerCase();
+    // Try direct numeric parse first ("10 percent"), then English word map
+    const asNum = parseFloat(raw);
+    const value = !isNaN(asNum) ? asNum : (PERCENT_NUMBER_WORDS[raw] ?? 0);
+    return value / 100;
+  }
+
+  // ── Tier 4: standard numeric  e.g. "100 USDC", "0.5" ──────
   AMOUNT_RE.lastIndex = 0;
   const m = AMOUNT_RE.exec(text);
   return m ? parseFloat(m[1]) : undefined;
@@ -125,13 +190,44 @@ function classifyClause(clause: string): ParsedIntent {
   }
 
   // ── explicit stake ──
-  if (STAKE_PATTERNS.test(lower) && !YIELD_PATTERNS.test(lower)) {
+  if (STAKE_PATTERNS.test(lower) && !YIELD_PATTERNS.test(lower) && !UNSTAKE_PATTERNS.test(lower)) {
     const tokens = extractTokens(clause);
+    const amount = extractAmount(clause);
     return {
       intentType: "stake",
       token: tokens[0] ?? "INIT",
+      amount,
       rawText: clause.trim(),
     };
+  }
+
+  // ── unstake / undelegate ──
+  if (UNSTAKE_PATTERNS.test(lower)) {
+    const tokens = extractTokens(clause);
+    const amount = extractAmount(clause);
+    return {
+      intentType: "unstake",
+      token: tokens[0] ?? "INIT",
+      amount,
+      rawText: clause.trim(),
+    };
+  }
+
+  // ── claim staking rewards ──
+  if (CLAIM_PATTERNS.test(lower)) {
+    return {
+      intentType: "claim_rewards",
+      token: "INIT",
+      rawText: clause.trim(),
+    };
+  }
+
+  // ── autopilot enable / disable ──
+  if (AUTOPILOT_ENABLE_PATTERNS.test(lower)) {
+    return { intentType: "autopilot_enable", rawText: clause.trim() };
+  }
+  if (AUTOPILOT_DISABLE_PATTERNS.test(lower)) {
+    return { intentType: "autopilot_disable", rawText: clause.trim() };
   }
 
   // ── portfolio allocation ──

@@ -16,19 +16,21 @@ export default function ExecutePage() {
   const [timeline, setTimeline] = useState<TimelineType | null>(null);
   const [result, setResult] = useState<ExecutionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("intentos_strategy");
     if (stored) {
       const s = JSON.parse(stored) as Strategy;
       setStrategy(s);
-      // Fetch existing timeline
       fetch(`${API_URL}/api/agent/timeline/${s.id}`, { headers: API_HEADERS })
         .then((r) => r.json())
         .then((d: ApiResponse<TimelineType>) => { if (d.data) setTimeline(d.data); })
         .catch(() => undefined);
     }
+    setLoaded(true);
   }, []);
+
 
   const handleExecute = async () => {
     if (!strategy) return;
@@ -54,6 +56,40 @@ export default function ExecutePage() {
     }
   };
 
+  if (!loaded) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-4 mt-8 animate-pulse">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-24 rounded-2xl" style={{ background: "rgba(255,255,255,0.04)" }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (!strategy) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 text-3xl"
+          style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.15)" }}
+        >
+          ⚡
+        </div>
+        <h2 className="text-xl font-black text-text-primary mb-2">No execution plan available</h2>
+        <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
+          Generate a strategy first before executing on-chain.<br />
+          Head to Intent to tell IntentOS your goal.
+        </p>
+        <button
+          onClick={() => router.push("/app/intent")}
+          className="btn-primary flex items-center gap-2 px-6 py-3"
+        >
+          ← Create Intent
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -63,16 +99,6 @@ export default function ExecutePage() {
         </p>
       </div>
 
-      {!strategy && (
-        <div className="glass-card p-12 text-center space-y-4">
-          <p className="text-text-muted text-sm">No strategy ready for execution.</p>
-          <button onClick={() => router.push("/app/intent")} className="btn-primary">
-            ← Start with an Intent
-          </button>
-        </div>
-      )}
-
-      {strategy && (
         <>
           {/* Strategy summary */}
           <div className="glass-card p-5">
@@ -116,7 +142,6 @@ export default function ExecutePage() {
             </div>
           )}
         </>
-      )}
     </div>
   );
 }

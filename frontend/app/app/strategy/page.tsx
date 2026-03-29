@@ -110,7 +110,7 @@ function ExecuteButton({ onExecute, disabled, execState }: {
           Executing on Initia…
         </span>
       )}
-      {execState === "idle" && <span className="flex items-center justify-center gap-2">Execute Strategy <ArrowRight className="w-4 h-4" /></span>}
+      {execState === "idle" && <span className="flex items-center justify-center gap-2">Execute On-Chain <ArrowRight className="w-4 h-4" /></span>}
       {execState === "success" && <span className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> Strategy Executed</span>}
       {execState === "failed" && <span className="flex items-center justify-center gap-2"><XCircle className="w-4 h-4" /> Execution Failed — Retry</span>}
     </motion.button>
@@ -126,12 +126,14 @@ export default function StrategyPage() {
   const [errorReason, setErrorReason] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string | undefined>();
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("intentos_strategy");
     if (stored) {
       try { setStrategy(JSON.parse(stored) as Strategy); } catch { /* ignore */ }
     }
+    setLoaded(true);
   }, []);
 
   const sim = strategy?.simulation;
@@ -147,95 +149,11 @@ export default function StrategyPage() {
     setExecState("executing");
     setErrorReason(null);
     try {
-      console.log("[DEBUG] 1. Starting execution flow for strategy:", strategy.id);
-      // 1. Ensure Session Registration Exists On-Chain
-      if (address) {
-        console.log("[DEBUG] 2. Checking session for address:", address);
-        const resSession = await fetch(`https://rest.testnet.initia.xyz/initia/move/v1/accounts/${address}/resources`);
-        const dataSession = await resSession.json();
-        console.log("[DEBUG] 3. Fetched resources count:", dataSession.resources?.length || 0);
-        
-        const sessionResource = dataSession.resources?.find((r: any) => 
-          r.struct_tag?.includes("::permission_manager::SessionPermission") || 
-          r.type?.includes("::permission_manager::SessionPermission") // local mock compat
-        );
-        
-        let needsRegistration = false;
-        let needsRevocation = false;
+      // Session registration is now handled atomically by the backend relayer
+      // inside the same transaction as execute_bundle — no frontend wallet call needed.
 
-        if (!sessionResource) {
-          console.log("[DEBUG] 4. No session found.");
-          needsRegistration = true;
-        } else {
-          // Check if session is locked to the current strategy
-          // For Initia REST API, it's sometimes stored loosely encoded under `data` or parsed JSON in `move_resource`.
-          let onChainStrategyId = "";
-          if (sessionResource.data?.strategy_id) onChainStrategyId = sessionResource.data.strategy_id;
-          else if (sessionResource.move_resource) {
-            try { onChainStrategyId = JSON.parse(sessionResource.move_resource).strategy_id || ""; } catch { }
-          }
-          
-          console.log("[DEBUG] 4. Found session on-chain for strategy:", onChainStrategyId);
-          if (onChainStrategyId !== strategy.id) {
-            console.log("[DEBUG] 5. Session is locked to a stale strategy! Overriding...");
-            needsRevocation = true;
-            needsRegistration = true;
-          } else {
-            console.log("[DEBUG] 5. Session already cleanly tied to current strategy. Bypassing.");
-          }
-        }
-
-        if (needsRegistration && requestTx) {
-          const PERMISSION_MANAGER = "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3";
-          
-          const args = [
-            (function bcsVectorU8(str: string) { const b = new TextEncoder().encode(str); return new Uint8Array([b.length, ...b]); })(address),
-            (function bcsVectorU8(str: string) { const b = new TextEncoder().encode(str); return new Uint8Array([b.length, ...b]); })(strategy.id),
-            (function bcsU64(num: number) { const b = new Uint8Array(8); new DataView(b.buffer).setUint32(0, num, true); return b; })(Math.floor(Date.now() / 1000) + 86400 * 30)
-          ];
-
-          const msgs: any[] = [];
-
-          // If a stale session exists, we must atomically revoke it first
-          if (needsRevocation) {
-             msgs.push({
-              typeUrl: "/initia.move.v1.MsgExecute",
-              value: {
-                sender: address,
-                moduleAddress: PERMISSION_MANAGER,
-                moduleName: "permission_manager",
-                functionName: "revoke_session",
-                typeArgs: [],
-                args: []
-              }
-            });
-          }
-
-          msgs.push({
-            typeUrl: "/initia.move.v1.MsgExecute",
-            value: {
-              sender: address,
-              moduleAddress: PERMISSION_MANAGER,
-              moduleName: "permission_manager",
-              functionName: "register_session",
-              typeArgs: [],
-              args
-            }
-          });
-
-          console.log("[DEBUG] 8. Requesting browser signature for messages:", msgs);
-          const txRes = await requestTx({ messages: msgs });
-          console.log("[DEBUG] 9. requestTx resolved! Response:", txRes);
-          await new Promise(r => setTimeout(r, 4000));
-        } else if (!requestTx) {
-          console.error("[DEBUG] requestTx hook is UNDEFINED!");
-        }
-      } else {
-        console.log("[DEBUG] 2. No wallet address found!");
-      }
-
-      console.log("[DEBUG] 11. Dispatching Strategy to Backend Relayer...");
-      // 2. Dispatch Strategy to Backend Relayer
+      console.log("[DEBUG] Dispatching strategy to backend relayer...");
+      // Step 2: Execute the strategy bundle via the backend relayer
       const res = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
         method: "POST",
         headers: API_HEADERS,
@@ -245,7 +163,6 @@ export default function StrategyPage() {
       if (!data.success) throw new Error(data.error ?? "Execution failed");
       setTxHash((data.data as ExecutionResult & { txHash?: string })?.txHash);
       setExecState("success");
-      // Show success modal instead of redirecting immediately
       setTimeout(() => setShowSuccess(true), 400);
     } catch (err) {
       setExecState("failed");
@@ -253,17 +170,41 @@ export default function StrategyPage() {
     }
   };
 
+  // Don't flash empty state during hydration — wait for sessionStorage to load
+  if (!loaded) {
+    return (
+      <div className="max-w-xl mx-auto space-y-4 mt-8 animate-pulse">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-24 rounded-2xl" style={{ background: "rgba(255,255,255,0.04)" }} />
+        ))}
+      </div>
+    );
+  }
+
   if (!strategy) {
     return (
-      <div className="max-w-xl mx-auto bg-bg-elevated border border-border-default p-12 text-center space-y-4 mt-8 shadow-2xl">
-        <p className="text-lg font-bold text-text-primary tracking-tight">No strategy yet</p>
-        <p className="text-sm text-text-muted">Start by entering your financial goal.</p>
-        <button onClick={() => router.push("/app/intent")} className="btn-primary mx-auto mt-2 flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" /> New Intent
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 text-3xl"
+          style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.15)" }}
+        >
+          🧠
+        </div>
+        <h2 className="text-xl font-black text-text-primary mb-2">No strategy generated yet</h2>
+        <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
+          IntentOS builds strategies from your financial goals.<br />
+          Start by creating an intent and the strategy will appear here.
+        </p>
+        <button
+          onClick={() => router.push("/app/intent")}
+          className="btn-primary flex items-center gap-2 px-6 py-3"
+        >
+          <ArrowLeft className="w-4 h-4" /> Create Intent
         </button>
       </div>
     );
   }
+
 
   return (
     <>
@@ -277,8 +218,8 @@ export default function StrategyPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-2 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-text-primary tracking-tight">Strategy Ready</h1>
-            <p className="text-sm text-text-muted mt-0.5">Review the simulation, then execute.</p>
+            <h1 className="text-2xl font-black text-text-primary tracking-tight">AI Strategy Plan</h1>
+            <p className="text-sm text-text-muted mt-0.5">IntentOS analyzed your request and generated a strategy below.</p>
           </div>
           <button onClick={() => router.push("/app/intent")} className="btn-secondary text-xs px-4 py-2 flex items-center gap-1">
             <ArrowLeft className="w-3 h-3" /> New Intent
@@ -294,7 +235,7 @@ export default function StrategyPage() {
             animate={{ opacity: 1, x: 0 }}
           >
             <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
-              Execution Plan · {strategy.bundle.steps.length} steps
+              Execution Plan · {strategy.bundle.steps.length} {strategy.bundle.steps.length === 1 ? 'step' : 'steps'}
             </p>
             {strategy.bundle.steps.map((step, i) => (
               <motion.div
@@ -316,7 +257,11 @@ export default function StrategyPage() {
                   <p className="text-xs text-text-muted">
                     {step.action === "stake"
                       ? (step.protocol || "Initia Network Staking")
-                      : `${step.protocol ? `${step.protocol} · ` : ""}${step.from ? `${step.from} → ${step.to}` : step.description}`}
+                      : step.action === "transfer" || step.action === "batch_transfer"
+                        ? `${step.protocol ?? "Initia Bank"} · ${step.from ?? "INIT"} → recipient`
+                        : step.from && step.to
+                          ? `${step.protocol ? `${step.protocol} · ` : ""}${step.from} → ${step.to}`
+                          : `${step.protocol ? `${step.protocol} · ` : ""}${step.description}`}
                   </p>
                 </div>
               </motion.div>

@@ -58,11 +58,12 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
     },
     medium: {
       steps: [
-        { action: "swap", from: "USDC", to: "INIT", description: "Convert stablecoins to INIT for growth exposure", protocol: "Initia DEX" },
-        { action: "stake", from: "INIT", description: "Stake INIT to compound growth over time", protocol: "Initia Staking" },
+        { action: "stake", from: "INIT", description: "Stake 40% INIT for stable protocol rewards", protocol: "Initia Staking", amount: 0.4 },
+        { action: "swap", from: "INIT", to: "USDC", description: "Swap 30% INIT → USDC for stablecoin reserve", protocol: "Initia DEX", amount: 0.3 },
+        { action: "provide_liquidity", from: "INIT", to: "USDC", description: "Provide 30% as INIT/USDC liquidity", protocol: "Initia AMM", amount: 0.3 },
       ],
       estimatedYield: 20, riskScoreNumeric: 5,
-      explanation: "Full INIT exposure with staking rewards compounds price appreciation with protocol incentives.",
+      explanation: "Balanced growth strategy: staking generates steady yield, USDC reduces volatility, and liquidity provision earns trading fees.",
     },
     high: {
       steps: [
@@ -197,8 +198,15 @@ function buildBatchTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "inde
 
 function buildStakeSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
   const token = intent.token ?? "INIT";
+  const amount = intent.amount;
   return [
-    { action: "stake", from: token, description: `Stake ${token} for protocol rewards`, protocol: "Initia Staking" },
+    { 
+      action: "stake", 
+      from: token, 
+      description: `Stake ${amount ? amount + " " : ""}${token} for protocol rewards`, 
+      protocol: "Initia Staking",
+      amount
+    },
   ];
 }
 
@@ -232,6 +240,55 @@ export function generateFromIntents(intents: ParsedIntent[]): StrategyBundle {
         totalRisk += 3; totalYield += 12;
         explanationParts.push(`Stake ${intent.token ?? "INIT"}`);
         break;
+
+      case "unstake": {
+        const uToken = intent.token ?? "INIT";
+        const uAmount = intent.amount;
+        allSteps.push({
+          action: "unstake",
+          from: uToken,
+          description: `Unstake ${uAmount ? uAmount + " " : ""}${uToken} from validator (21-day unbonding)`,
+          protocol: "Initia Staking",
+          amount: uAmount,
+        });
+        totalRisk += 1; totalYield += 0;
+        explanationParts.push(`Unstake ${uToken} — 21-day unbonding period begins`);
+        break;
+      }
+
+      case "claim_rewards": {
+        allSteps.push({
+          action: "claim_rewards",
+          from: "INIT",
+          description: "Claim pending staking rewards from validator",
+          protocol: "Initia Staking",
+        });
+        totalRisk += 0; totalYield += 0;
+        explanationParts.push("Claim staking rewards");
+        break;
+      }
+
+      case "autopilot_enable": {
+        allSteps.push({
+          action: "autopilot_enable",
+          description: "Enable Autopilot — automated DeFi strategies will run according to your settings",
+          protocol: "IntentOS Autopilot",
+        });
+        totalRisk += 0; totalYield += 0;
+        explanationParts.push("Autopilot enabled");
+        break;
+      }
+
+      case "autopilot_disable": {
+        allSteps.push({
+          action: "autopilot_disable",
+          description: "Disable Autopilot — all automated strategies paused",
+          protocol: "IntentOS Autopilot",
+        });
+        totalRisk += 0; totalYield += 0;
+        explanationParts.push("Autopilot disabled");
+        break;
+      }
       case "yield":
       case "portfolio_allocation":
       default: {

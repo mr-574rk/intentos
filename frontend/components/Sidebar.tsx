@@ -2,28 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import WalletConnect from "@/components/WalletConnect";
+import { useInterwovenKit } from "@initia/interwovenkit-react";
+import { BrainCircuit, PieChart, History } from "lucide-react";
+import { readAutopilotState } from "@/lib/autopilotState";
 
-import { BrainCircuit, ListTree, Zap, PieChart, History } from "lucide-react";
-
+// Consolidated nav — Strategy/Execute are steps in a flow, not top-level pages
 const NAV_ITEMS = [
-  { href: "/app/intent",    icon: BrainCircuit, label: "Intent" },
-  { href: "/app/strategy",  icon: ListTree,     label: "Strategy" },
-  { href: "/app/execute",   icon: Zap,          label: "Execute" },
+  { href: "/app/intent",    icon: BrainCircuit, label: "Chat" },
   { href: "/app/portfolio", icon: PieChart,     label: "Portfolio" },
   { href: "/app/history",   icon: History,      label: "History" },
 ];
 
+function shortenAddress(addr: string) {
+  if (!addr) return "";
+  return `${addr.slice(0, 8)}…${addr.slice(-6)}`;
+}
+
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
-  const pathname = usePathname();
+  const pathname          = usePathname();
+  const { address }       = useInterwovenKit();
+  const [autopilotOn, setAutopilotOn] = useState(false);
+
+  // React to autopilot state changes (same-tab via custom storage events)
+  useEffect(() => {
+    const read = () => setAutopilotOn(readAutopilotState().enabled);
+    read();
+    window.addEventListener("storage", read);
+    return () => window.removeEventListener("storage", read);
+  }, []);
+
+  // Derive display name — use .init username if known, else shorten address
+  const displayName = address ? shortenAddress(address) : "Not connected";
 
   return (
     <aside className="w-64 flex-shrink-0 h-screen flex flex-col border-r border-border-default bg-bg-secondary shadow-2xl md:shadow-none">
-      {/* Logo & Mobile Close */}
+
+      {/* ── Brand + Close ─────────────────────────────────── */}
       <div className="px-5 py-5 border-b border-border-default flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-text-primary text-bg-primary flex items-center justify-center font-bold text-xs tracking-wider">
+          <div className="w-8 h-8 bg-text-primary text-bg-primary flex items-center justify-center font-bold text-xs tracking-wider rounded-lg">
             IO
           </div>
           <div>
@@ -31,19 +51,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             <p className="text-xs text-text-muted">AI DeFi OS</p>
           </div>
         </div>
-        {/* Mobile close button */}
-        <button 
-          className="md:hidden text-text-muted hover:text-text-primary p-1"
-          onClick={onClose}
-        >
-          ✕
-        </button>
+        <button className="md:hidden text-text-muted hover:text-text-primary p-1" onClick={onClose}>✕</button>
       </div>
 
-      {/* Nav */}
+        {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+        {NAV_ITEMS.map(item => {
+          const isActive = pathname === item.href || (item.href === "/app/intent" && pathname === "/app/strategy");
           return (
             <Link
               key={item.href}
@@ -58,15 +72,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             >
               <item.icon className="w-[18px] h-[18px]" strokeWidth={2} />
               {item.label}
-              {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-none bg-accent-cyan" />
-              )}
+              {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-none bg-accent-cyan" />}
             </Link>
           );
         })}
       </nav>
 
-      {/* Wallet */}
+      {/* ── Wallet Identity ───────────────────────────────── */}
       <div className="p-4 border-t border-border-default">
         <WalletConnect compact />
       </div>

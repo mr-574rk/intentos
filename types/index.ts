@@ -26,6 +26,10 @@ export type IntentType =
   | "transfer"
   | "batch_transfer"
   | "stake"
+  | "unstake"
+  | "claim_rewards"
+  | "autopilot_enable"
+  | "autopilot_disable"
   | "portfolio_allocation";
 
 export interface ParsedIntent {
@@ -178,6 +182,7 @@ export interface HistoryEntry {
 // ── Portfolio ────────────────────────────────────────────────
 
 export interface PortfolioAsset {
+  denom?: string;   // raw chain denom (e.g. "uinit", "uusdc") — used for toggle filtering
   symbol: string;
   name: string;
   balance: number;

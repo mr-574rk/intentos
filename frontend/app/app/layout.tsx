@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import GlobalAutopilotToggle from "@/components/GlobalAutopilotToggle";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -43,8 +44,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className="flex-1 h-[100dvh] flex flex-col pt-16 md:pt-0 w-full relative">
-        <div className="flex-1 h-full w-full mx-auto md:p-8 overflow-hidden">
+        <GlobalAutopilotToggle />
+        <div className="flex-1 h-full w-full mx-auto md:p-8 p-4 overflow-y-auto pb-10">
           {children}
+        </div>
+        
+        {/* Global Page Footer */}
+        <div className="absolute bottom-3 right-6 pointer-events-none hidden md:block">
+           <p className="text-[10px] font-black text-text-muted/30 uppercase tracking-[0.2em]">
+             Powered by Initia
+           </p>
         </div>
       </main>
     </div>

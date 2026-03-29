@@ -1,14 +1,15 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import http from "http";
+import https from "https";
 
 const router = Router();
-const LCD_HOST = "localhost";
-const LCD_PORT = 1317;
+
+// Public initiation-2 testnet REST endpoint
+const LCD_BASE = "rest.testnet.initia.xyz";
 
 /**
  * GET /api/lcd/*
- * Transparent proxy to the local Minitia LCD (avoids browser CORS issues).
+ * Transparent CORS-safe proxy to the initiation-2 REST API.
  */
 router.get("/*", (req: Request, res: Response) => {
   const path = req.params[0] ? `/${req.params[0]}` : "/";
@@ -16,16 +17,17 @@ router.get("/*", (req: Request, res: Response) => {
   const fullPath = path + query;
 
   const options = {
-    hostname: LCD_HOST,
-    port: LCD_PORT,
+    hostname: LCD_BASE,
+    port: 443,
     path: fullPath,
     method: "GET",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
   };
 
-  const proxyReq = http.request(options, (proxyRes) => {
+  const proxyReq = https.request(options, (proxyRes) => {
     res.statusCode = proxyRes.statusCode ?? 200;
     res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
     proxyRes.pipe(res);
   });
 

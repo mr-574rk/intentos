@@ -122,7 +122,7 @@ export default function AgentTimeline({ timeline, loading }: AgentTimelineProps)
   if (loading && !timeline) {
     return (
       <motion.div
-        className="bg-bg-elevated border border-border-default p-6 space-y-5 shadow-2xl bg-gradient-to-b from-white/[0.03] to-transparent"
+        className="bg-[#13161D] border border-white/5 p-6 space-y-5 shadow-2xl rounded-2xl"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -152,7 +152,7 @@ export default function AgentTimeline({ timeline, loading }: AgentTimelineProps)
 
   return (
     <motion.div
-      className="bg-bg-elevated border border-border-default p-6 space-y-5 shadow-2xl bg-gradient-to-b from-white/[0.03] to-transparent"
+      className="bg-[#13161D] border border-white/5 p-6 space-y-5 shadow-2xl rounded-2xl"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}

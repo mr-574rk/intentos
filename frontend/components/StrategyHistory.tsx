@@ -58,11 +58,12 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24 md:pb-8">
       {list.map((entry, i) => {
         const success = entry.result.status === "success";
         const txHash = entry.result.txHash;
         const isReal = txHash && txHash !== "n/a" && !txHash.startsWith("tx_cached") && !txHash.startsWith("mock");
+        const explorerUrl = isReal ? `${EXPLORER}/${txHash}` : null;
 
         return (
           <motion.div
@@ -70,7 +71,10 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07 }}
-            className="glass-card p-5 hover:border-accent-cyan/20 transition-colors"
+            className="rounded-2xl p-5 transition-colors shadow-lg"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,245,212,0.25)")}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -88,7 +92,7 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
                   </span>
                 </div>
 
-                <p className="text-sm font-semibold text-text-primary mb-2 truncate">
+                <p className="text-lg font-semibold text-white mb-3 line-clamp-2 leading-snug">
                   &quot;{entry.intentText}&quot;
                 </p>
 
@@ -96,13 +100,13 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
                   {entry.bundle.steps.slice(0, 3).map((step) => (
                     <span
                       key={step.index}
-                      className="text-xs px-2 py-0.5 bg-bg-elevated border border-border-default rounded-md text-text-muted"
+                      className="text-[11px] font-medium px-2.5 py-1 bg-white/[0.04] border border-white-[0.05] rounded-lg text-white/60"
                     >
                       {step.description}
                     </span>
                   ))}
                   {entry.bundle.steps.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 bg-bg-elevated border border-border-default rounded-md text-text-muted">
+                    <span className="text-[11px] font-medium px-2.5 py-1 bg-white/[0.04] border border-white-[0.05] rounded-lg text-white/50">
                       +{entry.bundle.steps.length - 3} more
                     </span>
                   )}
@@ -117,24 +121,32 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
               )}
             </div>
 
+            {/* TX row — compact hash + prominent button */}
             {txHash && txHash !== "n/a" && (
-              <div className="mt-3 pt-3 border-t border-border-default">
-                <p className="text-xs text-text-muted flex items-center gap-2 flex-wrap">
-                  <span>Tx:</span>
-                  {isReal ? (
-                    <a
-                      href={`${EXPLORER}/${txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-accent-cyan/80 hover:text-accent-cyan truncate max-w-[200px] sm:max-w-none"
-                    >
-                      {txHash.slice(0, 12)}…{txHash.slice(-8)} ↗
-                    </a>
-                  ) : (
-                    <span className="font-mono text-text-muted/50">{txHash}</span>
-                  )}
-                  <span>· testnet</span>
+              <div className="mt-3 pt-3 border-t border-border-default flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-xs text-white/40 font-mono truncate max-w-[180px]">
+                  {isReal ? `${txHash.slice(0, 10)}…${txHash.slice(-8)}` : txHash}
                 </p>
+                {explorerUrl && (
+                  <a
+                    href={explorerUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all"
+                    style={{
+                      color: "#00F5D4",
+                      borderColor: "rgba(0,245,212,0.25)",
+                      background: "rgba(0,245,212,0.06)",
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,212,0.12)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,245,212,0.06)")}
+                  >
+                    View on Explorer
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </a>
+                )}
               </div>
             )}
           </motion.div>

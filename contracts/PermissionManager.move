@@ -54,19 +54,23 @@ module intentos::permission_manager {
 
     // ── Public Entry Functions ────────────────────────────────
 
-    /// Register a session permission after user wallet approval.
-    /// Called once — the agent uses this session for the full bundle.
-    /// Aborts if a session is already registered for this owner.
+    /// Register (or overwrite) a session permission after user wallet approval.
+    /// Safe upsert: if a session already exists it is fully destroyed first.
+    /// This means register_session is safe to call without revoking first.
     public entry fun register_session(
         owner: &signer,
         session_key: vector<u8>,
         strategy_id: vector<u8>,
         expires_at: u64,
-    ) {
+    ) acquires SessionPermission {
         let owner_addr = signer::address_of(owner);
 
-        // Prevent double-registration; user must revoke first.
-        assert!(!exists<SessionPermission>(owner_addr), error::already_exists(E_ALREADY_REGISTERED));
+        // If a session already exists, fully destroy it before creating the new one.
+        // This makes register_session idempotent — no need to revoke first.
+        if (exists<SessionPermission>(owner_addr)) {
+            let SessionPermission { owner: _, session_key: _, strategy_id: _, expires_at: _, is_active: _ }
+                = move_from<SessionPermission>(owner_addr);
+        };
 
         let strategy_id_str = string::utf8(strategy_id);
 
@@ -88,14 +92,16 @@ module intentos::permission_manager {
         });
     }
 
-    /// Revoke a session permission. User can call this at any time to stop
-    /// the agent from executing further bundles.
+    /// Revoke a session permission. Safe no-op if no session exists.
+    /// Fully DESTROYS the SessionPermission resource via move_from so
+    /// register_session can be called immediately after.
     public entry fun revoke_session(owner: &signer) acquires SessionPermission {
         let owner_addr = signer::address_of(owner);
-        assert!(exists<SessionPermission>(owner_addr), error::not_found(E_SESSION_NOT_FOUND));
+        // Safe no-op: if no session exists, nothing to revoke.
+        if (!exists<SessionPermission>(owner_addr)) return;
 
-        let permission = borrow_global_mut<SessionPermission>(owner_addr);
-        permission.is_active = false;
+        let SessionPermission { owner: _, session_key: _, strategy_id: _, expires_at: _, is_active: _ }
+            = move_from<SessionPermission>(owner_addr);
 
         event::emit(SessionRevokedEvent { owner: owner_addr });
     }

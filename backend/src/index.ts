@@ -9,6 +9,7 @@ import executeRouter from "./routes/execute";
 import historyRouter from "./routes/history";
 import timelineRouter from "./routes/agentTimeline";
 import lcdRouter from "./routes/lcd";
+import portfolioRouter from "./routes/portfolio";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
@@ -35,6 +36,7 @@ app.use("/api/execute", executeRouter);
 app.use("/api/history", historyRouter);
 app.use("/api/agent", timelineRouter);
 app.use("/api/lcd", lcdRouter);
+app.use("/api/portfolio", portfolioRouter);
 
 // ── 404 ──────────────────────────────────────────────────────
 app.use((_req, res) => {

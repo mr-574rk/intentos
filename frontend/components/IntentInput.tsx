@@ -4,23 +4,36 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowUpRight } from "lucide-react";
 
-// Max 3 chips — ChatGPT style contextual suggestions
-const SUGGESTIONS = [
-  "Grow my savings safely",
-  "Get the highest returns possible",
-  "Set up a steady passive income",
+// Suggestions when wallet has funds — action-oriented
+const SUGGESTIONS_FUNDED = [
+  "stake 1 init",
+  "swap 0.5 init to usdc",
+  "grow my portfolio",
+  "claim staking rewards",
+  "unstake half my init",
+];
+
+// Suggestions when wallet is empty — guide user to receive funds first
+const SUGGESTIONS_EMPTY = [
+  "receive init",
+  "receive usdc",
+  "how do I get started?",
 ];
 
 interface IntentInputProps {
-  onSubmit: (text: string) => void;
-  loading?: boolean;
-  disabled?: boolean;
+  onSubmit:      (text: string) => void;
+  loading?:      boolean;
+  disabled?:     boolean;
+  defaultValue?: string;
+  /** Pass true when wallet has no assets — suggestions switch to onboarding flow */
+  walletEmpty?:  boolean;
 }
 
-export default function IntentInput({ onSubmit, loading, disabled }: IntentInputProps) {
-  const [text, setText] = useState("");
+export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty }: IntentInputProps) {
+  const [text, setText] = useState(defaultValue ?? "");
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const suggestions = walletEmpty ? SUGGESTIONS_EMPTY : SUGGESTIONS_FUNDED;
 
   const handleSubmit = () => {
     if (!text.trim() || loading || disabled) return;
@@ -54,7 +67,7 @@ export default function IntentInput({ onSubmit, loading, disabled }: IntentInput
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
           }}
-          placeholder="What's your financial goal? e.g. Earn stable yield with low risk…"
+          placeholder="e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"
           disabled={loading || disabled}
           rows={3}
           className="w-full bg-transparent px-5 pt-5 pb-3 text-base text-text-primary
@@ -62,7 +75,7 @@ export default function IntentInput({ onSubmit, loading, disabled }: IntentInput
         />
 
         {/* Toolbar row */}
-        <div className="flex items-center justify-between px-4 pb-3 pt-1">
+        <div className="flex items-center justify-between px-5 pb-5 pt-3">
           <span className="text-xs text-text-muted">⌘↵ to send</span>
           <motion.button
             id="intent-submit-btn"
@@ -97,7 +110,7 @@ export default function IntentInput({ onSubmit, loading, disabled }: IntentInput
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.2 }}
           >
-            {SUGGESTIONS.map((s, i) => (
+            {suggestions.map((s, i) => (
               <motion.button
                 key={s}
                 initial={{ opacity: 0, x: -8 }}
