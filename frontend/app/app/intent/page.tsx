@@ -14,6 +14,7 @@ import type {
   Strategy,
   AgentTimeline as TimelineType,
   AmbiguityResponse,
+  ExecutionResult,
 } from "@/types";
 import { API_URL, API_HEADERS } from "@/lib/config";
 import {
@@ -313,7 +314,11 @@ function ConfirmTransactionCard({
 
 // ── Transaction Result Card ────────────────────────────────────────────────────
 function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () => void }) {
-  const explorerUrl = `https://testnet.scan.initia.xyz/txs/${txHash}`;
+  // Correct Initia testnet explorer — tx detail page
+  const hasTxHash = txHash && txHash !== "confirmed" && txHash.length > 10;
+  const explorerUrl = hasTxHash
+    ? `https://scan.testnet.initia.xyz/initiation-2/txs/${txHash}`
+    : `https://scan.testnet.initia.xyz/initiation-2/txs`;
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -341,7 +346,11 @@ function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () 
         <div className="rounded-xl p-3 space-y-1.5"
           style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.1)" }}>
           <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Transaction Hash</p>
-          <p className="font-mono text-xs text-emerald-400 break-all">{txHash}</p>
+          {hasTxHash ? (
+            <p className="font-mono text-xs text-emerald-400 break-all">{txHash}</p>
+          ) : (
+            <p className="text-xs text-emerald-400 font-semibold">Confirmed on-chain ✓</p>
+          )}
         </div>
 
         {/* Explorer link */}
@@ -353,7 +362,7 @@ function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () 
                      hover:bg-white/5 hover:border-white/20"
           style={{ borderColor: "rgba(255,255,255,0.1)", color: "#00F5D4" }}
         >
-          <span>View on Initia Explorer</span>
+          <span>{hasTxHash ? "View Transaction on Initia Explorer" : "View Initia Explorer"}</span>
           <ExternalLink className="w-4 h-4" />
         </a>
 
@@ -502,29 +511,45 @@ export default function IntentPage() {
     }
   };
 
-  // ── Transfer execution ────────────────────────────────────────────────────────
+  // ── Transfer execution (mirrors strategy page two-step flow exactly) ──────────
   const handleTransferProceed = async () => {
     if (!transferConfirm) return;
     setTransferLoading(true);
     try {
-      // Build a text intent that the backend understands as a transfer
+      // Step 1: Parse the transfer intent → get a strategy with an ID
       const intentText = `send ${transferConfirm.amount} ${transferConfirm.token} to ${transferConfirm.recipient}`;
-      const res = await fetch(`${API_URL}/api/execute/intent`, {
+      const intentRes = await fetch(`${API_URL}/api/execute/intent`, {
         method: "POST",
         headers: API_HEADERS,
         body: JSON.stringify({ text: intentText }),
       });
-      const data = await res.json();
+      const intentData: ApiResponse<Strategy> = await intentRes.json();
+      if (!intentData.success || !intentData.data) {
+        throw new Error(intentData.error ?? "Failed to parse transfer intent");
+      }
 
-      // Use txHash from response or generate a placeholder for demo
-      const txHash: string =
-        (data?.data as { txHash?: string })?.txHash
-        ?? ("0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""));
+      const strategy = intentData.data as Strategy;
 
-      setTransferResult(txHash);
+      // Step 2: Execute the strategy bundle via the real relayer — same endpoint
+      // the Execute button on strategy page calls
+      const execRes = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
+        method: "POST",
+        headers: API_HEADERS,
+        body: JSON.stringify({ sessionKey: address ?? "", strategy }),
+      });
+      const execData: ApiResponse<ExecutionResult> = await execRes.json();
+      if (!execData.success) {
+        throw new Error(execData.error ?? "Execution failed");
+      }
+
+      const txHash =
+        (execData.data as ExecutionResult & { txHash?: string })?.txHash ?? "";
+
+      setTransferResult(txHash || "confirmed");
       setShowTxToast(true);
       setTimeout(() => setShowTxToast(false), 4000);
-    } catch {
+    } catch (err) {
+      console.error("[Transfer] execution failed:", err);
       setTransferResult("error");
     } finally {
       setTransferLoading(false);
@@ -567,8 +592,21 @@ export default function IntentPage() {
         if (amount > 0 && walletINIT < amount) return { message: "Insufficient INIT for this swap.", sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`, action: "receive" };
         if (walletINIT === 0) return { message: "You have no INIT to swap.", sub: "Receive INIT to your wallet first.", action: "receive" };
       }
-      if (/\b(claim|collect).{0,20}(reward|yield)\b/.test(lower) && totalRewards === 0)
-        return { message: "No staking rewards available to claim.", sub: "Stake INIT first to start earning rewards." };
+      // Claim/collect rewards — distinguish "never staked" from "staked but still accruing"
+      if (/\b(claim|collect|withdraw).{0,35}(reward|yield|earn|staking)\b|\b(staking).{0,35}(reward|yield)\b/.test(lower)) {
+        if (totalDelegated === 0 && totalRewards === 0) {
+          return {
+            message: "You have no staking positions.",
+            sub: "Stake INIT first — rewards start accruing once your delegation is active. This usually takes 1\u20132 epochs.",
+          };
+        }
+        if (totalDelegated > 0 && totalRewards === 0) {
+          return {
+            message: "No claimable rewards yet.",
+            sub: `You have ${totalDelegated.toFixed(4)} INIT staked. Rewards are still accruing — check back after the next epoch (usually a few hours).`,
+          };
+        }
+      }
       if (/\b(unstake|undelegate)\b/.test(lower) && totalDelegated === 0)
         return { message: "You have no staked INIT to unstake.", sub: "Stake INIT first before you can unstake." };
       if (/\b(grow|invest|earn|yield|passive|income)\b/.test(lower) && totalBalance === 0)
@@ -667,7 +705,10 @@ export default function IntentPage() {
                 style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.2)" }}>
                 <span className="text-2xl font-black" style={{ color: "#00F5D4" }}>IO</span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black text-white tracking-normal mb-5 leading-snug">
+              <p className="text-gray-400 text-lg mb-1 font-medium">
+                {address ? `Hi, ${address.slice(0, 6)}...${address.slice(-4)}` : "Hi there"}
+              </p>
+              <h1 className="text-4xl md:text-5xl font-semibold text-white tracking-normal mb-5 leading-snug">
                 What do you want<br />
                 <span className="bg-gradient-to-r from-white to-[#00F5D4] text-transparent bg-clip-text">
                   your money to do?
@@ -909,7 +950,7 @@ export default function IntentPage() {
             key={rawText}
             onSubmit={handleSubmit}
             loading={loading || validating}
-            disabled={!!timeline || !isOnline}
+            disabled={!!timeline || !isOnline || transferLoading || !!transferConfirm}
             defaultValue={rawText}
             walletEmpty={walletEmpty}
           />

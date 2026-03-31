@@ -110,8 +110,7 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                       What happened
                     </p>
                     <div
-                      className="space-y-2 p-4"
-                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                      className="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5"
                     >
                       {steps.map((step, i) => (
                         <motion.div
@@ -122,8 +121,8 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                           transition={{ delay: 0.15 + i * 0.07, type: "spring", stiffness: 320, damping: 24 }}
                         >
                           <span
-                            className="w-1.5 h-1.5 mt-2 flex-shrink-0"
-                            style={{ background: "#00F5D4" }}
+                            className="w-2 h-2 mt-2 flex-shrink-0 rounded-full"
+                            style={{ background: "#00F5D4", boxShadow: "0 0 6px #00F5D4" }}
                           />
                           <span className="text-text-secondary capitalize font-medium">
                             {step.action?.replace(/_/g, " ") ?? step.description ?? `Step ${i + 1}`}
@@ -145,13 +144,16 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                     href={explorerUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-primary w-full flex items-center justify-center gap-2 py-3.5"
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full font-bold text-gray-900 transition-all duration-200"
+                    style={{ background: "#00F5D4" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(0,245,212,0.4)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                   >
                     View on Explorer <ExternalLink className="w-4 h-4" />
                   </a>
                   <button
                     onClick={handleClose}
-                    className="btn-secondary w-full py-3 text-sm"
+                    className="w-full py-3 text-sm font-semibold rounded-full border border-white/10 text-white/80 hover:bg-white/5 hover:text-white transition-all duration-200"
                   >
                     Back to Portfolio
                   </button>

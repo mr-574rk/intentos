@@ -2,23 +2,23 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowUpRight } from "lucide-react";
+import { Sparkles, Lock, ArrowRightLeft, TrendingUp, Gift, Unlock, Download, HelpCircle } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 // Suggestions when wallet has funds — action-oriented
 const SUGGESTIONS_FUNDED = [
-  "stake 1 init",
-  "swap 0.5 init to usdc",
-  "grow my portfolio",
-  "claim staking rewards",
-  "unstake half my init",
+  { text: "stake 1 init", icon: Lock },
+  { text: "swap 0.5 init to usdc", icon: ArrowRightLeft },
+  { text: "grow my portfolio", icon: TrendingUp },
+  { text: "claim staking rewards", icon: Gift },
+  { text: "unstake half my init", icon: Unlock },
 ];
 
 // Suggestions when wallet is empty — guide user to receive funds first
 const SUGGESTIONS_EMPTY = [
-  "receive init",
-  "receive usdc",
-  "how do I get started?",
+  { text: "receive init", icon: Download },
+  { text: "receive usdc", icon: Download },
+  { text: "how do I get started?", icon: HelpCircle },
 ];
 
 interface IntentInputProps {
@@ -40,6 +40,8 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
   const handleSubmit = () => {
     if (!text.trim() || loading || disabled || !isOnline) return;
     onSubmit(text.trim());
+    // Immediately blur so keyboard dismisses and signals "locked"
+    textareaRef.current?.blur();
   };
 
   const selectSuggestion = (s: string) => {
@@ -142,19 +144,20 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
           >
             {suggestions.map((s, i) => (
               <motion.button
-                key={s}
+                key={s.text}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                onClick={() => selectSuggestion(s)}
+                onClick={() => selectSuggestion(s.text)}
                 disabled={!isOnline}
                 className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full border border-white/10
-                           text-text-secondary bg-transparent
+                           text-text-secondary bg-white/5
                            hover:text-[#00F5D4] hover:border-[#00F5D4]/30 hover:bg-[#00F5D4]/5
                            disabled:opacity-40 disabled:cursor-not-allowed
                            transition-all duration-150"
               >
-                {s} <ArrowUpRight className="w-3 h-3 opacity-50" />
+                <s.icon className="w-3.5 h-3.5 opacity-70" />
+                {s.text}
               </motion.button>
             ))}
           </motion.div>

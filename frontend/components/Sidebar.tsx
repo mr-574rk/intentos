@@ -8,6 +8,7 @@ import WalletConnect from "@/components/WalletConnect";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { BrainCircuit, PieChart, History } from "lucide-react";
 import { readAutopilotState } from "@/lib/autopilotState";
+import { IntentOSLogo } from "@/components/IntentOSLogo";
 
 // Consolidated nav — Strategy/Execute are steps in a flow, not top-level pages
 const NAV_ITEMS = [
@@ -42,15 +43,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* ── Brand + Close ─────────────────────────────────── */}
       <div className="px-5 py-5 border-b border-border-default flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-text-primary text-bg-primary flex items-center justify-center font-bold text-xs tracking-wider rounded-lg">
-            IO
-          </div>
-          <div>
-            <p className="font-bold text-sm text-text-primary">IntentOS</p>
-            <p className="text-xs text-text-muted">AI DeFi OS</p>
-          </div>
-        </div>
+        <IntentOSLogo />
         <button className="md:hidden text-text-muted hover:text-text-primary p-1" onClick={onClose}>✕</button>
       </div>
 
@@ -72,7 +65,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             >
               <item.icon className="w-[18px] h-[18px]" strokeWidth={2} />
               {item.label}
-              {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-none bg-accent-cyan" />}
+              {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00F5D4] shadow-[0_0_6px_#00F5D4]" />}
             </Link>
           );
         })}
