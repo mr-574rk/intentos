@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ArrowUpRight } from "lucide-react";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 // Suggestions when wallet has funds — action-oriented
 const SUGGESTIONS_FUNDED = [
@@ -34,9 +35,10 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestions = walletEmpty ? SUGGESTIONS_EMPTY : SUGGESTIONS_FUNDED;
+  const isOnline = useOnlineStatus();
 
   const handleSubmit = () => {
-    if (!text.trim() || loading || disabled) return;
+    if (!text.trim() || loading || disabled || !isOnline) return;
     onSubmit(text.trim());
   };
 
@@ -45,62 +47,90 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
     textareaRef.current?.focus();
   };
 
-  const canSubmit = !!text.trim() && !loading && !disabled;
+  const canSubmit = !!text.trim() && !loading && !disabled && isOnline;
+
+  // Glow ring intensity driven by focus state
+  const glowGradient = focused
+    ? "linear-gradient(135deg, #00F5D4 0%, #7C3AED 40%, #0066FF 70%, #00F5D4 100%)"
+    : "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)";
 
   return (
     <div className="space-y-3">
-      {/* Main input card */}
+      {/* Animated Gemini-style glow ring wrapper */}
       <div
-        className="bg-bg-elevated border border-border-default transition-all duration-150 relative"
+        className="rounded-2xl transition-all duration-500"
         style={{
-          borderColor: focused ? "rgba(0,245,212,0.4)" : undefined,
-          boxShadow: focused ? "0 0 0 1px rgba(0,245,212,0.4), 0 8px 30px rgba(0,0,0,0.8)" : undefined,
+          padding: "1.5px",
+          background: glowGradient,
+          backgroundSize: "300% 300%",
+          animation: focused ? "glowRingRotate 3s ease-in-out infinite" : "none",
+          boxShadow: focused
+            ? "0 0 28px rgba(0,245,212,0.18), 0 0 60px rgba(124,58,237,0.08)"
+            : "0 0 0 rgba(0,0,0,0)",
         }}
       >
-        <textarea
-          ref={textareaRef}
-          id="intent-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-          }}
-          placeholder="e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"
-          disabled={loading || disabled}
-          rows={3}
-          className="w-full bg-transparent px-5 pt-5 pb-3 text-base text-text-primary
-                     placeholder:text-text-muted resize-none focus:outline-none leading-relaxed"
-        />
+        {/* Inner card — dark background so text stays readable */}
+        <div
+          className="rounded-2xl overflow-hidden transition-all duration-300"
+          style={{ background: "#13161D" }}
+        >
+          <textarea
+            ref={textareaRef}
+            id="intent-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+            }}
+            placeholder="e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"
+            disabled={loading || disabled || !isOnline}
+            rows={3}
+            className="w-full bg-transparent px-5 pt-5 pb-3 text-base text-text-primary
+                       placeholder:text-text-muted resize-none focus:outline-none leading-relaxed"
+          />
 
-        {/* Toolbar row */}
-        <div className="flex items-center justify-between px-5 pb-5 pt-3">
-          <span className="text-xs text-text-muted">⌘↵ to send</span>
-          <motion.button
-            id="intent-submit-btn"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="btn-primary px-5 py-2.5 text-sm"
-            whileHover={canSubmit ? { scale: 1.02 } : undefined}
-            whileTap={canSubmit ? { scale: 0.98 } : undefined}
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-                Thinking…
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">Generate <Sparkles className="w-4 h-4"/></span>
-            )}
-          </motion.button>
+          {/* Toolbar row */}
+          <div className="flex items-center justify-between px-5 pb-5 pt-2">
+            <span className="text-xs text-text-muted">
+              {!isOnline ? (
+                <span className="text-red-400/70">Offline — reconnect to send</span>
+              ) : (
+                "⌘↵ to send"
+              )}
+            </span>
+            <motion.button
+              id="intent-submit-btn"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="rounded-full font-bold text-sm px-5 py-2.5 transition-all duration-200 flex items-center gap-2"
+              style={{
+                background: canSubmit ? "#00F5D4" : "rgba(255,255,255,0.06)",
+                color: canSubmit ? "#000" : "rgba(255,255,255,0.3)",
+                boxShadow: canSubmit ? "0 0 16px rgba(0,245,212,0.25)" : "none",
+                cursor: canSubmit ? "pointer" : "not-allowed",
+              }}
+              whileHover={canSubmit ? { scale: 1.03, boxShadow: "0 0 28px rgba(0,245,212,0.45)" } : undefined}
+              whileTap={canSubmit ? { scale: 0.97 } : undefined}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Thinking…
+                </>
+              ) : (
+                <>Generate <Sparkles className="w-4 h-4"/></>
+              )}
+            </motion.button>
+          </div>
         </div>
       </div>
 
-      {/* Suggestion chips — max 3, ChatGPT style */}
+      {/* Suggestion chips — pill shape, premium tactile feel */}
       <AnimatePresence>
         {!loading && (
           <motion.div
@@ -117,11 +147,12 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
                 onClick={() => selectSuggestion(s)}
-                className="flex items-center gap-1.5 text-xs px-3.5 py-2 border text-text-secondary
-                           hover:text-[#00F5D4] hover:border-[#00F5D4]/30
-                           bg-bg-secondary hover:bg-[#00F5D4]/5
+                disabled={!isOnline}
+                className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full border border-white/10
+                           text-text-secondary bg-transparent
+                           hover:text-[#00F5D4] hover:border-[#00F5D4]/30 hover:bg-[#00F5D4]/5
+                           disabled:opacity-40 disabled:cursor-not-allowed
                            transition-all duration-150"
-                style={{ borderColor: "rgba(255,255,255,0.1)" }}
               >
                 {s} <ArrowUpRight className="w-3 h-3 opacity-50" />
               </motion.button>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import GlobalAutopilotToggle from "@/components/GlobalAutopilotToggle";
+import OfflineToast from "@/components/OfflineToast";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -49,6 +50,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
         
+        {/* Global offline detector */}
+        <OfflineToast />
+
         {/* Global Page Footer */}
         <div className="absolute bottom-3 right-6 pointer-events-none hidden md:block">
            <p className="text-[10px] font-black text-text-muted/30 uppercase tracking-[0.2em]">

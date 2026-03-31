@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain } from "lucide-react";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Strategy, ApiResponse, ExecutionResult } from "@/types";
 import SuccessModal from "@/components/SuccessModal";
 import StrategyReasoning from "@/components/StrategyReasoning";
@@ -96,8 +97,8 @@ function ExecuteButton({ onExecute, disabled, execState }: {
       onClick={execState !== "executing" ? onExecute : undefined}
       disabled={disabled || execState === "executing"}
       className={clsx(
-        "w-full py-4 font-bold text-sm uppercase tracking-widest transition-all duration-200",
-        execState === "idle" || execState === "executing" ? "btn-primary" : "",
+        "w-full py-4 font-bold text-sm uppercase tracking-widest transition-all duration-300 rounded-full",
+        (execState === "idle" || execState === "executing") && "bg-[#00F5D4] text-black shadow-[0_0_20px_rgba(0,245,212,0.25)] hover:bg-[#14FFDF] hover:scale-[1.02] hover:shadow-[0_0_35px_rgba(0,245,212,0.45)] border border-transparent hover:border-[#00F5D4]/50",
         execState === "success" && "bg-emerald-500 text-black shadow-[0_4px_20px_rgba(0,245,212,0.3)]",
         execState === "failed" && "bg-red-500/80 text-white",
       )}
@@ -121,6 +122,7 @@ function ExecuteButton({ onExecute, disabled, execState }: {
 export default function StrategyPage() {
   const router = useRouter();
   const { address, requestTx } = useWalletGuard();
+  const isOnline = useOnlineStatus();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
   const [errorReason, setErrorReason] = useState<string | null>(null);
@@ -138,7 +140,13 @@ export default function StrategyPage() {
 
   const sim = strategy?.simulation;
 
-  const riskScore = sim?.riskScoreNumeric ?? 5;
+  let riskScore = sim?.riskScoreNumeric ?? 5;
+  const riskBullet = strategy?.bundle?.reasoning?.find(r => r.match(/risk(?:\s+score)?\s+(\d+)\/10/i));
+  if (riskBullet) {
+    const match = riskBullet.match(/risk(?:\s+score)?\s+(\d+)\/10/i);
+    if (match) riskScore = parseInt(match[1]);
+  }
+
   const projectedApy = sim?.projectedAPY ?? 0;
   // Backend sends integer percentages (8 = 8%).
   const apyPct = Math.min(Math.round(projectedApy), 100);
@@ -185,10 +193,10 @@ export default function StrategyPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 text-3xl"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
           style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.15)" }}
         >
-          🧠
+          <Brain className="w-8 h-8" style={{ color: "#00F5D4" }} />
         </div>
         <h2 className="text-xl font-black text-text-primary mb-2">No strategy generated yet</h2>
         <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
@@ -221,16 +229,23 @@ export default function StrategyPage() {
             <h1 className="text-2xl font-black text-text-primary tracking-tight">AI Strategy Plan</h1>
             <p className="text-sm text-text-muted mt-0.5">IntentOS analyzed your request and generated a strategy below.</p>
           </div>
-          <button onClick={() => router.push("/app/intent")} className="btn-secondary text-xs px-4 py-2 flex items-center gap-1">
+          {/* Pill-shaped "New Intent" back button */}
+          <button
+            onClick={() => router.push("/app/intent")}
+            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full border border-white/10
+                       bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary
+                       transition-all duration-200"
+          >
             <ArrowLeft className="w-3 h-3" /> New Intent
           </button>
         </div>
 
+        {/* Top row: distinct cards with full gap — no merging borders */}
         <div className="flex flex-col md:flex-row gap-4">
 
           {/* Strategy Steps */}
           <motion.div
-            className="bg-bg-elevated border border-border-default p-5 flex-1 space-y-3 bg-gradient-to-b from-white/[0.03] to-transparent shadow-2xl"
+            className="bg-[#13161D]/60 backdrop-blur-md border border-white/10 p-6 rounded-3xl flex-1 space-y-4 shadow-2xl relative overflow-hidden"
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
           >
@@ -270,7 +285,7 @@ export default function StrategyPage() {
 
           {/* Before → After Simulation */}
           <motion.div
-            className="bg-bg-elevated border border-border-default p-5 space-y-5 md:w-64 flex-shrink-0 bg-gradient-to-b from-white/[0.03] to-transparent shadow-2xl"
+            className="bg-[#13161D]/60 backdrop-blur-md border border-white/10 p-6 rounded-3xl space-y-6 md:w-64 flex-shrink-0 shadow-2xl relative overflow-hidden"
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
@@ -311,9 +326,11 @@ export default function StrategyPage() {
           </motion.div>
         </div>
 
-        {/* Why This Strategy — reasoning card */}
+        {/* Why This Strategy — separate card below, with its own clean gap */}
         {strategy.bundle.reasoning && strategy.bundle.reasoning.length > 0 && (
-          <StrategyReasoning reasoning={strategy.bundle.reasoning} />
+          <div className="mt-4">
+            <StrategyReasoning reasoning={strategy.bundle.reasoning} />
+          </div>
         )}
 
         {/* ── GEMINI FIX: Blocked state shows why ── */}
@@ -342,7 +359,7 @@ export default function StrategyPage() {
           <div className="max-w-2xl mx-auto space-y-2">
             <ExecuteButton
               onExecute={handleExecute}
-              disabled={!!blocked || execState === "success"}
+              disabled={!!blocked || execState === "success" || !isOnline}
               execState={execState}
             />
             <AnimatePresence>

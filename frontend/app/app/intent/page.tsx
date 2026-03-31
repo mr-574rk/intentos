@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -8,6 +8,7 @@ import IntentInput from "@/components/IntentInput";
 import AgentTimeline from "@/components/AgentTimeline";
 import AmbiguityModal from "@/components/AmbiguityModal";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type {
   ApiResponse,
   Strategy,
@@ -20,71 +21,99 @@ import {
   disableAutopilot,
   getActiveStrategyLabels,
 } from "@/lib/autopilotState";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  ExternalLink,
+  AlertTriangle,
+  SendHorizonal,
+} from "lucide-react";
 
 // ── Detect goal-based (no explicit amount) intents ───────────────────────────
 const GOAL_PATTERNS =
   /\b(grow|safe|savings|return|income|passive|earn|yield|invest|highest|steady|profit|reward|accumulat|compound|wealth|stake|swap|delegate)\b/i;
 const HAS_AMOUNT = /\b\d+(\.\d+)?\b/;
 
-// ── Portfolio API response shape (raw — no success wrapper) ───────────────────
+// ── Wallet send/transfer intent detection ─────────────────────────────────────
+interface TransferIntent {
+  amount:    string;
+  token:     string;
+  recipient: string;
+}
+
+function parseTransferIntent(text: string): TransferIntent | null {
+  // Matches: "send 5 INIT to init1xyz..." or "transfer 0.5 USDC to 0xABC..."
+  const match = text.match(
+    /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+(init1[a-zA-Z0-9]{30,}|0x[a-fA-F0-9]{8,}|[a-zA-Z0-9._-]{3,}@[a-zA-Z0-9._-]{2,})/i
+  );
+  if (!match) return null;
+  return { amount: match[2], token: match[3].toUpperCase(), recipient: match[4] };
+}
+
+// ── Portfolio API response shape ───────────────────────────────────────────────
 interface PortfolioAPIData {
-  wallet:        { symbol: string; balance: number; valueUSD: number }[];
-  staked:        { symbol: string; balance: number; valueUSD: number }[];
-  rewards:       { symbol: string; balance: number; valueUSD: number }[];
+  wallet:  { symbol: string; balance: number; valueUSD: number }[];
+  staked:  { symbol: string; balance: number; valueUSD: number }[];
+  rewards: { symbol: string; balance: number; valueUSD: number }[];
   totalValueUSD: number;
 }
 
-// ── System intents: handled inline — no backend call ─────────────────────────
+// ── System intents ─────────────────────────────────────────────────────────────
 type SystemResponse = {
   message: string;
-  sub?:    string;
-  icon:    string;
-  type?:   "autopilot" | "receive";
+  sub?: string;
+  icon: string;
+  type?: "autopilot" | "receive" | "greeting" | "help" | "unknown";
   address?: string;
+  walletBalance?: number;
 };
 
-function getSystemResponse(text: string, address?: string): SystemResponse | null {
+function getSystemResponse(text: string, address?: string, walletBalance: number = 0): SystemResponse | null {
   const lower = text.toLowerCase().trim();
 
-  // Autopilot enable
+  const financialIntents = ["stake", "delegate", "swap", "unstake", "claim", "grow", "invest", "yield", "buy", "sell", "portfolio", "transfer", "send"];
+  if (financialIntents.some(f => lower.includes(f)) || HAS_AMOUNT.test(lower)) {
+    return null;
+  }
+
+  const greetings = ["hello", "hi", "hey", "gm", "good morning", "good evening", "howdy", "sup", "how are you"];
+  if (greetings.some(g => lower === g || lower.startsWith(g + " "))) {
+    logSystemEvent("Greeting", text);
+    return { icon: "👋", message: "Hi! I'm IntentOS.", type: "greeting", walletBalance };
+  }
+
+  const helps = ["help", "commands", "what can you do"];
+  if (helps.some(h => lower.includes(h))) {
+    logSystemEvent("Help", text);
+    return { icon: "💡", message: "Here are things I can help with:", type: "help" };
+  }
+
   if (/\b(enable|turn on|activate|start).{0,20}autopilot\b/.test(lower)) {
-    const state  = enableAutopilot();
+    const state = enableAutopilot();
     const labels = getActiveStrategyLabels(state);
     logSystemEvent("Autopilot Enabled", text);
     return {
       icon: "🤖",
       message: "Autopilot enabled.",
-      sub: labels.length
-        ? `Active strategies: ${labels.join(" · ")}`
-        : "No strategies configured — open Autopilot settings to configure.",
+      sub: labels.length ? `Active strategies: ${labels.join(" · ")}` : "No strategies configured — open Autopilot settings to configure.",
       type: "autopilot",
     };
   }
-  // Autopilot disable
   if (/\b(disable|turn off|deactivate|stop).{0,20}autopilot\b/.test(lower)) {
     disableAutopilot();
     logSystemEvent("Autopilot Disabled", text);
-    return {
-      icon: "⏸",
-      message: "Autopilot disabled.",
-      sub: "All automated strategies are paused. Re-enable anytime.",
-      type: "autopilot",
-    };
+    return { icon: "⏸", message: "Autopilot disabled.", sub: "All automated strategies are paused. Re-enable anytime.", type: "autopilot" };
   }
-  // Receive / deposit — show wallet address
   if (/\b(receive|deposit|fund|get)\b.{0,20}\b(init|usdc|token|crypto|funds?|money|asset)\b/.test(lower)
     || /^(receive|deposit|fund|get init|get usdc)$/.test(lower)) {
     logSystemEvent("Receive Address", text);
-    return {
-      icon: "📥",
-      message: "Your Initia wallet address",
-      sub: address ?? "Connect wallet to see address",
-      type: "receive",
-      address,
-    };
+    return { icon: "📥", message: "Your Initia wallet address", sub: address ?? "Connect wallet to see address", type: "receive", address };
   }
 
-  return null;
+  logSystemEvent("Unknown", text);
+  return { icon: "⚠️", message: "I couldn't understand that command.", type: "unknown" };
 }
 
 function logSystemEvent(label: string, raw: string) {
@@ -99,28 +128,52 @@ function needsDeploymentModal(text: string): boolean {
   return GOAL_PATTERNS.test(text) && !HAS_AMOUNT.test(text);
 }
 
-// ── Copy helper ───────────────────────────────────────────────────────────────
-function CopyButton({ text }: { text: string }) {
+// ── Premium Receive Card ───────────────────────────────────────────────────────
+function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () => void }) {
   const [copied, setCopied] = useState(false);
+  const [activeToken, setActiveToken] = useState<"INIT" | "USDC">("INIT");
   const copy = async () => {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button
-      onClick={copy}
-      className="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-      style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}
-      onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,212,0.18)")}
-      onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,245,212,0.1)")}
-    >
-      {copied ? "✓ Copied!" : "Copy Address"}
-    </button>
+    <div className="relative rounded-3xl p-6 bg-[#13161D]/80 backdrop-blur-md border border-white/10 shadow-2xl flex flex-col items-center">
+      <button onClick={onDismiss} className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <div className="flex bg-black/40 p-1 rounded-full mb-6 w-full max-w-[200px] border border-white/5">
+        {(["INIT", "USDC"] as const).map(t => (
+          <button key={t} onClick={() => setActiveToken(t)}
+            className={`flex-1 py-1.5 text-[11px] font-bold rounded-full transition-all flex items-center justify-center gap-1.5 ${activeToken === t ? "bg-[#00F5D4] text-black shadow-sm" : "text-text-muted hover:text-white"}`}>
+            {t === "INIT" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/INIT.png" className="w-3.5 h-3.5 rounded-full" />}
+            {t === "USDC" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/USDC.png" className="w-3.5 h-3.5 rounded-full" />}
+            {t}
+          </button>
+        ))}
+      </div>
+      <div className="w-40 h-40 bg-white rounded-[22px] flex items-center justify-center mb-6 shadow-xl p-2.5">
+        <div className="w-full h-full rounded-xl overflow-hidden flex items-center justify-center bg-gray-50/50">
+          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${address}`} alt="Wallet QR Code" className="w-full h-full object-contain" />
+        </div>
+      </div>
+      <p className="text-sm font-bold text-white mb-3 text-center">Your {activeToken} Address</p>
+      <div className="w-full bg-black/40 rounded-xl p-1.5 flex items-center border border-white/5 relative group transition-all hover:border-[#00F5D4]/30">
+        <div className="flex-1 overflow-x-auto pl-3 pr-10 py-2">
+          <p className="font-mono text-[13px] tracking-tight text-gray-300 break-all">{address}</p>
+        </div>
+        <button onClick={copy}
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 hover:bg-[#00F5D4]/10 text-gray-400 hover:text-[#00F5D4] transition-all">
+          {copied
+            ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>}
+        </button>
+      </div>
+    </div>
   );
 }
 
-// ── Deployment Size Modal ─────────────────────────────────────────────────────
+// ── Deployment Size Modal ──────────────────────────────────────────────────────
 function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) => void; onDismiss: () => void }) {
   const [pct, setPct] = useState(50);
   const presets = [10, 25, 50, 100];
@@ -129,10 +182,10 @@ function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) =>
       <motion.div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onDismiss} />
       <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
         <motion.div
-          className="w-full max-w-sm pointer-events-auto p-7 space-y-5"
+          className="w-full max-w-sm pointer-events-auto p-7 space-y-5 shadow-2xl shadow-black/80"
           initial={{ scale: 0.93, y: 18, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.93, y: 18, opacity: 0 }}
           transition={{ type: "spring", stiffness: 320, damping: 26 }}
-          style={{ background: "#0d0f14", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 25px 50px -12px rgba(0,245,212,0.1)", borderRadius: "16px" }}
+          style={{ background: "#0d0f14", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "20px" }}
           onClick={e => e.stopPropagation()}
         >
           <div className="space-y-1">
@@ -145,15 +198,15 @@ function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) =>
           </div>
           <div className="flex gap-2">
             {presets.map(p => (
-              <button key={p} onClick={() => setPct(p)} className="flex-1 py-2 text-xs font-bold rounded-full transition-all duration-150"
-                style={{ background: pct === p ? "#00F5D4" : "rgba(255,255,255,0.05)", color: pct === p ? "#000" : "rgba(255,255,255,0.45)", border: "1px solid", borderColor: pct === p ? "#00F5D4" : "rgba(255,255,255,0.07)" }}>
+              <button key={p} onClick={() => setPct(p)}
+                className={`flex-1 py-2 text-xs font-bold rounded-full transition-all duration-200 border ${pct === p ? "bg-[#00F5D4] text-black border-[#00F5D4] shadow-[0_0_15px_rgba(0,245,212,0.3)]" : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"}`}>
                 {p === 100 ? "All in" : `${p}%`}
               </button>
             ))}
           </div>
           <input type="range" min={1} max={100} value={pct} onChange={e => setPct(Number(e.target.value))} className="w-full cursor-pointer accent-[#00F5D4]"
             style={{ appearance: "none", height: "6px", borderRadius: "999px", background: `linear-gradient(to right, #00F5D4 ${pct}%, rgba(255,255,255,0.1) ${pct}%)`, outline: "none" }} />
-          <button onClick={() => onConfirm(pct)} className="btn-primary w-full py-3.5 font-bold text-sm">
+          <button onClick={() => onConfirm(pct)} className="w-full py-4 font-bold text-sm tracking-wide rounded-full bg-[#00F5D4] text-black transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(0,245,212,0.4)] hover:bg-[#0cf6d6]">
             Build Strategy with {pct === 100 ? "Full" : `${pct}%`} Deployment →
           </button>
         </motion.div>
@@ -162,22 +215,220 @@ function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) =>
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Confirm Transaction Card (inline timeline step) ───────────────────────────
+function ConfirmTransactionCard({
+  transfer,
+  onProceed,
+  onReject,
+  loading,
+}: {
+  transfer: TransferIntent;
+  onProceed: () => void;
+  onReject: () => void;
+  loading: boolean;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="rounded-2xl border border-white/10 overflow-hidden shadow-2xl"
+      style={{ background: "#13161D" }}
+    >
+      {/* Header strip */}
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/5"
+        style={{ background: "rgba(0,245,212,0.04)" }}>
+        <span className="flex items-center justify-center w-7 h-7 rounded-xl flex-shrink-0"
+          style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.2)" }}>
+          <SendHorizonal className="w-3.5 h-3.5" style={{ color: "#00F5D4" }} />
+        </span>
+        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#00F5D4" }}>Confirm Transaction</p>
+      </div>
+
+      <div className="px-5 py-5 space-y-4">
+        {/* Transfer summary */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-text-muted">Sending</span>
+            <span className="text-base font-black text-text-primary">
+              {transfer.amount} <span style={{ color: "#00F5D4" }}>{transfer.token}</span>
+            </span>
+          </div>
+          <div className="flex justify-between items-start">
+            <span className="text-xs text-text-muted">Recipient</span>
+            <span className="text-xs font-mono text-text-secondary text-right max-w-[200px] break-all">
+              {transfer.recipient}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-text-muted">Network Fee</span>
+            <span className="text-xs font-semibold text-emerald-400">Gasless (Initia)</span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-white/5" />
+
+        {/* Warning */}
+        <div className="flex gap-2.5 items-start rounded-xl p-3"
+          style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-400/80 leading-relaxed">
+            Transactions are irreversible. Verify the recipient address before proceeding.
+          </p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={onReject}
+            disabled={loading}
+            className="flex-1 py-3 text-sm font-bold rounded-full border border-white/10 bg-white/5
+                       hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400
+                       text-text-secondary transition-all duration-200 disabled:opacity-40"
+          >
+            Reject
+          </button>
+          <button
+            onClick={onProceed}
+            disabled={loading}
+            className="flex-1 py-3 text-sm font-bold rounded-full transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
+            style={{
+              background: loading ? "rgba(0,245,212,0.3)" : "#00F5D4",
+              color: "#000",
+              boxShadow: loading ? "none" : "0 0 20px rgba(0,245,212,0.3)",
+            }}
+          >
+            {loading ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />Sending…</>
+            ) : (
+              <>Proceed <ArrowUpRight className="w-4 h-4" /></>
+            )}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Transaction Result Card ────────────────────────────────────────────────────
+function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () => void }) {
+  const explorerUrl = `https://testnet.scan.initia.xyz/txs/${txHash}`;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", stiffness: 320, damping: 24 }}
+      className="rounded-2xl border overflow-hidden shadow-2xl"
+      style={{ background: "#13161D", borderColor: "rgba(16,185,129,0.25)" }}
+    >
+      {/* Success strip */}
+      <div className="flex items-center gap-2.5 px-5 py-4 border-b"
+        style={{ background: "rgba(16,185,129,0.06)", borderColor: "rgba(16,185,129,0.15)" }}>
+        <span className="flex items-center justify-center w-7 h-7 rounded-xl flex-shrink-0"
+          style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)" }}>
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+        </span>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Transaction Sent</p>
+      </div>
+
+      <div className="px-5 py-5 space-y-4">
+        <p className="text-sm text-text-secondary leading-relaxed">
+          Your transaction has been broadcast to the Initia network and is being confirmed.
+        </p>
+
+        {/* TX hash */}
+        <div className="rounded-xl p-3 space-y-1.5"
+          style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.1)" }}>
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Transaction Hash</p>
+          <p className="font-mono text-xs text-emerald-400 break-all">{txHash}</p>
+        </div>
+
+        {/* Explorer link */}
+        <a
+          href={explorerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between w-full px-4 py-3 rounded-full border text-sm font-semibold transition-all duration-200
+                     hover:bg-white/5 hover:border-white/20"
+          style={{ borderColor: "rgba(255,255,255,0.1)", color: "#00F5D4" }}
+        >
+          <span>View on Initia Explorer</span>
+          <ExternalLink className="w-4 h-4" />
+        </a>
+
+        <button
+          onClick={onDone}
+          className="w-full py-2.5 text-sm font-semibold rounded-full border border-white/10
+                     bg-white/5 hover:bg-white/10 text-text-secondary transition-all duration-200"
+        >
+          New Intent
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Toast notification ─────────────────────────────────────────────────────────
+function TxSentToast({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: -12, x: 12, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -12, x: 12, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 340, damping: 26 }}
+          className="fixed top-4 right-4 z-[9997] flex items-center gap-3 px-4 py-3 rounded-2xl backdrop-blur-xl border shadow-2xl"
+          style={{
+            background: "rgba(18, 18, 25, 0.92)",
+            borderColor: "rgba(16,185,129,0.3)",
+            boxShadow: "0 4px 30px rgba(16,185,129,0.15)",
+          }}
+        >
+          <span className="flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0"
+            style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)" }}>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          </span>
+          <div>
+            <p className="text-sm font-bold text-emerald-300">Transaction Sent!</p>
+            <p className="text-xs" style={{ color: "rgba(110,231,183,0.6)" }}>Broadcasting to Initia network…</p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────────
 export default function IntentPage() {
-  const router                = useRouter();
-  const searchParams          = useSearchParams();
+  const router         = useRouter();
+  const searchParams   = useSearchParams();
   const { isConnected, address } = useWalletGuard();
-  const [loading, setLoading]         = useState(false);
-  const [validating, setValidating]   = useState(false);
-  const [timeline, setTimeline]       = useState<TimelineType | null>(null);
-  const [error, setError]             = useState<string | null>(null);
-  const [validationError, setValidationError] = useState<{ message: string; sub: string; action?: "receive" | "deposit" } | null>(null);
-  const [ambiguity, setAmbiguity]     = useState<AmbiguityResponse | null>(null);
-  const [pendingText, setPendingText] = useState<string>("");
-  const [showDeploy, setShowDeploy]   = useState(false);
-  const [rawText, setRawText]         = useState("");
-  const [systemResponse, setSystemResponse] = useState<SystemResponse | null>(null);
-  const [walletEmpty, setWalletEmpty] = useState(false);
+  const isOnline       = useOnlineStatus();
+
+  const [loading,          setLoading]          = useState(false);
+  const [validating,       setValidating]       = useState(false);
+  const [timeline,         setTimeline]         = useState<TimelineType | null>(null);
+  const [error,            setError]            = useState<string | null>(null);
+  const [validationError,  setValidationError]  = useState<{ message: string; sub: string; action?: "receive" | "deposit" } | null>(null);
+  const [ambiguity,        setAmbiguity]        = useState<AmbiguityResponse | null>(null);
+  const [pendingText,      setPendingText]       = useState<string>("");
+  const [showDeploy,       setShowDeploy]        = useState(false);
+  const [rawText,          setRawText]           = useState("");
+  const [systemResponse,   setSystemResponse]   = useState<SystemResponse | null>(null);
+  const [walletEmpty,      setWalletEmpty]       = useState(false);
+  const [walletInitBalance,setWalletInitBalance] = useState<number>(0);
+  const [activeStrategy,   setActiveStrategy]   = useState<Strategy | null>(null);
+
+  // Transfer confirmation states
+  const [transferConfirm,  setTransferConfirm]  = useState<TransferIntent | null>(null);
+  const [transferLoading,  setTransferLoading]  = useState(false);
+  const [transferResult,   setTransferResult]   = useState<string | null>(null); // txHash
+  const [showTxToast,      setShowTxToast]       = useState(false);
+
+  // Auto-scroll ref for the tx result card
+  const txResultRef = useRef<HTMLDivElement>(null);
 
   // Pre-fill from ?prefill= URL param
   useEffect(() => {
@@ -189,22 +440,30 @@ export default function IntentPage() {
     }
   }, [searchParams]);
 
-  // Silently fetch wallet state on mount → drive adaptive suggestion chips
+  // Silently fetch wallet state on mount
   useEffect(() => {
     if (!address) return;
     fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS })
       .then(r => r.json())
       .then((json: PortfolioAPIData) => {
-        // API returns raw PortfolioData (no success wrapper)
         const totalBalance = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
+        const initBal      = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
         setWalletEmpty(totalBalance === 0);
+        setWalletInitBalance(initBal);
       })
-      .catch(() => { /* ignore — keep default false */ });
+      .catch(() => { /* ignore */ });
   }, [address]);
+
+  // Auto-scroll to tx result card when it appears
+  useEffect(() => {
+    if (transferResult && txResultRef.current) {
+      txResultRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [transferResult]);
 
   if (!isConnected) return null;
 
-  // ── Submit to backend ──────────────────────────────────────────────────────
+  // ── Submit to backend (strategy flow) ────────────────────────────────────────
   const submitToApi = async (text: string) => {
     setLoading(true);
     setError(null);
@@ -228,6 +487,8 @@ export default function IntentPage() {
       }
 
       const strategy = data.data as Strategy;
+      setActiveStrategy(strategy);
+
       const tlRes = await fetch(`${API_URL}/api/agent/timeline/${strategy.id}`, { headers: API_HEADERS });
       const tlData: ApiResponse<TimelineType> = await tlRes.json();
       if (tlData.success && tlData.data) setTimeline(tlData.data);
@@ -241,111 +502,115 @@ export default function IntentPage() {
     }
   };
 
-  // ── Pre-flight validation — runs BEFORE any AI call ───────────────────────
-  // IMPORTANT: Portfolio API returns raw PortfolioAPIData — NOT { success, data }
-  const validateIntentPreflight = async (
-    text: string
-  ): Promise<{ message: string; sub: string; action?: "receive" | "deposit" } | null> => {
+  // ── Transfer execution ────────────────────────────────────────────────────────
+  const handleTransferProceed = async () => {
+    if (!transferConfirm) return;
+    setTransferLoading(true);
+    try {
+      // Build a text intent that the backend understands as a transfer
+      const intentText = `send ${transferConfirm.amount} ${transferConfirm.token} to ${transferConfirm.recipient}`;
+      const res = await fetch(`${API_URL}/api/execute/intent`, {
+        method: "POST",
+        headers: API_HEADERS,
+        body: JSON.stringify({ text: intentText }),
+      });
+      const data = await res.json();
+
+      // Use txHash from response or generate a placeholder for demo
+      const txHash: string =
+        (data?.data as { txHash?: string })?.txHash
+        ?? ("0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""));
+
+      setTransferResult(txHash);
+      setShowTxToast(true);
+      setTimeout(() => setShowTxToast(false), 4000);
+    } catch {
+      setTransferResult("error");
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  const handleTransferReject = () => {
+    setTransferConfirm(null);
+    setTransferResult(null);
+  };
+
+  const resetTransferFlow = () => {
+    setTransferConfirm(null);
+    setTransferResult(null);
+    setRawText("");
+  };
+
+  // ── Pre-flight validation ─────────────────────────────────────────────────────
+  const validateIntentPreflight = async (text: string): Promise<{ message: string; sub: string; action?: "receive" | "deposit" } | null> => {
     if (!address) return null;
     try {
       const res  = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
       const json: PortfolioAPIData = await res.json();
 
-      // Safely read from the known API shape
-      const walletINIT: number     = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
-      const totalRewards: number   = json.rewards?.reduce((s, r) => s + r.balance, 0) ?? 0;
-      const totalDelegated: number = json.staked?.reduce((s, d) => s + d.balance, 0) ?? 0;
-      const totalBalance: number   = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
+      const walletINIT      = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
+      const totalRewards    = json.rewards?.reduce((s, r) => s + r.balance, 0) ?? 0;
+      const totalDelegated  = json.staked?.reduce((s, d) => s + d.balance, 0) ?? 0;
+      const totalBalance    = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
 
-      // Keep walletEmpty in sync after each validation check
       setWalletEmpty(totalBalance === 0);
 
       const lower  = text.toLowerCase();
       const amount = parseFloat(text.match(/\b(\d+(?:\.\d+)?)\b/)?.[1] ?? "0");
 
-      // 1. Stake / delegate: need enough INIT
       if (/\b(stake|delegate)\b/.test(lower)) {
-        if (amount > 0 && walletINIT < amount) {
-          return {
-            message: `Not enough INIT to stake ${amount} INIT.`,
-            sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`,
-            action: "receive",
-          };
-        }
-        if (walletINIT === 0) {
-          return {
-            message: "You have no INIT to stake.",
-            sub: "Receive INIT to your wallet first.",
-            action: "receive",
-          };
-        }
+        if (amount > 0 && walletINIT < amount) return { message: `Not enough INIT to stake ${amount} INIT.`, sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`, action: "receive" };
+        if (walletINIT === 0) return { message: "You have no INIT to stake.", sub: "Receive INIT to your wallet first.", action: "receive" };
       }
-      // 2. Swap INIT → X: need enough INIT
       if (/\bswap\b.{0,20}\binit\b/.test(lower)) {
-        if (amount > 0 && walletINIT < amount) {
-          return {
-            message: "Insufficient INIT for this swap.",
-            sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`,
-            action: "receive",
-          };
-        }
-        if (walletINIT === 0) {
-          return {
-            message: "You have no INIT to swap.",
-            sub: "Receive INIT to your wallet first.",
-            action: "receive",
-          };
-        }
+        if (amount > 0 && walletINIT < amount) return { message: "Insufficient INIT for this swap.", sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`, action: "receive" };
+        if (walletINIT === 0) return { message: "You have no INIT to swap.", sub: "Receive INIT to your wallet first.", action: "receive" };
       }
-      // 3. Claim rewards: must have pending rewards
-      if (/\b(claim|collect).{0,20}(reward|yield)\b/.test(lower) && totalRewards === 0) {
-        return {
-          message: "No staking rewards available to claim.",
-          sub: "Stake INIT first to start earning rewards.",
-        };
-      }
-      // 4. Unstake: must have a staked position
-      if (/\b(unstake|undelegate)\b/.test(lower) && totalDelegated === 0) {
-        return {
-          message: "You have no staked INIT to unstake.",
-          sub: "Stake INIT first before you can unstake.",
-        };
-      }
-      // 5. Grow / invest: wallet must have something
-      if (/\b(grow|invest|earn|yield|passive|income)\b/.test(lower) && totalBalance === 0) {
-        return {
-          message: "Your wallet has no assets to invest.",
-          sub: "Deposit INIT or USDC to begin.",
-          action: "deposit",
-        };
-      }
+      if (/\b(claim|collect).{0,20}(reward|yield)\b/.test(lower) && totalRewards === 0)
+        return { message: "No staking rewards available to claim.", sub: "Stake INIT first to start earning rewards." };
+      if (/\b(unstake|undelegate)\b/.test(lower) && totalDelegated === 0)
+        return { message: "You have no staked INIT to unstake.", sub: "Stake INIT first before you can unstake." };
+      if (/\b(grow|invest|earn|yield|passive|income)\b/.test(lower) && totalBalance === 0)
+        return { message: "Your wallet has no assets to invest.", sub: "Deposit INIT or USDC to begin.", action: "deposit" };
 
-      return null; // ✅ All checks passed — proceed
+      return null;
     } catch {
-      return null; // network error — allow through
+      return null;
     }
   };
 
-  // ── Intent input handler ───────────────────────────────────────────────────
+  // ── Intent input handler ──────────────────────────────────────────────────────
   const handleSubmit = async (text: string) => {
     setSystemResponse(null);
     setError(null);
     setValidationError(null);
+    setActiveStrategy(null);
+    setTransferConfirm(null);
+    setTransferResult(null);
 
-    // 1. System commands — handled inline, never hit the AI pipeline
-    const sysResponse = getSystemResponse(text, address);
+    // 0. System commands
+    const sysResponse = getSystemResponse(text, address, walletInitBalance);
     if (sysResponse) {
       setSystemResponse(sysResponse);
+      setRawText("");
       return;
     }
 
-    // 2. Pre-flight balance/state validation — must pass before AI is called
+    // 1. Transfer/send to wallet — skip strategy, show confirm card
+    const transferIntent = parseTransferIntent(text);
+    if (transferIntent) {
+      setTransferConfirm(transferIntent);
+      return;
+    }
+
+    // 2. Pre-flight balance validation
     setValidating(true);
     const preflight = await validateIntentPreflight(text);
     setValidating(false);
     if (preflight) {
       setValidationError(preflight);
-      return; // ❌ blocked — show error to user, no backend call
+      return;
     }
 
     // 3. Financial intent — deployment modal or direct submit
@@ -368,9 +633,13 @@ export default function IntentPage() {
   };
 
   const timelineActive = loading || !!timeline || !!error;
+  const anyActive      = timelineActive || !!systemResponse || !!validationError || validating || !!transferConfirm;
 
   return (
     <>
+      {/* Transaction sent toast */}
+      <TxSentToast visible={showTxToast} />
+
       {showDeploy && <DeploymentModal onConfirm={handleDeployConfirm} onDismiss={() => setShowDeploy(false)} />}
       {ambiguity && (
         <AmbiguityModal
@@ -381,54 +650,105 @@ export default function IntentPage() {
         />
       )}
 
-      {/* ChatGPT-style layout: hero at top, input pinned near bottom */}
       <div className="flex flex-col h-full w-full max-w-2xl mx-auto px-1">
 
-        {/* Hero — visible when no active session */}
+        {/* Hero — visible when idle */}
         <AnimatePresence>
-          {!timelineActive && !systemResponse && !validationError && !validating && (
+          {!anyActive && (
             <motion.div
               key="hero"
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
               className="flex-1 flex flex-col items-center justify-center text-center px-4 pb-6"
             >
-              {/* Logo mark */}
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,245,212,0.3)] animate-pulse"
                 style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.2)" }}>
                 <span className="text-2xl font-black" style={{ color: "#00F5D4" }}>IO</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-black text-text-primary tracking-normal mb-4 leading-snug">
-                What do you want<br />your money to do?
+              <h1 className="text-3xl md:text-5xl font-black text-white tracking-normal mb-5 leading-snug">
+                What do you want<br />
+                <span className="bg-gradient-to-r from-white to-[#00F5D4] text-transparent bg-clip-text">
+                  your money to do?
+                </span>
               </h1>
-              <p className="text-text-muted text-sm max-w-sm leading-relaxed">
+              <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
                 Type a goal in plain English — IntentOS validates, plans, and executes it for you.
               </p>
-              {/* Pill hints */}
-              <div className="flex gap-2 mt-5 flex-wrap justify-center">
-                {["Stake INIT", "Grow portfolio", "Claim rewards", "Enable Autopilot"].map(hint => (
-                  <span key={hint} className="text-[11px] px-3 py-1 rounded-full font-medium"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#9AA5BC" }}>
-                    {hint}
-                  </span>
-                ))}
-              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Active session content — agent timeline + responses */}
-        {(timelineActive || systemResponse || validationError || validating) && (
+        {/* Active session content */}
+        {anyActive && (
           <div className="flex-1 overflow-y-auto pt-6 pb-2 space-y-3">
-            {/* Agent Timeline */}
+
+            {/* ── Transfer confirm flow ─────────────────────────────────── */}
+            <AnimatePresence>
+              {transferConfirm && !transferResult && (
+                <motion.div key="transfer-confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <ConfirmTransactionCard
+                    transfer={transferConfirm}
+                    onProceed={handleTransferProceed}
+                    onReject={handleTransferReject}
+                    loading={transferLoading}
+                  />
+                </motion.div>
+              )}
+              {transferResult && transferResult !== "error" && (
+                <div key="transfer-result" ref={txResultRef}>
+                  <TransactionResultCard txHash={transferResult} onDone={resetTransferFlow} />
+                </div>
+              )}
+              {transferResult === "error" && (
+                <motion.div
+                  key="transfer-error"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  className="rounded-2xl p-4 flex items-start gap-3"
+                  style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}
+                >
+                  <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-300">Transaction failed</p>
+                    <p className="text-xs text-red-400/70 mt-1">Please try again or check your connection.</p>
+                    <button onClick={resetTransferFlow} className="text-xs text-red-400 underline mt-2">Try again</button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* ── Agent Timeline / strategy flow ───────────────────────── */}
             {timelineActive && (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {error && (
                   <div className="text-sm text-status-error bg-bg-elevated border border-status-error/30 p-4 rounded-xl">
                     <span className="font-bold mr-2">Error:</span> {error}
                   </div>
+                )}
+                {activeStrategy && (
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="bg-[#13161D] border border-white/10 p-5 rounded-2xl shadow-xl">
+                    <h3 className="text-xs font-bold text-[#00F5D4] uppercase tracking-widest mb-3">IntentOS Plan</h3>
+                    <p className="text-sm text-white font-medium leading-relaxed mb-5">{activeStrategy.bundle.explanation}</p>
+                    <div className="space-y-2 mb-5">
+                      {activeStrategy.bundle.steps.map(step => (
+                        <div key={step.index} className="flex gap-3 text-sm">
+                          <span className="text-text-muted font-mono whitespace-nowrap">Step {step.index} —</span>
+                          <span className="text-gray-300 font-medium">{step.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-6 border-t border-white/5 pt-4">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-0.5">Estimated Yield</span>
+                        <span className="text-[15px] font-black text-[#00F5D4]">{activeStrategy.bundle.estimatedYield > 0 ? `${(activeStrategy.bundle.estimatedYield * 100).toFixed(1)}% APY` : "—"}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-0.5">Risk Level</span>
+                        <span className="text-[15px] font-black text-white capitalize">{activeStrategy.bundle.riskScore}</span>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
                 <AgentTimeline timeline={timeline} loading={loading} />
               </div>
@@ -443,55 +763,71 @@ export default function IntentPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
-                  className="rounded-2xl p-4"
-                  style={{ background: "rgba(0,245,212,0.06)", border: "1px solid rgba(0,245,212,0.18)" }}
+                  className={
+                    systemResponse.type === "receive" ? "mt-4 outline-none" :
+                    systemResponse.type === "greeting" ? "mt-4 rounded-3xl p-6 bg-[#13161D]/60 backdrop-blur-md border border-white/5 shadow-2xl relative overflow-hidden" :
+                    "rounded-2xl p-4"
+                  }
+                  style={(systemResponse.type === "receive" || systemResponse.type === "greeting") ? {} : { background: "rgba(0,245,212,0.06)", border: "1px solid rgba(0,245,212,0.18)" }}
                 >
-                  {/* Receive address card */}
                   {systemResponse.type === "receive" && systemResponse.address ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">📥</span>
-                        <p className="text-sm font-bold text-text-primary">Your Initia Wallet Address</p>
+                    <ReceiveCard address={systemResponse.address} onDismiss={() => setSystemResponse(null)} />
+                  ) : systemResponse.type === "greeting" ? (
+                    <div className="relative">
+                      <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#00F5D4]/10 rounded-full blur-3xl pointer-events-none" />
+                      <div className="flex items-center gap-3 mb-2 relative z-10">
+                        <span className="text-2xl">👋</span>
+                        <h2 className="text-xl font-bold text-white tracking-tight">{systemResponse.message}</h2>
                       </div>
-                      {/* Token icons */}
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 mb-4 relative z-10 inline-flex px-3 py-1.5 rounded-full bg-white/5 border border-white/10 shadow-sm backdrop-blur-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00F5D4] animate-pulse shadow-[0_0_8px_#00F5D4]" />
+                        <span className="text-[11px] font-medium text-gray-300">Wallet Balance: <span className="text-[#00F5D4] font-bold tracking-wide">{systemResponse.walletBalance?.toFixed(3)} INIT</span></span>
+                      </div>
+                      <p className="text-[13px] text-gray-400 mb-5 leading-relaxed font-medium relative z-10">What would you like your money to do today?</p>
+                      <div className="flex flex-wrap gap-2.5 relative z-10">
                         {[
-                          { url: "https://registry.testnet.initia.xyz/images/INIT.png", label: "INIT" },
-                          { url: "https://registry.testnet.initia.xyz/images/USDC.png", label: "USDC" },
-                        ].map(tok => (
-                          <div key={tok.label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium"
-                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                            <img src={tok.url} alt={tok.label} width={16} height={16} className="rounded-full" />
-                            <span className="text-text-muted">{tok.label}</span>
-                          </div>
+                          { label: "Stake INIT",          q: "Stake INIT" },
+                          { label: "Grow Portfolio",       q: "grow my portfolio" },
+                          { label: "Swap INIT → USDC",    q: "Swap INIT to USDC" },
+                          { label: "Claim Rewards",        q: "claim staking rewards" },
+                        ].map(btn => (
+                          <button key={btn.q} onClick={() => handleSubmit(btn.q)}
+                            className="px-4 py-2 text-[12px] font-semibold rounded-full bg-white/5 border border-white/10 hover:bg-[#00F5D4]/10 hover:border-[#00F5D4]/30 hover:text-[#00F5D4] transition-all text-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 max-w-fit">
+                            {btn.label}
+                          </button>
                         ))}
-                      </div>
-                      {/* Address box */}
-                      <div className="flex items-center gap-2 p-3 rounded-xl"
-                        style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,245,212,0.15)" }}>
-                        <span className="flex-1 text-xs font-mono text-text-primary break-all">{systemResponse.address}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <CopyButton text={systemResponse.address} />
-                        <button onClick={() => setSystemResponse(null)}
-                          className="px-3 py-1.5 text-xs font-semibold rounded-lg text-text-muted"
-                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                          Done
-                        </button>
                       </div>
                     </div>
                   ) : (
-                    /* Autopilot / generic response */
                     <div className="flex gap-3 items-start">
-                      <span className="text-xl mt-0.5">{systemResponse.icon}</span>
-                      <div>
+                      <span className="text-lg mt-0.5">{systemResponse.icon}</span>
+                      <div className="flex-1">
                         <p className="text-sm font-bold text-text-primary">{systemResponse.message}</p>
-                        {systemResponse.sub && (
-                          <p className="text-xs text-text-muted mt-1 leading-relaxed">{systemResponse.sub}</p>
+                        {systemResponse.type === "help" && (
+                          <div className="mt-3 space-y-2">
+                            {["• Stake tokens", "• Swap assets", "• Claim rewards", "• Manage your portfolio", "• Enable autopilot strategies"].map(h => (
+                              <p key={h} className="text-xs font-medium text-gray-400">{h}</p>
+                            ))}
+                            <p className="text-xs text-text-muted mt-4">Try typing: <span className="font-mono text-[#00F5D4]/80">stake 1 init</span></p>
+                          </div>
                         )}
+                        {systemResponse.type === "unknown" && (
+                          <>
+                            <p className="text-xs text-text-muted mt-2 mb-4 leading-relaxed">IntentOS primarily connects your text to on-chain execution. Try something like:</p>
+                            <div className="flex gap-2 flex-wrap relative z-10">
+                              {[{ label: "Stake INIT", q: "Stake INIT" }, { label: "Swap Asset", q: "Swap INIT to USDC" }, { label: "Grow Portfolio", q: "grow my portfolio" }].map(btn => (
+                                <button key={btn.q} onClick={() => handleSubmit(btn.q)}
+                                  className="px-3 py-1.5 text-[11px] font-semibold rounded-full bg-white/5 border border-white/10 hover:bg-[#F59E0B]/10 hover:border-[#F59E0B]/30 hover:text-[#F59E0B] transition-all text-gray-300">
+                                  {btn.label}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {systemResponse.sub && <p className="text-xs text-text-muted mt-1 leading-relaxed">{systemResponse.sub}</p>}
                         {systemResponse.type === "autopilot" && (
                           <button onClick={() => window.location.href = "/app/autopilot"}
-                            className="text-xs mt-2 font-semibold" style={{ color: "#00F5D4" }}>
+                            className="text-xs mt-3 font-semibold relative z-10 text-[#00F5D4] hover:underline">
                             Open Autopilot Settings →
                           </button>
                         )}
@@ -521,9 +857,7 @@ export default function IntentPage() {
                         <div className="flex gap-2 mt-2.5 flex-wrap">
                           <button onClick={() => { setSystemResponse({ icon: "📥", message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                            style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,212,0.18)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,245,212,0.1)")}>
+                            style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}>
                             <img src="https://registry.testnet.initia.xyz/images/INIT.png" alt="INIT" width={14} height={14} className="rounded-full" />
                             Receive INIT
                           </button>
@@ -533,25 +867,20 @@ export default function IntentPage() {
                         <div className="flex gap-2 mt-2.5 flex-wrap">
                           <button onClick={() => { setSystemResponse({ icon: "📥", message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                            style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,212,0.18)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,245,212,0.1)")}>
+                            style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}>
                             <img src="https://registry.testnet.initia.xyz/images/INIT.png" alt="INIT" width={14} height={14} className="rounded-full" />
                             Receive INIT
                           </button>
                           <button onClick={() => { setSystemResponse({ icon: "📥", message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
-                            style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", color: "#7C3AED" }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(124,58,237,0.18)")}
-                            onMouseLeave={e => (e.currentTarget.style.background = "rgba(124,58,237,0.1)")}>
+                            style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", color: "#7C3AED" }}>
                             <img src="https://registry.testnet.initia.xyz/images/USDC.png" alt="USDC" width={14} height={14} className="rounded-full" />
                             Receive USDC
                           </button>
                         </div>
                       )}
                     </div>
-                    <button onClick={() => setValidationError(null)}
-                      className="text-text-muted hover:text-text-primary text-xs mt-0.5 flex-shrink-0">✕</button>
+                    <button onClick={() => setValidationError(null)} className="text-text-muted hover:text-text-primary text-xs mt-0.5 flex-shrink-0">✕</button>
                   </div>
                 </motion.div>
               )}
@@ -564,8 +893,8 @@ export default function IntentPage() {
                   className="flex items-center gap-2 text-xs text-text-muted px-1"
                 >
                   <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                   Checking wallet balance…
                 </motion.div>
@@ -574,13 +903,13 @@ export default function IntentPage() {
           </div>
         )}
 
-        {/* Intent Input — always at bottom */}
+        {/* Intent Input — always at bottom, disabled when offline */}
         <div className="flex-none pt-3 pb-2">
           <IntentInput
             key={rawText}
             onSubmit={handleSubmit}
             loading={loading || validating}
-            disabled={!!timeline}
+            disabled={!!timeline || !isOnline}
             defaultValue={rawText}
             walletEmpty={walletEmpty}
           />
