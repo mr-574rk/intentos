@@ -701,9 +701,22 @@ export default function IntentPage() {
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="flex-1 flex flex-col items-center justify-center text-center px-4 pb-6"
             >
-              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,245,212,0.3)] animate-pulse"
-                style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.2)" }}>
-                <span className="text-2xl font-black" style={{ color: "#00F5D4" }}>IO</span>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,245,212,0.3)] animate-pulse group cursor-pointer"
+                style={{ background: "rgba(0,245,212,0.05)", border: "1px solid rgba(0,245,212,0.15)" }}>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-10 h-10 transition-transform duration-700 ease-in-out group-hover:rotate-180 drop-shadow-[0_0_8px_rgba(0,245,212,0.8)]"
+                >
+                  <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
+                  <circle
+                    cx="12" cy="12" r="9"
+                    stroke="#00F5D4" strokeWidth="2" strokeLinecap="round"
+                    strokeDasharray="35 60" strokeDashoffset="15"
+                  />
+                  <circle cx="12" cy="12" r="2.5" fill="#00F5D4" />
+                </svg>
               </div>
               <p className="text-gray-400 text-lg mb-1 font-medium">
                 {address ? `Hi, ${address.slice(0, 6)}...${address.slice(-4)}` : "Hi there"}

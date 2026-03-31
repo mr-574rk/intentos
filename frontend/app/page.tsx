@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import WalletConnect from "@/components/WalletConnect";
 import { BrainCircuit, Zap, ShieldAlert, Layers } from "lucide-react";
+import { IntentOSLogo } from "@/components/IntentOSLogo";
 
 export default function LandingPage() {
   return (
@@ -30,12 +31,9 @@ export default function LandingPage() {
 
       {/* Sticky Top Nav */}
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 lg:px-8 bg-[#0D0F14]/70 backdrop-blur-lg border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00F5D4] to-[#7C3AED] flex items-center justify-center text-gray-900 font-black text-sm shadow-[0_0_15px_rgba(0,245,212,0.2)]">
-            IO
-          </div>
-          <span className="font-bold text-lg text-white tracking-wide">IntentOS</span>
-          <span className="text-[10px] px-2 py-0.5 bg-[#00F5D4]/10 text-[#00F5D4] rounded-full border border-[#00F5D4]/20 ml-1 font-bold uppercase tracking-widest">
+        <div className="flex items-center gap-2 md:gap-3">
+          <IntentOSLogo />
+          <span className="text-[10px] px-2 py-0.5 bg-[#00F5D4]/10 text-[#00F5D4] rounded-full border border-[#00F5D4]/20 font-bold uppercase tracking-widest translate-y-[1px]">
             Initia
           </span>
         </div>
