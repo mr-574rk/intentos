@@ -43,6 +43,12 @@ function timeAgo(d: Date): string {
   return m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ago`;
 }
 
+function formatUSD(val: number, precision = 2, hasBalance = false): string {
+  if (hasBalance && val === 0) return "<$0.01";
+  if (val > 0 && val < 0.01) return "<$0.01";
+  return `$${val.toLocaleString("en-US", { minimumFractionDigits: precision, maximumFractionDigits: precision })}`;
+}
+
 // ── Sparkline ─────────────────────────────────────────────────────────────────
 function Sparkline({ data }: { data: { date: string; value: number }[] }) {
   if (!data.length) return null;
@@ -60,7 +66,7 @@ function Sparkline({ data }: { data: { date: string; value: number }[] }) {
           <Tooltip
             cursor={false}
             contentStyle={{ background: "rgba(19,22,29,0.9)", border: "1px solid rgba(0,245,212,0.3)", borderRadius: 12, fontSize: 12, color: "#fff", padding: "4px 10px", backdropFilter: "blur(10px)" }}
-            formatter={(v: number) => [`$${v.toFixed(2)}`, ""]}
+            formatter={(v: number) => [formatUSD(v), ""]}
             labelStyle={{ display: "none" }}
           />
           <Area type="monotone" dataKey="value" stroke="#00F5D4" strokeWidth={3} fill="url(#sg)" dot={false} activeDot={{ r: 5, fill: "#00F5D4", stroke: "#000", strokeWidth: 2 }} />
@@ -118,7 +124,7 @@ function AllocationDonut({ segments }: { segments: { label: string; pct: number;
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-shadow" style={{ background: seg.color, boxShadow: hovered === i ? `0 0 8px ${seg.color}` : undefined }} />
             <span className="text-xs font-semibold text-white/80 flex-1">{seg.label}</span>
             <span className="text-xs font-mono font-bold text-white">{seg.pct.toFixed(1)}%</span>
-            <span className="text-[10px] text-white/40 w-12 text-right">${seg.value.toFixed(2)}</span>
+            <span className="text-[10px] text-white/40 w-12 text-right">{formatUSD(seg.value)}</span>
           </div>
         ))}
       </div>
@@ -144,10 +150,10 @@ function AIInsight({ data, onIntent }: { data: PortfolioData; onIntent: (t: stri
     msg = "Your wallet is empty. Deposit INIT to start earning yield and unlock AI-driven strategies.";
     action = "receive init"; actionLabel = "Receive INIT";
   } else if (stakedPct === 0) {
-    msg = `All $${totalWallet.toFixed(2)} of your assets are idle. Stake INIT to earn protocol rewards securely.`;
+    msg = `All ${formatUSD(totalWallet)} of your assets are idle. Stake INIT to earn protocol rewards securely.`;
     action = "stake init"; actionLabel = "Stake INIT";
   } else if (totalRewards > 0) {
-    msg = `You have $${totalRewards.toFixed(4)} in pending staking rewards. Claim and re-stake to compound your yield.`;
+    msg = `You have ${formatUSD(totalRewards, 4)} in pending staking rewards. Claim and re-stake to compound your yield.`;
     action = "claim staking rewards"; actionLabel = "Claim & Re-stake";
   } else if (stablePct < 15 && total > 1) {
     msg = `Portfolio is heavily exposed to INIT. Consider swapping a portion to USDC to reduce volatility.`;
@@ -235,7 +241,7 @@ function AssetSheet({ asset, onClose, onIntent }: { asset: WalletAsset; onClose:
             <button onClick={onClose} className="text-white/40 hover:text-white p-2 rounded-full hover:bg-white/5 transition-colors"><X className="w-5 h-5" /></button>
           </div>
           <div className="px-6 py-5 bg-white/[0.02]">
-            <p className="text-3xl font-black text-white tracking-tighter">${asset.valueUSD.toFixed(2)}</p>
+            <p className="text-3xl font-black text-white tracking-tighter">{formatUSD(asset.valueUSD)}</p>
             <p className="text-xs text-white/40 mt-1 uppercase tracking-widest font-bold">Current Value</p>
           </div>
           {/* Actions */}
@@ -264,7 +270,7 @@ function AssetSheet({ asset, onClose, onIntent }: { asset: WalletAsset; onClose:
 
 // ── Golden Rewards Modal ──────────────────────────────────────────────────────
 function RewardsModal({ rewards, total, onClose, onClaim, onIntent }: { rewards: RewardAsset[]; total: number; onClose: () => void; onClaim: () => void; onIntent: (i: string) => void }) {
-  const hasRewards = rewards.length > 0 && total > 0;
+  const hasRewards = rewards.length > 0 && rewards.some(r => r.balance > 0);
   return (
     <AnimatePresence>
       <motion.div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
@@ -311,7 +317,7 @@ function RewardsModal({ rewards, total, onClose, onClaim, onIntent }: { rewards:
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-yellow-400">{r.balance.toFixed(4)}</p>
-                      <p className="text-[10px] text-white/40">${r.valueUSD.toFixed(3)}</p>
+                      <p className="text-[10px] text-white/40">{formatUSD(r.valueUSD, 3, r.balance > 0)}</p>
                     </div>
                   </div>
                 ))}
@@ -321,7 +327,7 @@ function RewardsModal({ rewards, total, onClose, onClaim, onIntent }: { rewards:
                   style={{ background: "linear-gradient(135deg, #FDE047 0%, #EAB308 100%)", boxShadow: "0 4px 15px rgba(250, 204, 21, 0.3)" }}
                   onMouseEnter={e => e.currentTarget.style.boxShadow = "0 6px 20px rgba(250, 204, 21, 0.5)"}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = "0 4px 15px rgba(250, 204, 21, 0.3)"}>
-                  Claim ${total.toFixed(2)} Now <Sparkles className="w-4 h-4" />
+                  Claim {total > 0 || hasRewards ? formatUSD(total, 2, hasRewards) : 'Rewards'} Now <Sparkles className="w-4 h-4" />
                 </button>
               </>
             ) : (
@@ -509,20 +515,20 @@ export default function PortfolioDashboard() {
                 <div className="absolute top-0 right-0 p-8"><Badge text="Live" /></div>
                 <p className="text-[12px] font-bold uppercase tracking-widest text-[#00F5D4]/70 mb-2">Total Equity</p>
                 <p className="text-5xl font-black text-white tracking-tighter drop-shadow-sm">
-                  ${data.totalValueUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatUSD(data.totalValueUSD)}
                 </p>
-                {(totalStakedUSD > 0 || totalRewardsUSD > 0) && (
+                {(totalStakedUSD > 0 || totalRewardsUSD > 0 || data.staked.length > 0 || totalRewardsBal > 0) && (
                   <div className="flex gap-6 mt-5 bg-white/5 w-fit px-5 py-3 rounded-2xl border border-white/5">
-                    {totalStakedUSD > 0 && (
+                    {(totalStakedUSD > 0 || data.staked.length > 0) && (
                       <div>
                         <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-0.5">Staked</p>
-                        <p className="text-sm font-bold text-white">${totalStakedUSD.toFixed(2)}</p>
+                        <p className="text-sm font-bold text-white">{formatUSD(totalStakedUSD, 2, data.staked.length > 0)}</p>
                       </div>
                     )}
-                    {totalRewardsUSD > 0 && (
+                    {(totalRewardsUSD > 0 || totalRewardsBal > 0) && (
                       <div>
                         <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-0.5">Pending Rewards</p>
-                        <p className="text-sm font-bold text-yellow-400">${totalRewardsUSD.toFixed(4)}</p>
+                        <p className="text-sm font-bold text-yellow-400">{formatUSD(totalRewardsUSD, 4, totalRewardsBal > 0)}</p>
                       </div>
                     )}
                   </div>
@@ -631,7 +637,7 @@ export default function PortfolioDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <p className="text-base font-bold text-white">${asset.valueUSD.toFixed(2)}</p>
+                      <p className="text-base font-bold text-white">{formatUSD(asset.valueUSD, 2, asset.balance > 0)}</p>
                       <ChevronRight className="w-4 h-4 text-white/10 group-hover:text-white/40 transition-colors" />
                     </div>
                   </button>
@@ -650,13 +656,13 @@ export default function PortfolioDashboard() {
               <TrendingUp className="w-4 h-4 text-[#00F5D4]" />
               <p className="text-xs font-bold uppercase tracking-widest text-[#00F5D4]/80">Yield Positions</p>
             </div>
-            {totalStakedUSD > 0 && (
+            {(totalStakedUSD > 0 || data.staked.length > 0) && (
               <span className="text-[10px] font-bold text-[#F59E0B] bg-[#F59E0B]/10 px-2.5 py-1 rounded-full border border-[#F59E0B]/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
-                ${totalStakedUSD.toFixed(2)} total
+                {formatUSD(totalStakedUSD, 2, data.staked.length > 0)} total
               </span>
             )}
           </div>
-          {data.staked.length === 0 ? (
+          {data.staked.length === 0 && data.rewards.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <div className="w-14 h-14 rounded-full bg-[#00F5D4]/5 border border-[#00F5D4]/10 flex items-center justify-center mb-5"><BarChart3 className="w-6 h-6 text-[#00F5D4]/40" /></div>
               <p className="text-base font-bold text-white/90 mb-2">No active yield</p>
@@ -692,7 +698,7 @@ export default function PortfolioDashboard() {
                       </div>
                       <div className="text-right">
                         <p className="text-base font-bold text-white">{s.balance.toFixed(4)} <span className="text-xs text-white/50">INIT</span></p>
-                        <p className="text-xs text-white/40 mt-0.5">${s.valueUSD.toFixed(2)}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{formatUSD(s.valueUSD, 2, s.balance > 0)}</p>
                       </div>
                     </div>
                     {/* Inline rewards */}
@@ -722,6 +728,29 @@ export default function PortfolioDashboard() {
                   </div>
                 );
               })}
+              {data.staked.length === 0 && data.rewards.length > 0 && (
+                <div className="p-6 rounded-2xl border transition-colors relative overflow-hidden group" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full flex flex-shrink-0 items-center justify-center bg-yellow-400/10 border border-yellow-400/20">
+                      <Gift className="w-6 h-6 text-yellow-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center w-full">
+                        <p className="text-white font-medium">Pending Yield</p>
+                        <p className="text-white font-bold">{totalRewardsBal.toFixed(4)} <span className="text-gray-400 text-sm ml-1 font-normal">{data.rewards[0]?.symbol || "INIT"}</span></p>
+                      </div>
+                      <div className="flex justify-between items-center w-full mt-0.5">
+                        <p className="text-gray-400 text-sm">Locked positions</p>
+                        <p className="text-gray-400 font-mono text-sm">{formatUSD(totalRewardsUSD, 2, totalRewardsBal > 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => dispatchIntent("claim staking rewards")}
+                    className="w-full mt-6 py-3 rounded-full text-sm font-bold transition-all text-center border bg-white/5 hover:bg-white/10 text-[#00F5D4] border-[#00F5D4]/30 hover:shadow-[0_0_15px_rgba(0,245,212,0.2)]">
+                    Claim Available Rewards
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </motion.div>

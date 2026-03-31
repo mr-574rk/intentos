@@ -30,7 +30,7 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
     },
     medium: {
       steps: [
-        { action: "split_allocation", from: "INIT", description: "Split INIT 60/40 between staking and liquidity", protocol: "Initia" },
+        { action: "split_allocation", from: "INIT", description: "Allocate 60% to staking and 40% to liquidity", protocol: "" },
         { action: "provide_liquidity", from: "INIT", to: "USDC", description: "Add INIT/USDC liquidity to earn trading fees", protocol: "Initia AMM" },
         { action: "stake_lp", description: "Stake LP tokens for additional incentives", protocol: "Initia Staking" },
       ],

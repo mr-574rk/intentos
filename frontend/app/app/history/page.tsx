@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import StrategyHistory from "@/components/StrategyHistory";
-import { Zap, Bot } from "lucide-react";
+import { Zap, Bot, Terminal } from "lucide-react";
+import { Pagination } from "@/components/Pagination";
 
 interface SystemEvent {
   label: string;
@@ -14,6 +15,8 @@ interface SystemEvent {
 
 function SystemEvents() {
   const [events, setEvents] = useState<SystemEvent[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     try {
@@ -35,14 +38,13 @@ function SystemEvents() {
     );
   }
 
+  const totalPages = Math.ceil(events.length / itemsPerPage);
+  const paginatedEvents = events.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div className="space-y-2">
-      {events.map((ev, i) => {
-        const isEnable  = ev.label.toLowerCase().includes("enable");
-        const isDisable = ev.label.toLowerCase().includes("disable");
-        const color     = isEnable ? "#00F5D4" : isDisable ? "#FF4D6D" : "#7C3AED";
-        const icon      = isEnable ? "🤖" : isDisable ? "⏸" : "⚙";
-        const date      = new Date(ev.timestamp).toLocaleString("en-US", {
+      {paginatedEvents.map((ev, i) => {
+        const date = new Date(ev.timestamp).toLocaleString("en-US", {
           month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
         });
 
@@ -50,18 +52,31 @@ function SystemEvents() {
           <motion.div
             key={i}
             initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl"
-            style={{ background: `${color}08`, border: `1px solid ${color}16` }}
+            className="bg-[#13161D]/40 border border-white/5 rounded-xl p-4 flex items-center justify-between mb-3 hover:bg-white/5 transition-colors gap-4"
           >
-            <span className="text-lg">{icon}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text-primary">{ev.label}</p>
-              <p className="text-xs text-text-muted font-mono truncate">{ev.raw}</p>
+            <div className="flex items-center min-w-0 flex-1">
+              <div className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 shrink-0">
+                <Terminal className="w-4 h-4 text-gray-400" />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center ml-3 min-w-0 gap-1.5 sm:gap-3">
+                <span className="font-mono text-white text-sm truncate">&gt; {ev.raw}</span>
+                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-widest text-gray-400 w-fit shrink-0">
+                  {ev.label}
+                </span>
+              </div>
             </div>
-            <p className="text-[10px] text-text-muted flex-shrink-0">{date}</p>
+            <p className="text-xs text-gray-600 flex-shrink-0 ml-2">{date}</p>
           </motion.div>
         );
       })}
+
+      <div className="flex justify-center w-full mt-4 pb-8">
+        <Pagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
     </div>
   );
 }

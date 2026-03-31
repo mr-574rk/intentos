@@ -3,14 +3,49 @@
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { truncate } from "@initia/utils";
 import clsx from "clsx";
+import Link from "next/link";
+import UserAvatar from "@/components/UserAvatar";
 
-export default function WalletConnect({ compact = false }: { compact?: boolean }) {
+export default function WalletConnect({
+  compact = false,
+  navMode = false,
+}: {
+  compact?: boolean;
+  navMode?: boolean;
+}) {
   const { address, username, openConnect, openWallet } = useInterwovenKit();
 
   const isConnected = !!address;
-  // Use username (.init) if available, otherwise truncate the address.
   const displayName = username ?? (address ? truncate(address) : "Not connected");
 
+  // ── Landing page nav mode ──────────────────────────────────────────────────
+  if (navMode) {
+    if (!isConnected) {
+      return (
+        <button
+          id="nav-launch-app-btn"
+          onClick={openConnect}
+          className="bg-[#00F5D4] text-gray-900 font-bold text-sm px-5 py-2 rounded-full transition-all hover:scale-[1.03] hover:bg-[#00E5C4] hover:shadow-[0_0_18px_rgba(0,245,212,0.45)] tracking-wide"
+        >
+          Launch App
+        </button>
+      );
+    }
+
+    // Connected — send straight to the app
+    return (
+      <Link
+        href="/onboarding"
+        id="nav-open-dashboard-btn"
+        className="flex items-center gap-2 bg-[#00F5D4]/10 border border-[#00F5D4]/30 text-[#00F5D4] font-bold text-sm px-5 py-2 rounded-full transition-all hover:bg-[#00F5D4]/20 hover:shadow-[0_0_14px_rgba(0,245,212,0.3)] hover:scale-[1.02]"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-[#00F5D4] animate-pulse shadow-[0_0_6px_rgba(0,245,212,0.8)]" />
+        Open Dashboard
+      </Link>
+    );
+  }
+
+  // ── Dashboard / sidebar wallet pill (unchanged) ────────────────────────────
   if (!isConnected) {
     return (
       <button
@@ -37,12 +72,9 @@ export default function WalletConnect({ compact = false }: { compact?: boolean }
       onClick={openWallet}
       title="Click to manage wallet"
     >
-      {/* Dynamic Gradient Avatar */}
-      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
-        style={{ background: "linear-gradient(135deg, #00F5D4 0%, #7C3AED 100%)", color: "#000" }}>
-        {address.slice(2, 4).toUpperCase()}
-      </div>
-      
+      {/* Dynamic Profile Avatar */}
+      <UserAvatar username={username} address={address} size={32} />
+
       {/* Wallet Details */}
       <div className="flex-1 min-w-0">
         <p className="text-xs font-mono font-semibold text-text-primary truncate">

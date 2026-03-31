@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { Copy } from "lucide-react";
+import { Pagination } from "./Pagination";
 import type { HistoryEntry } from "../types";
 import { API_URL, EXPLORER } from "@/lib/config";
 
@@ -11,6 +13,8 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
   const [list, setList] = useState<HistoryEntry[]>(entries ?? []);
   const [loading, setLoading] = useState(!entries);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   useEffect(() => {
     if (entries) return; // caller provided data — skip fetch
@@ -57,101 +61,102 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
     );
   }
 
+  const totalPages = Math.ceil(list.length / itemsPerPage);
+  const paginatedList = list.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div className="space-y-4 pb-24 md:pb-8">
-      {list.map((entry, i) => {
+      {paginatedList.map((entry, i) => {
         const success = entry.result.status === "success";
         const txHash = entry.result.txHash;
         const isReal = txHash && txHash !== "n/a" && !txHash.startsWith("tx_cached") && !txHash.startsWith("mock");
         const explorerUrl = isReal ? `${EXPLORER}/${txHash}` : null;
+        const date = new Date(entry.createdAt).toLocaleDateString("en-US", {
+          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+        });
 
         return (
           <motion.div
             key={entry.id}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.07 }}
-            className="rounded-2xl p-5 transition-colors shadow-lg"
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,245,212,0.25)")}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+            transition={{ delay: i * 0.05 }}
+            className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#13161D]/60 backdrop-blur-md border border-white/5 hover:bg-white/5 hover:border-white/10 transition-colors group"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${success
-                    ? "text-status-success bg-status-success/10 border-status-success/20"
-                    : "text-status-error bg-status-error/10 border-status-error/20"
-                    }`}>
-                    {success ? "✓ Success" : "✗ Failed"}
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    {new Date(entry.createdAt).toLocaleDateString("en-US", {
-                      month: "short", day: "numeric", year: "numeric",
-                    })}
-                  </span>
-                </div>
-
-                <p className="text-lg font-semibold text-white mb-3 line-clamp-2 leading-snug">
-                  &quot;{entry.intentText}&quot;
-                </p>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {entry.bundle.steps.slice(0, 3).map((step) => (
-                    <span
-                      key={step.index}
-                      className="text-[11px] font-medium px-2.5 py-1 bg-white/[0.04] border border-white-[0.05] rounded-lg text-white/60"
-                    >
-                      {step.description}
-                    </span>
-                  ))}
-                  {entry.bundle.steps.length > 3 && (
-                    <span className="text-[11px] font-medium px-2.5 py-1 bg-white/[0.04] border border-white-[0.05] rounded-lg text-white/50">
-                      +{entry.bundle.steps.length - 3} more
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {entry.performance && (
-                <div className="text-right flex-shrink-0">
-                  <p className="text-xl font-black text-status-success">{entry.performance}</p>
-                  <p className="text-xs text-text-muted">return</p>
-                </div>
-              )}
+            {/* Left Side: The Intent */}
+            <div className="flex flex-col flex-[1.2] min-w-0">
+               <div className="flex items-center gap-2 mb-2 text-xs">
+                 <span className={`px-2 py-1 rounded-full border ${
+                   success 
+                     ? "bg-green-500/10 text-green-400 border-green-500/20" 
+                     : "bg-red-500/10 text-red-400 border-red-500/20"
+                 }`}>
+                   {success ? "Success" : "Failed"}
+                 </span>
+                 <span className="text-gray-500">{date}</span>
+               </div>
+               <p className="text-[17px] font-mono text-white mt-1 leading-snug truncate">
+                 &gt; "{entry.intentText}"
+               </p>
             </div>
 
-            {/* TX row — compact hash + prominent button */}
-            {txHash && txHash !== "n/a" && (
-              <div className="mt-3 pt-3 border-t border-border-default flex items-center justify-between gap-3 flex-wrap">
-                <p className="text-xs text-white/40 font-mono truncate max-w-[180px]">
-                  {isReal ? `${txHash.slice(0, 10)}…${txHash.slice(-8)}` : txHash}
-                </p>
-                {explorerUrl && (
-                  <a
+            {/* Middle: The Details */}
+            <div className="flex flex-col flex-[1.4] min-w-0 gap-2">
+               <div className="flex flex-wrap gap-2">
+                 {entry.bundle.steps.slice(0, 3).map((step) => (
+                    <span key={step.index} className="rounded-full bg-white/5 border border-white/10 text-gray-400 text-xs px-3 py-1 truncate max-w-[150px]">
+                      {step.description}
+                    </span>
+                 ))}
+                 {entry.bundle.steps.length > 3 && (
+                    <span className="rounded-full bg-white/5 border border-white/10 text-gray-400 text-xs px-3 py-1">
+                      +{entry.bundle.steps.length - 3} more
+                    </span>
+                 )}
+               </div>
+               
+               {txHash && txHash !== "n/a" && (
+                 <div className="flex items-center gap-2 mt-1">
+                   <p className="text-xs text-gray-500 font-mono">
+                     {isReal ? `${txHash.slice(0, 6)}...${txHash.slice(-4)}` : txHash}
+                   </p>
+                   {isReal && (
+                     <Copy 
+                       className="w-3.5 h-3.5 text-gray-500 hover:text-[#00F5D4] cursor-pointer transition-colors" 
+                       onClick={() => navigator.clipboard.writeText(txHash)}
+                     />
+                   )}
+                 </div>
+               )}
+            </div>
+
+            {/* Right Side: Results & Action */}
+            <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center shrink-0 w-full md:w-auto mt-2 md:mt-0 gap-2.5">
+               {entry.performance && (
+                 <p className="text-sm font-bold text-green-400">
+                   {entry.performance} return
+                 </p>
+               )}
+               {explorerUrl && (
+                 <a
                     href={explorerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all"
-                    style={{
-                      color: "#00F5D4",
-                      borderColor: "rgba(0,245,212,0.25)",
-                      background: "rgba(0,245,212,0.06)",
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,245,212,0.12)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "rgba(0,245,212,0.06)")}
-                  >
+                    className="rounded-full text-xs border border-[#00F5D4]/30 text-[#00F5D4] hover:bg-[#00F5D4]/10 px-4 py-1.5 transition-colors whitespace-nowrap text-center"
+                 >
                     View on Explorer
-                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M2 10L10 2M10 2H5M10 2V7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </a>
-                )}
-              </div>
-            )}
+                 </a>
+               )}
+            </div>
           </motion.div>
         );
       })}
+
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

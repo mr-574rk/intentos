@@ -39,8 +39,8 @@ const HAS_AMOUNT = /\b\d+(\.\d+)?\b/;
 
 // ── Wallet send/transfer intent detection ─────────────────────────────────────
 interface TransferIntent {
-  amount:    string;
-  token:     string;
+  amount: string;
+  token: string;
   recipient: string;
 }
 
@@ -55,8 +55,8 @@ function parseTransferIntent(text: string): TransferIntent | null {
 
 // ── Portfolio API response shape ───────────────────────────────────────────────
 interface PortfolioAPIData {
-  wallet:  { symbol: string; balance: number; valueUSD: number }[];
-  staked:  { symbol: string; balance: number; valueUSD: number }[];
+  wallet: { symbol: string; balance: number; valueUSD: number }[];
+  staked: { symbol: string; balance: number; valueUSD: number }[];
   rewards: { symbol: string; balance: number; valueUSD: number }[];
   totalValueUSD: number;
 }
@@ -141,7 +141,7 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
   return (
     <div className="relative rounded-3xl p-6 bg-[#13161D]/80 backdrop-blur-md border border-white/10 shadow-2xl flex flex-col items-center">
       <button onClick={onDismiss} className="absolute top-4 right-4 text-text-muted hover:text-white transition-colors">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
       </button>
       <div className="flex bg-black/40 p-1 rounded-full mb-6 w-full max-w-[200px] border border-white/5">
         {(["INIT", "USDC"] as const).map(t => (
@@ -166,8 +166,8 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
         <button onClick={copy}
           className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 hover:bg-[#00F5D4]/10 text-gray-400 hover:text-[#00F5D4] transition-all">
           {copied
-            ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>}
+            ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+            : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>}
         </button>
       </div>
     </div>
@@ -411,30 +411,30 @@ function TxSentToast({ visible }: { visible: boolean }) {
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function IntentPage() {
-  const router         = useRouter();
-  const searchParams   = useSearchParams();
-  const { isConnected, address } = useWalletGuard();
-  const isOnline       = useOnlineStatus();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { isConnected, address, username } = useWalletGuard();
+  const isOnline = useOnlineStatus();
 
-  const [loading,          setLoading]          = useState(false);
-  const [validating,       setValidating]       = useState(false);
-  const [timeline,         setTimeline]         = useState<TimelineType | null>(null);
-  const [error,            setError]            = useState<string | null>(null);
-  const [validationError,  setValidationError]  = useState<{ message: string; sub: string; action?: "receive" | "deposit" } | null>(null);
-  const [ambiguity,        setAmbiguity]        = useState<AmbiguityResponse | null>(null);
-  const [pendingText,      setPendingText]       = useState<string>("");
-  const [showDeploy,       setShowDeploy]        = useState(false);
-  const [rawText,          setRawText]           = useState("");
-  const [systemResponse,   setSystemResponse]   = useState<SystemResponse | null>(null);
-  const [walletEmpty,      setWalletEmpty]       = useState(false);
-  const [walletInitBalance,setWalletInitBalance] = useState<number>(0);
-  const [activeStrategy,   setActiveStrategy]   = useState<Strategy | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [timeline, setTimeline] = useState<TimelineType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<{ message: string; sub: string; action?: "receive" | "deposit" } | null>(null);
+  const [ambiguity, setAmbiguity] = useState<AmbiguityResponse | null>(null);
+  const [pendingText, setPendingText] = useState<string>("");
+  const [showDeploy, setShowDeploy] = useState(false);
+  const [rawText, setRawText] = useState("");
+  const [systemResponse, setSystemResponse] = useState<SystemResponse | null>(null);
+  const [walletEmpty, setWalletEmpty] = useState(false);
+  const [walletInitBalance, setWalletInitBalance] = useState<number>(0);
+  const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
 
   // Transfer confirmation states
-  const [transferConfirm,  setTransferConfirm]  = useState<TransferIntent | null>(null);
-  const [transferLoading,  setTransferLoading]  = useState(false);
-  const [transferResult,   setTransferResult]   = useState<string | null>(null); // txHash
-  const [showTxToast,      setShowTxToast]       = useState(false);
+  const [transferConfirm, setTransferConfirm] = useState<TransferIntent | null>(null);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferResult, setTransferResult] = useState<string | null>(null); // txHash
+  const [showTxToast, setShowTxToast] = useState(false);
 
   // Auto-scroll ref for the tx result card
   const txResultRef = useRef<HTMLDivElement>(null);
@@ -456,7 +456,7 @@ export default function IntentPage() {
       .then(r => r.json())
       .then((json: PortfolioAPIData) => {
         const totalBalance = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
-        const initBal      = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
+        const initBal = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
         setWalletEmpty(totalBalance === 0);
         setWalletInitBalance(initBal);
       })
@@ -503,7 +503,7 @@ export default function IntentPage() {
       if (tlData.success && tlData.data) setTimeline(tlData.data);
 
       sessionStorage.setItem("intentos_strategy", JSON.stringify(strategy));
-      setTimeout(() => router.push("/app/strategy"), 800);
+      setTimeout(() => router.push("/app/strategy"), 9000);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -571,17 +571,17 @@ export default function IntentPage() {
   const validateIntentPreflight = async (text: string): Promise<{ message: string; sub: string; action?: "receive" | "deposit" } | null> => {
     if (!address) return null;
     try {
-      const res  = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
+      const res = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
       const json: PortfolioAPIData = await res.json();
 
-      const walletINIT      = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
-      const totalRewards    = json.rewards?.reduce((s, r) => s + r.balance, 0) ?? 0;
-      const totalDelegated  = json.staked?.reduce((s, d) => s + d.balance, 0) ?? 0;
-      const totalBalance    = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
+      const walletINIT = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
+      const totalRewards = json.rewards?.reduce((s, r) => s + r.balance, 0) ?? 0;
+      const totalDelegated = json.staked?.reduce((s, d) => s + d.balance, 0) ?? 0;
+      const totalBalance = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
 
       setWalletEmpty(totalBalance === 0);
 
-      const lower  = text.toLowerCase();
+      const lower = text.toLowerCase();
       const amount = parseFloat(text.match(/\b(\d+(?:\.\d+)?)\b/)?.[1] ?? "0");
 
       if (/\b(stake|delegate)\b/.test(lower)) {
@@ -671,7 +671,7 @@ export default function IntentPage() {
   };
 
   const timelineActive = loading || !!timeline || !!error;
-  const anyActive      = timelineActive || !!systemResponse || !!validationError || validating || !!transferConfirm;
+  const anyActive = timelineActive || !!systemResponse || !!validationError || validating || !!transferConfirm;
 
   return (
     <>
@@ -718,8 +718,8 @@ export default function IntentPage() {
                   <circle cx="12" cy="12" r="2.5" fill="#00F5D4" />
                 </svg>
               </div>
-              <p className="text-gray-400 text-lg mb-1 font-medium">
-                {address ? `Hi, ${address.slice(0, 6)}...${address.slice(-4)}` : "Hi there"}
+              <p className="text-gray-400 text-lg mb-6 font-medium">
+                Hi, <span className="text-[#00F5D4] font-semibold tracking-wide drop-shadow-[0_0_8px_rgba(0,245,212,0.5)] transition-all duration-300">{username ?? (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "there")}</span>
               </p>
               <h1 className="text-4xl md:text-5xl font-semibold text-white tracking-normal mb-5 leading-snug">
                 What do you want<br />
@@ -819,8 +819,8 @@ export default function IntentPage() {
                   transition={{ duration: 0.2 }}
                   className={
                     systemResponse.type === "receive" ? "mt-4 outline-none" :
-                    systemResponse.type === "greeting" ? "mt-4 rounded-3xl p-6 bg-[#13161D]/60 backdrop-blur-md border border-white/5 shadow-2xl relative overflow-hidden" :
-                    "rounded-2xl p-4"
+                      systemResponse.type === "greeting" ? "mt-4 rounded-3xl p-6 bg-[#13161D]/60 backdrop-blur-md border border-white/5 shadow-2xl relative overflow-hidden" :
+                        "rounded-2xl p-4"
                   }
                   style={(systemResponse.type === "receive" || systemResponse.type === "greeting") ? {} : { background: "rgba(0,245,212,0.06)", border: "1px solid rgba(0,245,212,0.18)" }}
                 >
@@ -840,10 +840,10 @@ export default function IntentPage() {
                       <p className="text-[13px] text-gray-400 mb-5 leading-relaxed font-medium relative z-10">What would you like your money to do today?</p>
                       <div className="flex flex-wrap gap-2.5 relative z-10">
                         {[
-                          { label: "Stake INIT",          q: "Stake INIT" },
-                          { label: "Grow Portfolio",       q: "grow my portfolio" },
-                          { label: "Swap INIT → USDC",    q: "Swap INIT to USDC" },
-                          { label: "Claim Rewards",        q: "claim staking rewards" },
+                          { label: "Stake INIT", q: "Stake INIT" },
+                          { label: "Grow Portfolio", q: "grow my portfolio" },
+                          { label: "Swap INIT → USDC", q: "Swap INIT to USDC" },
+                          { label: "Claim Rewards", q: "claim staking rewards" },
                         ].map(btn => (
                           <button key={btn.q} onClick={() => handleSubmit(btn.q)}
                             className="px-4 py-2 text-[12px] font-semibold rounded-full bg-white/5 border border-white/10 hover:bg-[#00F5D4]/10 hover:border-[#00F5D4]/30 hover:text-[#00F5D4] transition-all text-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 max-w-fit">
