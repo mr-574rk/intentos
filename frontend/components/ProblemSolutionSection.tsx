@@ -31,7 +31,7 @@ export function ProblemSolutionSection() {
             <Database className="w-6 h-6 text-gray-500" />
             <h3 className="text-xl font-bold text-white">Information overload</h3>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Hundreds of protocols. Thousands of tokens. Even experienced users constantly wonder: 'Am I using the best strategy?'
+              Hundreds of protocols. Thousands of tokens. Even experienced users constantly wonder: &apos;Am I using the best strategy?&apos;
             </p>
           </div>
           {/* Card 3 */}
@@ -47,7 +47,7 @@ export function ProblemSolutionSection() {
             <Cpu className="w-6 h-6 text-gray-500" />
             <h3 className="text-xl font-bold text-white">Not designed for humans</h3>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Tools assume you understand liquidity pools, validators, and gas optimization. But you just want to ask: 'What should my money do?'
+              Tools assume you understand liquidity pools, validators, and gas optimization. But you just want to ask: &apos;What should my money do?&apos;
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ export function ProblemSolutionSection() {
             viewport={{ once: true }}
             className="rounded-full bg-white/10 border border-white/20 px-6 py-3 shadow-[0_0_30px_rgba(0,245,212,0.2)] mb-4 z-20 backdrop-blur-md"
           >
-            <span className="text-white text-base font-medium">"Grow my portfolio safely"</span>
+            <span className="text-white text-base font-medium">&quot;Grow my portfolio safely&quot;</span>
           </motion.div>
 
           {/* The Flow Line */}

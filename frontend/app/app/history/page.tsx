@@ -33,7 +33,7 @@ function SystemEvents() {
           <Bot className="w-5 h-5" style={{ color: "#7C3AED" }} />
         </div>
         <p className="text-sm font-semibold text-text-primary mb-1">No system events yet</p>
-        <p className="text-xs text-text-muted">Try: <span className="font-mono">"enable autopilot"</span> on the Intent page</p>
+        <p className="text-xs text-text-muted">Try: <span className="font-mono">&quot;enable autopilot&quot;</span> on the Intent page</p>
       </div>
     );
   }

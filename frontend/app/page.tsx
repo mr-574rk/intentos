@@ -80,13 +80,13 @@ export default function LandingPage() {
           <div className="flex flex-col justify-between h-full w-full max-w-[280px] z-10">
             <div className="flex flex-col gap-6 w-full justify-center h-full">
                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-4">
-                 <p className="text-sm text-white font-medium">"stake 1 init"</p>
+                 <p className="text-sm text-white font-medium">&quot;stake 1 init&quot;</p>
                </motion.div>
                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 4, delay: 0.5 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-center">
-                 <p className="text-sm text-white font-medium">"swap usdc to init"</p>
+                 <p className="text-sm text-white font-medium">&quot;swap usdc to init&quot;</p>
                </motion.div>
                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3.5, delay: 1 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-2">
-                 <p className="text-sm text-white font-medium">"grow my portfolio"</p>
+                 <p className="text-sm text-white font-medium">&quot;grow my portfolio&quot;</p>
                </motion.div>
             </div>
           </div>

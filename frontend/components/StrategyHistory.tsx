@@ -96,7 +96,7 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
                  <span className="text-gray-500">{date}</span>
                </div>
                <p className="text-[17px] font-mono text-white mt-1 leading-snug truncate">
-                 &gt; "{entry.intentText}"
+                 &gt; &quot;{entry.intentText}&quot;
                </p>
             </div>
 
