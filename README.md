@@ -20,16 +20,31 @@ Intent → Strategy → Simulation → Execution → Portfolio Update
 
 All transactions execute on Initia testnet using Move smart contracts and InterwovenKit wallet integration.
 
+> Unlike traditional DeFi dashboards, IntentOS treats DeFi as an operating system — translating human intent into automated on-chain financial strategies.
+
 ---
 
 ## 🎥 Demo
 
 | | |
 |---|---|
-| **Live Demo** | [app.intentos.xyz](https://app.intentos.xyz) |
-| **Demo Video** | [youtube.com/watch?v=tVpuoN79Lgs](https://youtu.be/tVpuoN79Lgs) |
-| **GitHub** | [github.com/mr-574rk/intentos](https://github.com/mr-574rk/intentos) |
-| **Screenshots** | See `/docs/screenshots/` |
+| **Live Demo** | [https://app.intentos.xyz](https://app.intentos.xyz) |
+| **Demo Video** | [https://youtu.be/tVpuoN79Lgs](https://youtu.be/tVpuoN79Lgs) |
+| **GitHub** | [https://github.com/mr-574rk/intentos](https://github.com/mr-574rk/intentos) |
+| **Screenshots** | See below ↓ |
+
+---
+
+## 📸 Screenshots
+
+### Onboarding — Connect Wallet
+![IntentOS Onboarding](docs/screenshots/onboarding.png)
+
+### Intent Interface — Natural Language DeFi
+![IntentOS Intent Interface](docs/screenshots/intent.png)
+
+### Portfolio Dashboard — Live Equity & Positions
+![IntentOS Portfolio Dashboard](docs/screenshots/portfolio.png)
 
 ---
 
