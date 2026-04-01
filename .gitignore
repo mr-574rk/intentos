@@ -62,14 +62,12 @@ contracts/build/
 backend/data/
 backend/temp.*
 
-# ── Backend scratch / dev-only test scripts ───────────────────
-backend/test.ts
-backend/testArgs.mjs
-backend/testE2E.ts
-backend/testMismatch.ts
-backend/testPK.ts
-backend/testPaths.ts
-backend/testTx.ts
+# ── Scratch / dev-only test scripts (all directories) ────────
+**/test*.ts
+**/test*.js
+**/test*.mjs
+**/test*.mts
+**/test*.cjs
 
 # ── AI agent tooling (internal dev tooling, not project code) ─
 .agents/
