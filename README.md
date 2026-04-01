@@ -52,10 +52,11 @@ All transactions execute on Initia testnet using Move smart contracts and Interw
 
 All strategies execute as real on-chain transactions on the Initia testnet (`initiation-2`).
 
-| | |
-|---|---|
-| **Example Stake TX** | [A208BFF3...B626D44](https://scan.testnet.initia.xyz/initiation-2/txs/A208BFF36B104E7306F3EA9CF0BEE2671C9DC88935E8EAA731E005974B626D44) |
-| **Contract Deployment** | [0x3dd7b889...ebec3](https://scan.testnet.initia.xyz/initiation-2/accounts/0x3dd7b889be628c573c8a46b0f7657ae8483ebec3) |
+**Example Stake TX:**
+https://scan.testnet.initia.xyz/initiation-2/txs/A208BFF36B104E7306F3EA9CF0BEE2671C9DC88935E8EAA731E005974B626D44
+
+**Contract Deployment:**
+https://scan.testnet.initia.xyz/initiation-2/accounts/0x3dd7b889be628c573c8a46b0f7657ae8483ebec3
 
 ---
 
