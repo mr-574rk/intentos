@@ -28,7 +28,7 @@ All transactions execute on Initia testnet using Move smart contracts and Interw
 
 | | |
 |---|---|
-| **Live Demo** | [https://app.intentos.xyz](https://app.intentos.xyz) |
+| **Live Demo** | [#](upload soon) |
 | **Demo Video** | [https://youtu.be/tVpuoN79Lgs](https://youtu.be/tVpuoN79Lgs) |
 | **GitHub** | [https://github.com/mr-574rk/intentos](https://github.com/mr-574rk/intentos) |
 | **Screenshots** | See below ↓ |
