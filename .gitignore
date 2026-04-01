@@ -54,3 +54,27 @@ coverage/
 contracts/.build/
 contracts/build/
 *.mv
+
+# ── Databases & local data ────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+backend/data/
+backend/temp.*
+
+# ── Backend scratch / dev-only test scripts ───────────────────
+backend/test.ts
+backend/testArgs.mjs
+backend/testE2E.ts
+backend/testMismatch.ts
+backend/testPK.ts
+backend/testPaths.ts
+backend/testTx.ts
+
+# ── AI agent tooling (internal dev tooling, not project code) ─
+.agents/
+.agent/
+_agents/
+_agent/
+skills-lock.json
+.gemini/

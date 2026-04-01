@@ -1,23 +1,33 @@
 {
-  "project_name": "IntentOS",
-  "tagline": "AI-powered DeFi operating system on Initia",
-  "description": "IntentOS converts natural language financial goals into simulated and executable DeFi strategies on Initia. Users interact through an AI intent engine that generates strategy bundles, simulates outcomes, and autonomously executes transactions via session-based permissions.",
-  "category": "DeFi / AI / Infrastructure",
-  "version": "1.0.0",
-  "license": "MIT",
-  "repository": "https://github.com/intentos/intentos",
-  "demo": "http://localhost:3000",
-  "integrations": [
-    "InterwovenKit (@initia/interwovenkit-react)",
-    ".init usernames"
+  "name": "IntentOS",
+  "description": "An AI-powered financial operating system built on Initia. Users describe goals in natural language and IntentOS converts them into executable on-chain DeFi strategies — from staking and swapping to full portfolio management.",
+  "repository": "https://github.com/mr-574rk/intentos",
+  "demo": "https://app.intent-os.xyz",
+  "video": "https://youtu.be/tVpuoN79Lgs",
+  "contracts": [
+    {
+      "name": "intentos_contracts",
+      "network": "initiation-2",
+      "address": "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3",
+      "explorer": "https://scan.testnet.initia.xyz/initiation-2/accounts/0x3dd7b889be628c573c8a46b0f7657ae8483ebec3"
+    }
   ],
-  "chain_id": "intentos-1",
-  "l1_chain_id": "initiation-2",
-  "contracts": {
-    "StrategyExecutor": "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3",
-    "PermissionManager": "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3"
-  },
-  "tx_hashes": {
-    "deploy": "D963A0934B5B7A2BAF3AF7C736E3418F6388C598B0700B1CAA67887F1121EFAA"
-  }
+  "transactions": [
+    {
+      "description": "Example stake execution on Initia testnet",
+      "hash": "A208BFF36B104E7306F3EA9CF0BEE2671C9DC88935E8EAA731E005974B626D44",
+      "explorer": "https://scan.testnet.initia.xyz/initiation-2/txs/A208BFF36B104E7306F3EA9CF0BEE2671C9DC88935E8EAA731E005974B626D44"
+    }
+  ],
+  "tech_stack": [
+    "Next.js 14",
+    "Node.js / Express",
+    "Move (Initia)",
+    "@initia/interwovenkit-react",
+    "Framer Motion",
+    "Recharts"
+  ],
+  "chain": "initiation-2",
+  "rpc": "https://rpc.testnet.initia.xyz",
+  "lcd": "https://lcd.testnet.initia.xyz"
 }

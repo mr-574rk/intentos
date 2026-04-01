@@ -8,19 +8,45 @@
 
 ---
 
+## 🧠 TL;DR
+
+IntentOS is an AI-powered financial operating system built on Initia.
+
+Users describe financial goals in natural language (e.g., `"stake 1 INIT"` or `"grow my portfolio"`), and IntentOS converts those goals into executable on-chain DeFi strategies.
+
+```
+Intent → Strategy → Simulation → Execution → Portfolio Update
+```
+
+All transactions execute on Initia testnet using Move smart contracts and InterwovenKit wallet integration.
+
+---
+
 ## 🎥 Demo
 
 | | |
 |---|---|
-| **Live Demo** | _[Add deployment URL here]_ |
-| **Demo Video** | _[Add video link here]_ |
+| **Live Demo** | [app.intentos.xyz](https://app.intentos.xyz) |
+| **Demo Video** | [youtube.com/watch?v=tVpuoN79Lgs](https://youtu.be/tVpuoN79Lgs) |
+| **GitHub** | [github.com/mr-574rk/intentos](https://github.com/mr-574rk/intentos) |
 | **Screenshots** | See `/docs/screenshots/` |
+
+---
+
+## 🔗 On-Chain Execution Proof
+
+All strategies execute as real on-chain transactions on the Initia testnet (`initiation-2`).
+
+| | |
+|---|---|
+| **Example Stake TX** | [A208BFF3...B626D44](https://scan.testnet.initia.xyz/initiation-2/txs/A208BFF36B104E7306F3EA9CF0BEE2671C9DC88935E8EAA731E005974B626D44) |
+| **Contract Deployment** | [0x3dd7b889...ebec3](https://scan.testnet.initia.xyz/initiation-2/accounts/0x3dd7b889be628c573c8a46b0f7657ae8483ebec3) |
 
 ---
 
 ## The Problem
 
-DeFi today is genuinely hard to use — even for people who understand it.
+DeFi today is powerful but still extremely difficult to use — even for people who understand it.
 
 To earn yield on a single token today, a user might need to:
 1. Find the right protocol
@@ -34,6 +60,20 @@ To earn yield on a single token today, a user might need to:
 Each step requires understanding a different UI, a different wallet confirmation, and different risk parameters.
 
 **The result:** Most people never get past step one. Billions in assets sit idle because the interface is too complex.
+
+---
+
+## ⚡ Initia-Native Features
+
+IntentOS integrates deeply with the Initia ecosystem:
+
+- **InterwovenKit Wallet Integration** — native Initia wallet UX and Cosmos transaction signing via `@initia/interwovenkit-react`
+- **Move Smart Contracts** — `StrategyExecutor` and adapter modules written in Initia Move, deployed on `initiation-2`
+- **`.init` Username Support** — send assets to human-readable identities (e.g. `@alice.init`) resolved natively
+- **Native Staking Integration** — direct interaction with Cosmos staking modules (`MsgDelegate`, `MsgUndelegate`, `MsgWithdrawDelegatorReward`)
+- **Native DEX Routing** — `dex_adapter.move` routes swaps through Initia's built-in AMM without third-party bridges
+- **Initia Testnet Execution** — all strategies executed on-chain (`initiation-2`) via `https://rpc.testnet.initia.xyz`
+- **LCD Balance Fetching** — live portfolio data pulled from `https://lcd.testnet.initia.xyz` in real-time
 
 ---
 
