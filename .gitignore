@@ -76,3 +76,7 @@ _agents/
 _agent/
 skills-lock.json
 .gemini/
+
+# Temporary export tools
+frontend/public/export-tools.html
+frontend/public/og-image.png

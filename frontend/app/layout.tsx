@@ -11,6 +11,14 @@ export const metadata: Metadata = {
     title: "IntentOS",
     description: "AI-powered DeFi operating system on Initia",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1500,
+        height: 500,
+        alt: "IntentOS Banner",
+      },
+    ],
   },
 };
 
