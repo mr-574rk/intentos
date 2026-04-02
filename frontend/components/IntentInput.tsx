@@ -29,9 +29,10 @@ interface IntentInputProps {
   /** Pass true when wallet has no assets — switches to onboarding flow. Null means loading so suppress pills. */
   walletEmpty?: boolean | null;
   onTextChange?: (text: string) => void;
+  detectedIntent?: string | null;
 }
 
-export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty, onTextChange }: IntentInputProps) {
+export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty, onTextChange, detectedIntent }: IntentInputProps) {
   const [text, setText] = useState(defaultValue ?? "");
   const [focused, setFocused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -87,28 +88,48 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
       >
         {/* Inner card — dark background so text stays readable */}
         <div
-          className="rounded-2xl overflow-hidden transition-all duration-300 relative flex flex-col justify-between"
-          style={{ background: "#13161D", height: (focused || text.length > 0) ? "160px" : "80px" }}
+          className="rounded-2xl overflow-hidden transition-all duration-300 relative flex flex-col w-full"
+          style={{ background: "#13161D" }}
         >
-          <textarea
-            ref={textareaRef}
-            id="intent-input"
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              if (onTextChange) onTextChange(e.target.value);
-            }}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-            }}
-            placeholder={isMobile ? "e.g. stake 0.5 INIT..." : "e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"}
-            disabled={loading || disabled || !isOnline}
-            className="w-full h-full bg-transparent pt-4 pl-5 pb-12 pr-[100px] md:pr-[120px] text-base text-text-primary
-                       placeholder:text-text-muted resize-none focus:outline-none focus:ring-0 focus:border-transparent border-none align-top leading-relaxed
-                       transition-all duration-300 ease-in-out"
-          />
+          {/* 1. THE DETECTED INTENT HEADER (Only renders if intent exists) */}
+          <AnimatePresence>
+            {detectedIntent && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="w-full px-5 pt-4 pb-2 border-b border-white/5 bg-white/[0.02]"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00F5D4] animate-pulse" />
+                  <span className="text-[10px] font-bold text-[#00F5D4] tracking-widest uppercase">Detected Intent</span>
+                </div>
+                <p className="text-white font-medium pl-3.5 tracking-tight mb-1">{detectedIntent}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 2. THE TEXT AREA (Must ALWAYS be visible) */}
+          <div className="relative w-full flex-1">
+            <textarea
+              ref={textareaRef}
+              id="intent-input"
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (onTextChange) onTextChange(e.target.value);
+              }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+              }}
+              placeholder={isMobile ? "e.g. stake 0.5 INIT..." : "e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"}
+              disabled={loading || disabled || !isOnline}
+              className={`w-full bg-transparent pl-5 pt-4 pb-12 pr-[100px] md:pr-[120px] text-base text-text-primary
+                         placeholder:text-text-muted resize-none focus:outline-none focus:ring-0 focus:border-transparent border-none align-top leading-relaxed
+                         transition-all duration-300 ease-in-out ${focused || text.length > 0 ? "min-h-[140px]" : "min-h-[80px]"}`}
+            />
 
           {/* Bottom Left: Cmd to send helper */}
           <span className="absolute bottom-4 left-5 text-xs text-text-muted hidden md:block pointer-events-none">
@@ -146,6 +167,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
               <>Run <Sparkles className="w-4 h-4" /></>
             )}
           </motion.button>
+          </div>
         </div>
       </div>
 
