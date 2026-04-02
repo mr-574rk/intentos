@@ -8,11 +8,14 @@ import { BrainCircuit, Zap, ShieldAlert, Layers, Circle, ArrowRight, PlayCircle 
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { ProblemSolutionSection } from "@/components/ProblemSolutionSection";
 import { VideoModal } from "@/components/VideoModal";
+import DeepSpaceBackground from "@/components/DeepSpaceBackground";
+import LoadingCover from "@/components/LoadingCover";
 
 export default function LandingPage() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   return (
     <main className="relative min-h-[100dvh] overflow-hidden flex flex-col bg-[#0D0F14]">
+      <LoadingCover />
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes flowDown {
@@ -36,11 +39,8 @@ export default function LandingPage() {
         }
       `}} />
 
-      {/* Background effects */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-dots">
-        <div className="w-[800px] h-[800px] bg-[#00F5D4] rounded-full blur-[140px] opacity-[0.05]" />
-        <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-accent-purple/5 blur-[100px]" />
-      </div>
+      {/* Interactive Deep Space Background engine */}
+      <DeepSpaceBackground />
 
       {/* Sticky Top Nav */}
       <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 lg:px-8 bg-[#0D0F14]/70 backdrop-blur-lg border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
@@ -302,14 +302,6 @@ export default function LandingPage() {
             >
               Launch App
             </Link>
-            <a 
-              href="https://github.com/mr-574rk/intentos" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="border border-white/20 text-white font-medium text-lg px-8 py-4 rounded-full hover:bg-white/10 transition-colors duration-300 w-full sm:w-auto"
-            >
-              View GitHub
-            </a>
           </div>
         </div>
       </section>
