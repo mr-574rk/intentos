@@ -19,28 +19,14 @@ export default function WalletConnect({
   const displayName = username ?? (address ? truncate(address) : "Not connected");
 
   // ── Landing page nav mode ──────────────────────────────────────────────────
-  if (navMode) {
-    if (!isConnected) {
-      return (
-        <button
-          id="nav-launch-app-btn"
-          onClick={openConnect}
-          className="bg-[#00F5D4] text-gray-900 font-bold text-sm px-5 py-2 rounded-full transition-all hover:scale-[1.03] hover:bg-[#00E5C4] hover:shadow-[0_0_18px_rgba(0,245,212,0.45)] tracking-wide"
-        >
-          Launch App
-        </button>
-      );
-    }
-
-    // Connected — send straight to the app
+  if (navMode && !isConnected) {
     return (
       <Link
+        id="nav-launch-app-btn"
         href="/app/onboarding"
-        id="nav-open-dashboard-btn"
-        className="flex items-center gap-2 bg-[#00F5D4]/10 border border-[#00F5D4]/30 text-[#00F5D4] font-bold text-sm px-5 py-2 rounded-full transition-all hover:bg-[#00F5D4]/20 hover:shadow-[0_0_14px_rgba(0,245,212,0.3)] hover:scale-[1.02]"
+        className="bg-[#00F5D4] text-gray-900 font-bold text-sm px-5 py-2 rounded-full transition-all hover:scale-[1.03] hover:bg-[#00E5C4] hover:shadow-[0_0_18px_rgba(0,245,212,0.45)] tracking-wide"
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-[#00F5D4] animate-pulse shadow-[0_0_6px_rgba(0,245,212,0.8)]" />
-        Open Dashboard
+        Launch App
       </Link>
     );
   }
