@@ -31,6 +31,12 @@ import {
   AlertTriangle,
   SendHorizonal,
   Maximize2,
+  Hand,
+  Lightbulb,
+  Bot,
+  Download,
+  Pause,
+  X,
 } from "lucide-react";
 
 // ── Detect goal-based (no explicit amount) intents ───────────────────────────
@@ -66,7 +72,7 @@ interface PortfolioAPIData {
 type SystemResponse = {
   message: string;
   sub?: string;
-  icon: string;
+  icon: React.ReactNode;
   type?: "autopilot" | "receive" | "greeting" | "help" | "unknown";
   address?: string;
   walletBalance?: number;
@@ -83,13 +89,13 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
   const greetings = ["hello", "hi", "hey", "gm", "good morning", "good evening", "howdy", "sup", "how are you"];
   if (greetings.some(g => lower === g || lower.startsWith(g + " "))) {
     logSystemEvent("Greeting", text);
-    return { icon: "👋", message: "Hi! I'm IntentOS.", type: "greeting", walletBalance };
+    return { icon: <Hand className="w-5 h-5 text-emerald-400" />, message: "Hi! I'm IntentOS.", type: "greeting", walletBalance };
   }
 
   const helps = ["help", "commands", "what can you do", "get started", "how do i", "what is intentos", "beginner", "tutorial", "new here", "how does this work", "what can i do"];
   if (helps.some(h => lower.includes(h))) {
     logSystemEvent("Help", text);
-    return { icon: "💡", message: "Here are things I can help with:", type: "help" };
+    return { icon: <Lightbulb className="w-5 h-5 text-amber-400" />, message: "Here are things I can help with:", type: "help" };
   }
 
   if (/\b(enable|turn on|activate|start).{0,20}autopilot\b/.test(lower)) {
@@ -97,7 +103,7 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
     const labels = getActiveStrategyLabels(state);
     logSystemEvent("Autopilot Enabled", text);
     return {
-      icon: "🤖",
+      icon: <Bot className="w-5 h-5 text-blue-400" />,
       message: "Autopilot enabled.",
       sub: labels.length ? `Active strategies: ${labels.join(" · ")}` : "No strategies configured — open Autopilot settings to configure.",
       type: "autopilot",
@@ -106,16 +112,16 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
   if (/\b(disable|turn off|deactivate|stop).{0,20}autopilot\b/.test(lower)) {
     disableAutopilot();
     logSystemEvent("Autopilot Disabled", text);
-    return { icon: "⏸", message: "Autopilot disabled.", sub: "All automated strategies are paused. Re-enable anytime.", type: "autopilot" };
+    return { icon: <Pause className="w-5 h-5 text-gray-400" />, message: "Autopilot disabled.", sub: "All automated strategies are paused. Re-enable anytime.", type: "autopilot" };
   }
   if (/\b(receive|deposit|fund|get)\b.{0,20}\b(init|usdc|token|crypto|funds?|money|asset)\b/.test(lower)
     || /^(receive|deposit|fund|get init|get usdc)$/.test(lower)) {
     logSystemEvent("Receive Address", text);
-    return { icon: "📥", message: "Your Initia wallet address", sub: address ?? "Connect wallet to see address", type: "receive", address };
+    return { icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia wallet address", sub: address ?? "Connect wallet to see address", type: "receive", address };
   }
 
   logSystemEvent("Unknown", text);
-  return { icon: "⚠️", message: "I couldn't understand that command.", type: "unknown" };
+  return { icon: <AlertTriangle className="w-5 h-5 text-amber-400" />, message: "I couldn't understand that command.", type: "unknown" };
 }
 
 function logSystemEvent(label: string, raw: string) {
@@ -413,7 +419,7 @@ function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () 
           {hasTxHash ? (
             <p className="font-mono text-xs text-emerald-400 break-all">{txHash}</p>
           ) : (
-            <p className="text-xs text-emerald-400 font-semibold">Confirmed on-chain ✓</p>
+            <p className="text-xs text-emerald-400 font-semibold items-center inline-flex gap-1">Confirmed on-chain <CheckCircle2 className="w-4 h-4" /></p>
           )}
         </div>
 
@@ -802,10 +808,19 @@ export default function IntentPage() {
         {anyActive && (
           <div className="flex-1 overflow-y-auto pt-6 pb-2 space-y-3">
 
-            {/* ── Transfer confirm flow ─────────────────────────────────── */}
-            <AnimatePresence>
+            {/* ── Chat Feed / Active Session Layout wrapper ── */}
+            <AnimatePresence mode="popLayout">
+              
+              {/* ── Transfer confirm flow ─────────────────────────────────── */}
               {transferConfirm && !transferResult && (
-                <motion.div key="transfer-confirm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div 
+                  key="transfer-confirm" 
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                >
                   <ConfirmTransactionCard
                     transfer={transferConfirm}
                     onProceed={handleTransferProceed}
@@ -815,14 +830,26 @@ export default function IntentPage() {
                 </motion.div>
               )}
               {transferResult && transferResult !== "error" && (
-                <div key="transfer-result" ref={txResultRef}>
+                <motion.div 
+                  key="transfer-result" 
+                  ref={txResultRef}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                >
                   <TransactionResultCard txHash={transferResult} onDone={resetTransferFlow} />
-                </div>
+                </motion.div>
               )}
               {transferResult === "error" && (
                 <motion.div
                   key="transfer-error"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                   className="rounded-2xl p-4 flex items-start gap-3"
                   style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}
                 >
@@ -834,18 +861,25 @@ export default function IntentPage() {
                   </div>
                 </motion.div>
               )}
-            </AnimatePresence>
 
             {/* ── Agent Timeline / strategy flow ───────────────────────── */}
             {timelineActive && (
-              <div className="space-y-4">
+              <motion.div 
+                key="agent-timeline"
+                layout
+                initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                className="space-y-4"
+              >
                 {error && (
                   <div className="text-sm text-status-error bg-bg-elevated border border-status-error/30 p-4 rounded-xl">
                     <span className="font-bold mr-2">Error:</span> {error}
                   </div>
                 )}
                 {activeStrategy && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="bg-[#13161D] border border-white/10 p-5 rounded-2xl shadow-xl">
+                  <motion.div layout initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="bg-[#13161D] border border-white/10 p-5 rounded-2xl shadow-xl">
                     <h3 className="text-xs font-bold text-[#00F5D4] uppercase tracking-widest mb-3">IntentOS Plan</h3>
                     <p className="text-sm text-white font-medium leading-relaxed mb-5">{activeStrategy.bundle.explanation}</p>
                     <div className="space-y-2 mb-5">
@@ -869,18 +903,18 @@ export default function IntentPage() {
                   </motion.div>
                 )}
                 <AgentTimeline timeline={timeline} loading={loading} />
-              </div>
+              </motion.div>
             )}
 
             {/* System Command Response */}
-            <AnimatePresence>
               {systemResponse && (
                 <motion.div
                   key="sys-response"
-                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                   className={
                     systemResponse.type === "receive" ? "mt-4 outline-none" :
                       systemResponse.type === "greeting" ? "mt-4 rounded-3xl p-6 bg-[#13161D]/60 backdrop-blur-md border border-white/5 shadow-2xl relative overflow-hidden" :
@@ -894,7 +928,7 @@ export default function IntentPage() {
                     <div className="relative">
                       <div className="absolute -top-10 -left-10 w-32 h-32 bg-[#00F5D4]/10 rounded-full blur-3xl pointer-events-none" />
                       <div className="flex items-center gap-3 mb-2 relative z-10">
-                        <span className="text-2xl">👋</span>
+                        <span className="flex-shrink-0 mt-0.5">{systemResponse.icon}</span>
                         <h2 className="text-xl font-bold text-white tracking-tight">{systemResponse.message}</h2>
                       </div>
                       <div className="flex items-center gap-2 mb-4 relative z-10 inline-flex px-3 py-1.5 rounded-full bg-white/5 border border-white/10 shadow-sm backdrop-blur-sm">
@@ -918,7 +952,7 @@ export default function IntentPage() {
                     </div>
                   ) : (
                     <div className="flex gap-3 items-start">
-                      <span className="text-lg mt-0.5">{systemResponse.icon}</span>
+                      <span className="flex-shrink-0 mt-0.5">{systemResponse.icon}</span>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-text-primary">{systemResponse.message}</p>
                         {systemResponse.type === "help" && (
@@ -959,21 +993,22 @@ export default function IntentPage() {
               {validationError && (
                 <motion.div
                   key="validation-error"
-                  initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                   className="rounded-2xl p-4"
                   style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
                 >
                   <div className="flex gap-3 items-start">
-                    <span className="text-xl mt-0.5">⚠️</span>
+                    <span className="flex-shrink-0 mt-0.5"><AlertTriangle className="w-6 h-6 text-amber-500" /></span>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-text-primary">{validationError.message}</p>
                       <p className="text-xs text-text-muted mt-1 leading-relaxed">{validationError.sub}</p>
                       {validationError.action === "receive" && (
                         <div className="flex gap-2 mt-2.5 flex-wrap">
-                          <button onClick={() => { setSystemResponse({ icon: "📥", message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
+                          <button onClick={() => { setSystemResponse({ icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}>
                             <img src="https://registry.testnet.initia.xyz/images/INIT.png" alt="INIT" width={14} height={14} className="rounded-full" />
@@ -983,13 +1018,13 @@ export default function IntentPage() {
                       )}
                       {validationError.action === "deposit" && (
                         <div className="flex gap-2 mt-2.5 flex-wrap">
-                          <button onClick={() => { setSystemResponse({ icon: "📥", message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
+                          <button onClick={() => { setSystemResponse({ icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}>
                             <img src="https://registry.testnet.initia.xyz/images/INIT.png" alt="INIT" width={14} height={14} className="rounded-full" />
                             Receive INIT
                           </button>
-                          <button onClick={() => { setSystemResponse({ icon: "📥", message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
+                          <button onClick={() => { setSystemResponse({ icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", color: "#7C3AED" }}>
                             <img src="https://registry.testnet.initia.xyz/images/USDC.png" alt="USDC" width={14} height={14} className="rounded-full" />
@@ -998,7 +1033,7 @@ export default function IntentPage() {
                         </div>
                       )}
                     </div>
-                    <button onClick={() => setValidationError(null)} className="text-text-muted hover:text-text-primary text-xs mt-0.5 flex-shrink-0">✕</button>
+                    <button onClick={() => setValidationError(null)} className="text-text-muted hover:text-text-primary mt-0.5 flex-shrink-0"><X className="w-4 h-4 ml-1 inline-block" /></button>
                   </div>
                 </motion.div>
               )}
@@ -1007,7 +1042,11 @@ export default function IntentPage() {
               {validating && (
                 <motion.div
                   key="validating"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
                   className="flex items-center gap-2 text-xs text-text-muted px-1"
                 >
                   <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">

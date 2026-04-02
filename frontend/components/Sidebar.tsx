@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import WalletConnect from "@/components/WalletConnect";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { BrainCircuit, PieChart, History } from "lucide-react";
+import { BrainCircuit, PieChart, History, X } from "lucide-react";
 import { readAutopilotState } from "@/lib/autopilotState";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 
@@ -44,7 +44,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* ── Brand + Close ─────────────────────────────────── */}
       <div className="px-5 py-5 border-b border-border-default flex items-center justify-between">
         <IntentOSLogo />
-        <button className="md:hidden text-text-muted hover:text-text-primary p-1" onClick={onClose}>✕</button>
+        <button className="md:hidden text-text-muted hover:text-text-primary p-1" onClick={onClose}><X className="w-5 h-5" /></button>
       </div>
 
         {/* Nav */}

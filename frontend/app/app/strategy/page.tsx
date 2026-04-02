@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain, AlertTriangle } from "lucide-react";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Strategy, ApiResponse, ExecutionResult } from "@/types";
@@ -388,8 +388,8 @@ export default function StrategyPage() {
               exit={{ opacity: 0 }}
               className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-5 py-4 space-y-1"
             >
-              <p className="text-sm font-semibold text-amber-400">
-                ⚠ Strategy execution blocked
+              <p className="text-sm font-semibold text-amber-400 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" /> Strategy execution blocked
               </p>
               <p className="text-xs text-amber-400/75">
                 {sim?.warnings?.[0] ??

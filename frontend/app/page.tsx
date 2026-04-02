@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import WalletConnect from "@/components/WalletConnect";
-import { BrainCircuit, Zap, ShieldAlert, Layers, Circle, ArrowRight, PlayCircle } from "lucide-react";
+import { BrainCircuit, Zap, ShieldAlert, Layers, Circle, ArrowRight, PlayCircle, MessageSquare } from "lucide-react";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { ProblemSolutionSection } from "@/components/ProblemSolutionSection";
 import { VideoModal } from "@/components/VideoModal";
@@ -159,7 +159,7 @@ export default function LandingPage() {
           {/* Node 1 */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <div className="bg-[#13161D]/90 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_15px_rgba(255,255,255,0.05)] relative z-10">
-              <span className="text-base text-white">💬</span>
+              <MessageSquare className="w-5 h-5 text-white" />
               <span className="text-sm font-semibold text-gray-200 tracking-wide">User Intent (Natural Language)</span>
             </div>
           </motion.div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain } from "lucide-react";
+import { Brain, Check } from "lucide-react";
 
 interface StrategyReasoningProps {
   reasoning: string[];
@@ -39,7 +39,7 @@ export default function StrategyReasoning({ reasoning }: StrategyReasoningProps)
             transition={{ delay: 0.1 + i * 0.07 }}
             className="flex items-start gap-2.5 text-sm text-text-secondary leading-relaxed"
           >
-            <span className="text-[#00F5D4] mt-0.5 flex-shrink-0 text-xs">✔</span>
+            <Check className="w-3.5 h-3.5 text-[#00F5D4] mt-0.5 flex-shrink-0" />
             <span>{bullet}</span>
           </motion.li>
         ))}

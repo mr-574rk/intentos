@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart2, Check, X } from "lucide-react";
 import type { SimulationResult } from "../types";
 
 const COLORS = ["#00F5D4", "#7C3AED", "#F59E0B", "#10B981", "#EF4444", "#3B82F6"];
@@ -23,14 +24,18 @@ export default function SimulationPanel({ simulation }: { simulation: Simulation
       className="glass-card p-6 space-y-5"
     >
       <div className="flex items-center gap-2">
-        <span className="text-xl">📊</span>
+        <BarChart2 className="w-5 h-5" />
         <h2 className="font-semibold text-text-primary">Simulation Results</h2>
         <span className={`ml-auto text-xs px-2.5 py-1 rounded-full border font-medium ${
           simulation.passed
             ? "bg-status-success/10 border-status-success/20 text-status-success"
             : "bg-status-error/10 border-status-error/20 text-status-error"
         }`}>
-          {simulation.passed ? "✓ Cleared" : "✗ Flagged"}
+          {simulation.passed ? (
+            <div className="flex items-center gap-1"><Check className="w-3 h-3"/> Cleared</div>
+          ) : (
+            <div className="flex items-center gap-1"><X className="w-3 h-3"/> Flagged</div>
+          )}
         </span>
       </div>
 

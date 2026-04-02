@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Lock, ArrowRightLeft, TrendingUp, Gift, Unlock, Download, HelpCircle } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -33,7 +33,15 @@ interface IntentInputProps {
 export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty }: IntentInputProps) {
   const [text, setText] = useState(defaultValue ?? "");
   const [focused, setFocused] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    handleResize(); // Init on client
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   
   // Suppress suggestions until balance check completes (walletEmpty !== null)
   const suggestions = walletEmpty === null ? [] : (walletEmpty ? SUGGESTIONS_EMPTY : SUGGESTIONS_FUNDED);
@@ -90,49 +98,49 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
             }}
-            placeholder="e.g. stake 0.5 INIT · swap USDC to INIT · enable autopilot"
+            placeholder={isMobile ? "e.g. stake 0.5 INIT..." : "e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"}
             disabled={loading || disabled || !isOnline}
-            className="w-full bg-transparent pt-4 px-5 pb-16 text-base text-text-primary
+            className="w-full h-full bg-transparent pt-4 pl-5 pb-12 pr-[100px] md:pr-[120px] text-base text-text-primary
                        placeholder:text-text-muted resize-none focus:outline-none focus:ring-0 focus:border-transparent border-none align-top leading-relaxed
-                       transition-all duration-300 ease-in-out h-full"
+                       transition-all duration-300 ease-in-out"
           />
 
-          {/* Toolbar row */}
-          <div className="absolute bottom-3 left-5 right-3 flex items-center justify-between">
-            <span className="text-xs text-text-muted">
-              {!isOnline ? (
-                <span className="text-red-400/70">Offline — reconnect to send</span>
-              ) : (
-                "⌘↵ to send"
-              )}
-            </span>
-            <motion.button
-              id="intent-submit-btn"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="rounded-full font-bold text-sm px-5 py-2.5 transition-all duration-200 flex items-center gap-2"
-              style={{
-                background: canSubmit ? "#00F5D4" : "rgba(255,255,255,0.06)",
-                color: canSubmit ? "#000" : "rgba(255,255,255,0.3)",
-                boxShadow: canSubmit ? "0 0 16px rgba(0,245,212,0.25)" : "none",
-                cursor: canSubmit ? "pointer" : "not-allowed",
-              }}
-              whileHover={canSubmit ? { scale: 1.03, boxShadow: "0 0 28px rgba(0,245,212,0.45)" } : undefined}
-              whileTap={canSubmit ? { scale: 0.97 } : undefined}
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Running…
-                </>
-              ) : (
-                <>Run <Sparkles className="w-4 h-4" /></>
-              )}
-            </motion.button>
-          </div>
+          {/* Bottom Left: Cmd to send helper */}
+          <span className="absolute bottom-4 left-5 text-xs text-text-muted hidden md:block pointer-events-none">
+            {!isOnline ? (
+              <span className="text-red-400/70">Offline — reconnect to send</span>
+            ) : (
+              "⌘↵ to send"
+            )}
+          </span>
+
+          {/* Bottom Right: Run Button */}
+          <motion.button
+            id="intent-submit-btn"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="absolute bottom-3 right-3 rounded-full font-bold text-sm px-5 py-2.5 transition-all duration-200 flex items-center gap-2"
+            style={{
+              background: canSubmit ? "#00F5D4" : "rgba(255,255,255,0.06)",
+              color: canSubmit ? "#000" : "rgba(255,255,255,0.3)",
+              boxShadow: canSubmit ? "0 0 16px rgba(0,245,212,0.25)" : "none",
+              cursor: canSubmit ? "pointer" : "not-allowed",
+            }}
+            whileHover={canSubmit ? { scale: 1.03, boxShadow: "0 0 28px rgba(0,245,212,0.45)" } : undefined}
+            whileTap={canSubmit ? { scale: 0.97 } : undefined}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Running…
+              </>
+            ) : (
+              <>Run <Sparkles className="w-4 h-4" /></>
+            )}
+          </motion.button>
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BrainCircuit, ListTree, PieChart, PackageCheck, Zap, Check, X, Loader2 } from "lucide-react";
+import { BrainCircuit, ListTree, PieChart, PackageCheck, Zap, Check, X, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import type { AgentTimeline as TimelineType, TimelineStepStatus } from "../types";
 
 // ── Mint pulse dot ─────────────────────────────────────────────────────────────
@@ -159,8 +159,8 @@ export default function AgentTimeline({ timeline, loading }: AgentTimelineProps)
             : timeline.overall === "failed"  ? "bg-red-500/10 border-red-500/25 text-red-400"
             : "bg-white/5 border-white/10 text-gray-400"
         }`}>
-          {timeline.overall === "complete" ? "✓ Complete"
-            : timeline.overall === "failed" ? "✗ Failed"
+          {timeline.overall === "complete" ? <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Complete</span>
+            : timeline.overall === "failed" ? <span className="inline-flex items-center gap-1"><XCircle className="w-3.5 h-3.5" /> Failed</span>
             : "● Processing"}
         </span>
       </div>

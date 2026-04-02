@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
+import { Check, Zap, Loader2 } from "lucide-react";
 
 interface ExecuteButtonProps {
   onExecute: () => Promise<void>;
@@ -32,7 +33,7 @@ export default function ExecuteButton({ onExecute, disabled, executed }: Execute
         animate={{ scale: 1, opacity: 1 }}
         className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl bg-status-success/10 border border-status-success/30 text-status-success font-semibold"
       >
-        <span className="text-xl">✓</span>
+        <Check className="w-5 h-5" />
         Strategy Executed Successfully
       </motion.div>
     );
@@ -54,12 +55,12 @@ export default function ExecuteButton({ onExecute, disabled, executed }: Execute
     >
       {loading ? (
         <span className="flex items-center justify-center gap-2">
-          <span className="animate-spin text-xl">◌</span>
+          <Loader2 className="animate-spin w-5 h-5" />
           Executing Bundle…
         </span>
       ) : (
         <span className="flex items-center justify-center gap-2">
-          ⚡ Execute Strategy
+          <Zap className="w-5 h-5" /> Execute Strategy
         </span>
       )}
       {/* Shimmer on hover */}

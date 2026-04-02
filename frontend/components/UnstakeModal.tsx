@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, AlertTriangle } from "lucide-react";
 
 interface UnstakeModalProps {
   open: boolean;
@@ -119,7 +119,7 @@ export default function UnstakeModal({
 
                 {/* Warning */}
                 <div className="flex gap-2 p-3 rounded-xl" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
-                  <span style={{ color: "#F59E0B" }} className="text-sm mt-0.5">⚠</span>
+                  <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                   <p className="text-xs text-text-muted leading-relaxed">
                     Unstaked INIT will be locked for <strong className="text-text-primary">21 days</strong> before returning to your wallet. You will not earn rewards during this period.
                   </p>

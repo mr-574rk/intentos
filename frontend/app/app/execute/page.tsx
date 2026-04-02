@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AgentTimeline from "@/components/AgentTimeline";
 import ExecuteButton from "@/components/ExecuteButton";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
-import { XCircle } from "lucide-react";
+import { XCircle, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { Strategy, ApiResponse, ExecutionResult, AgentTimeline as TimelineType, StrategyStep } from "@/types";
 import { API_URL, API_HEADERS } from "@/lib/config";
 
@@ -115,10 +115,10 @@ export default function ExecutePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5 text-3xl"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
           style={{ background: "rgba(0,245,212,0.08)", border: "1px solid rgba(0,245,212,0.15)" }}
         >
-          ⚡
+          <Zap className="w-8 h-8 text-[#00F5D4]" />
         </div>
         <h2 className="text-xl font-black text-text-primary mb-2">No execution plan available</h2>
         <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
@@ -202,14 +202,14 @@ export default function ExecutePage() {
         )}
 
         {error && (
-          <div className="text-sm text-status-error bg-status-error/10 border border-status-error/20 rounded-xl px-4 py-3">
-            ⚠ {error}
+          <div className="text-sm text-status-error bg-status-error/10 border border-status-error/20 rounded-xl px-4 py-3 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" /> <span className="pt-px">{error}</span>
           </div>
         )}
 
         {result && (
           <div className="glass-card p-5 space-y-3">
-            <p className="text-sm font-semibold text-status-success">✓ Execution complete</p>
+            <p className="text-sm font-semibold text-status-success items-center inline-flex gap-1.5"><CheckCircle2 className="w-4 h-4" /> Execution complete</p>
             <div className="text-xs text-text-muted space-y-1 font-mono">
               <p>Mode: <span className="text-text-primary">{result.mode}</span></p>
               <p>Tx Hash: <span className="text-accent-cyan">{result.txHash}</span></p>
