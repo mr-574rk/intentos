@@ -666,8 +666,8 @@ export default function IntentPage() {
         const data = await res.json();
         const seconds = Math.ceil((data.retryAfterMs ?? 30000) / 1000);
         setValidationError({
-          message: "Slow down a little ✋",
-          sub: `You've sent too many intents. Please wait ${seconds}s before trying again.`,
+          message: "Rate limit reached",
+          sub: `Too many intents submitted. Please wait ${seconds}s before trying again.`,
         });
         setLoading(false);
         return;
@@ -754,7 +754,7 @@ export default function IntentPage() {
       const msg = (err as Error).message ?? "";
       if (msg.includes("429") || msg.toLowerCase().includes("too many")) {
         setTransferResult(null);
-        setRecipientError({ message: "Slow down", sub: "You're submitting too fast. Please wait a moment and try again." });
+        setRecipientError({ message: "Rate limit reached", sub: "Too many requests. Please wait a moment before trying again." });
       } else {
         setTransferResult("error");
       }

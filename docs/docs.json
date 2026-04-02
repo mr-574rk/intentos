@@ -26,6 +26,7 @@
             "group": "Using IntentOS",
             "pages": [
               "example-intents",
+              "sending-tokens",
               "autopilot",
               "portfolio-dashboard"
             ]

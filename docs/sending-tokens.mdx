@@ -1,0 +1,68 @@
+---
+title: "Sending Tokens — .init Usernames & Addresses"
+description: "IntentOS supports sending INIT to both human-readable .init usernames and raw Initia bech32 addresses."
+---
+
+## Supported Recipient Formats
+
+When submitting a send intent, IntentOS accepts two recipient formats:
+
+| Format | Example | How it works |
+|---|---|---|
+| `.init` username | `alice.init` or `@alice.init` | Resolved via Initia nameservice before the transaction is built |
+| Initia address | `init1abc123...` | Validated (prefix, length, character set) before execution |
+
+---
+
+## .init Username Resolution
+
+IntentOS talks directly to the Initia nameservice to resolve usernames:
+
+```
+GET https://lcd.testnet.initia.xyz/initia/nameservice/v1/names/{username}
+```
+
+The `@` prefix is stripped automatically — both `alice.init` and `@alice.init` work identically.
+
+If the username is not registered on the Initia network, the transaction is **blocked before the Agent Timeline starts** and a clear error is shown inline.
+
+---
+
+## Example Intents
+
+```
+send 5 init to alice.init
+send 5 init to @alice.init
+send 5 init to init1qnk2uqgfhe3h4tur0e3wlrlnf7gkb5tgr6kq...
+```
+
+---
+
+## Validation Rules
+
+**Username (.init)**
+- Must end with `.init`
+- Resolved via Initia nameservice — must return a valid `init1` address
+
+**Raw Initia address**
+- Must start with `init1`
+- Minimum 39 characters
+- Lowercase bech32 encoding only (no uppercase after the prefix)
+
+---
+
+## Error Handling
+
+Errors appear inline in the Intent chat feed — no browser alerts.
+
+| Scenario | Error shown |
+|---|---|
+| Username not registered | "Username not found" — not registered on Initia network |
+| Invalid address format | "Invalid Initia address format" — character or length violation |
+| Nameservice unreachable | "Username resolution failed" — network connectivity issue |
+
+---
+
+## Recent Recipients
+
+After every successful send, the recipient (username and resolved address) is saved to your account in the IntentOS database. Future versions will surface recent recipients as autocomplete suggestions in the Intent input.
