@@ -146,7 +146,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
         </div>
 
         {/* User Profile Card */}
-        <div className="p-3 border border-white/10 rounded-xl bg-white/[0.02]">
+        <div className="w-full">
           <WalletConnect compact />
         </div>
       </div>
