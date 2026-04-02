@@ -481,6 +481,18 @@ function TxSentToast({ visible }: { visible: boolean }) {
   );
 }
 
+// ── Intent Detection ───────────────────────────────────────────────────────────
+function detectIntent(input: string) {
+  const text = input.toLowerCase();
+  if (text.includes("swap") || text.includes("buy") || text.includes("sell")) return "Swap Assets";
+  if (text.includes("unstake") || text.includes("undelegate")) return "Unstake INIT";
+  if (text.includes("claim")) return "Claim Rewards";
+  if (text.includes("stake") || text.includes("delegate")) return "Staking INIT";
+  if (text.includes("send") || text.includes("transfer")) return "Transfer Assets";
+  if (text.includes("grow") || text.includes("invest") || text.includes("yield") || text.includes("portfolio")) return "AI Portfolio Strategy";
+  return null;
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function IntentPage() {
   const router = useRouter();
@@ -501,6 +513,7 @@ export default function IntentPage() {
   const [walletEmpty, setWalletEmpty] = useState<boolean | null>(null);
   const [walletInitBalance, setWalletInitBalance] = useState<number>(0);
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
+  const [intentType, setIntentType] = useState<string | null>(null);
 
   // Transfer confirmation states
   const [transferConfirm, setTransferConfirm] = useState<TransferIntent | null>(null);
@@ -864,6 +877,24 @@ export default function IntentPage() {
                 </motion.div>
               )}
 
+            {/* ── Live Intent Recognition ─────────────────────────────── */}
+            {!timelineActive && intentType && !systemResponse && !loading && !transferConfirm && (
+              <motion.div
+                key="live-intent"
+                layout
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="rounded-2xl p-4 flex flex-col justify-center gap-1 mb-2 bg-[#13161D]/80 border border-[#00F5D4]/20 shadow-[0_0_15px_rgba(0,245,212,0.1)]"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00F5D4] animate-pulse" />
+                  <p className="text-[10px] text-[#00F5D4] font-bold uppercase tracking-widest">Detected Intent</p>
+                </div>
+                <p className="text-white font-medium pl-3.5 tracking-tight">{intentType}</p>
+              </motion.div>
+            )}
+
             {/* ── Agent Timeline / strategy flow ───────────────────────── */}
             {timelineActive && (
               <motion.div 
@@ -1071,6 +1102,7 @@ export default function IntentPage() {
             disabled={!!timeline || !isOnline || transferLoading || !!transferConfirm}
             defaultValue={rawText}
             walletEmpty={walletEmpty}
+            onTextChange={(val) => setIntentType(detectIntent(val))}
           />
         </div>
       </div>

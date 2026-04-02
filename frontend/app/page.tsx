@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import WalletConnect from "@/components/WalletConnect";
@@ -11,10 +11,16 @@ import { VideoModal } from "@/components/VideoModal";
 import DeepSpaceBackground from "@/components/DeepSpaceBackground";
 import LoadingCover from "@/components/LoadingCover";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
+import { wakeBackend } from "@/utils/wakeBackend";
 
 export default function LandingPage() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
   const { address } = useInterwovenKit();
+
+  useEffect(() => {
+    wakeBackend();
+  }, []);
+
   return (
     <main className="relative min-h-[100dvh] overflow-hidden flex flex-col bg-[#0D0F14]">
       <LoadingCover />

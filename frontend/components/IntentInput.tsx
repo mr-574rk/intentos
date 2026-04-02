@@ -28,9 +28,10 @@ interface IntentInputProps {
   defaultValue?: string;
   /** Pass true when wallet has no assets — switches to onboarding flow. Null means loading so suppress pills. */
   walletEmpty?: boolean | null;
+  onTextChange?: (text: string) => void;
 }
 
-export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty }: IntentInputProps) {
+export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty, onTextChange }: IntentInputProps) {
   const [text, setText] = useState(defaultValue ?? "");
   const [focused, setFocused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -59,6 +60,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
   const selectSuggestion = (s: string) => {
     setText(s);
     textareaRef.current?.focus();
+    if (onTextChange) onTextChange(s);
   };
 
   const canSubmit = !!text.trim() && !loading && !disabled && isOnline;
@@ -92,7 +94,10 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
             ref={textareaRef}
             id="intent-input"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (onTextChange) onTextChange(e.target.value);
+            }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             onKeyDown={(e) => {

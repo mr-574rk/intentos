@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { wakeBackend } from "@/utils/wakeBackend";
 import Sidebar from "@/components/Sidebar";
 import GlobalAutopilotToggle from "@/components/GlobalAutopilotToggle";
 import OfflineToast from "@/components/OfflineToast";
@@ -11,6 +12,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { address } = useInterwovenKit();
   const isConnected = !!address;
+
+  useEffect(() => {
+    wakeBackend();
+  }, []);
 
   return (
     <div className="flex h-[100dvh] w-full bg-bg-primary overflow-hidden">

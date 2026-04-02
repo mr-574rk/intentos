@@ -19,12 +19,23 @@ export default function StrategyHistory({ entries, address }: { entries?: Histor
   useEffect(() => {
     if (entries) return; // caller provided data — skip fetch
     let cancelled = false;
-    setLoading(true);
+    const cacheKey = `intentos_history_cache_${address || "all"}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached && list.length === 0) {
+      try {
+        setList(JSON.parse(cached));
+        setLoading(false);
+      } catch {}
+    } else if (list.length === 0) {
+      setLoading(true);
+    }
+    
     fetch(`${API_URL}/api/history${address ? `?address=${address}` : ""}`)
       .then((r) => r.json())
       .then((json) => {
         if (!cancelled) {
           setList(json.data ?? []);
+          localStorage.setItem(cacheKey, JSON.stringify(json.data ?? []));
           setLoading(false);
         }
       })
@@ -39,8 +50,8 @@ export default function StrategyHistory({ entries, address }: { entries?: Histor
 
   if (loading) {
     return (
-      <div className="glass-card p-12 text-center text-text-muted text-sm animate-pulse">
-        Loading strategy history…
+      <div className="flex flex-col gap-4 animate-pulse pt-2">
+        {[...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-2xl" style={{ background: "rgba(255,255,255,0.05)" }} />)}
       </div>
     );
   }

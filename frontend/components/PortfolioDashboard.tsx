@@ -379,7 +379,27 @@ export default function PortfolioDashboard() {
 
   const load = async () => {
     if (!address) { setLoading(false); return; }
-    setLoading(true); setError(null);
+    setError(null);
+    const cacheKey = `intentos_portfolio_cache_${address}`;
+    const cached = localStorage.getItem(cacheKey);
+    // Optimistic UI cache load
+    if (cached && !data) {
+      try {
+        const pd = JSON.parse(cached) as PortfolioData;
+        setData(pd);
+        setLoading(false);
+        const now = new Date();
+        const spark = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date(now); d.setDate(d.getDate() - (6 - i));
+          return { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), value: pd.totalValueUSD * (0.92 + Math.random() * 0.08) };
+        });
+        spark[6].value = pd.totalValueUSD;
+        setSparkData(spark);
+      } catch {}
+    } else if (!data) {
+      setLoading(true);
+    }
+
     try {
       const res  = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
       const json = await res.json();
@@ -390,6 +410,7 @@ export default function PortfolioDashboard() {
         totalValueUSD: json.totalValueUSD || 0,
       };
       setData(pd);
+      localStorage.setItem(cacheKey, JSON.stringify(pd));
       setLastUpdated(new Date());
       const now = new Date();
       const spark = Array.from({ length: 7 }, (_, i) => {
