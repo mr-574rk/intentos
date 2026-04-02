@@ -63,31 +63,36 @@ function parseTransferIntent(text: string): TransferIntent | null {
 }
 
 // ── Recipient verification ──────────────────────────────────────────────────────
-const INITIA_LCD = "https://lcd.testnet.initia.xyz";
-
 type RecipientResult =
   | { ok: true; address: string; displayName: string }
   | { ok: false; error: string; sub: string };
 
-async function resolveRecipient(raw: string): Promise<RecipientResult> {
+async function resolveRecipient(raw: string, apiUrl: string): Promise<RecipientResult> {
   const cleaned = raw.trim();
 
   // ── Case 1: .init username ──────────────────────────────────────────────────
   if (cleaned.toLowerCase().endsWith(".init")) {
-    const username = cleaned.replace(/^@/, "").toLowerCase();
     try {
-      const res = await fetch(`${INITIA_LCD}/initia/nameservice/v1/names/${username}`);
-      if (!res.ok) {
-        return { ok: false, error: "Username not found", sub: `"${username}" is not registered on the Initia network.` };
-      }
+      const res = await fetch(`${apiUrl}/api/nameservice/resolve/${encodeURIComponent(cleaned)}`, {
+        headers: { "ngrok-skip-browser-warning": "69420" },
+      });
       const json = await res.json();
-      const addr: string | undefined = json?.name?.owner || json?.address || json?.owner;
-      if (!addr || !addr.startsWith("init1")) {
-        return { ok: false, error: "Username not found", sub: `Could not resolve an Initia address for "${username}".` };
+
+      if (!json.success) {
+        return {
+          ok: false,
+          error: json.error ?? "Username not found",
+          sub: json.detail ?? `"${cleaned.replace(/^@/, "")}" is not registered on the Initia network.`,
+        };
       }
-      return { ok: true, address: addr, displayName: username };
+
+      return { ok: true, address: json.address, displayName: json.username ?? cleaned.replace(/^@/, "") };
     } catch {
-      return { ok: false, error: "Username resolution failed", sub: "Could not reach the Initia nameservice. Check your connection." };
+      return {
+        ok: false,
+        error: "Username resolution failed",
+        sub: "Could not contact the IntentOS backend. Check your connection.",
+      };
     }
   }
 
@@ -99,15 +104,6 @@ async function resolveRecipient(raw: string): Promise<RecipientResult> {
     // Optional: basic bech32 character check (alphanumeric, no uppercase after prefix)
     if (!/^init1[a-z0-9]{38,}$/.test(cleaned)) {
       return { ok: false, error: "Invalid Initia address format", sub: "Address contains invalid characters. Initia addresses use lowercase bech32 encoding." };
-    }
-    // Verify address exists on-chain via bank endpoint (light touch)
-    try {
-      const res = await fetch(`${INITIA_LCD}/cosmos/bank/v1beta1/balances/${cleaned}`);
-      if (!res.ok && res.status !== 200) {
-        return { ok: false, error: "Address not recognised", sub: "Could not verify this address on the Initia testnet." };
-      }
-    } catch {
-      // Network error — don't block; let the tx fail on-chain with a clear error
     }
     const short = `${cleaned.slice(0, 8)}…${cleaned.slice(-6)}`;
     return { ok: true, address: cleaned, displayName: short };
@@ -849,7 +845,7 @@ export default function IntentPage() {
     const transferIntent = parseTransferIntent(text);
     if (transferIntent) {
       setRecipientVerifying(true);
-      const result = await resolveRecipient(transferIntent.recipient);
+      const result = await resolveRecipient(transferIntent.recipient, API_URL);
       setRecipientVerifying(false);
       if (!result.ok) {
         setRecipientError({ message: result.error, sub: result.sub });

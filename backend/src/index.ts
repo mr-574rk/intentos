@@ -11,6 +11,7 @@ import timelineRouter from "./routes/agentTimeline";
 import lcdRouter from "./routes/lcd";
 import portfolioRouter from "./routes/portfolio";
 import recipientsRouter from "./routes/recipients";
+import nameserviceRouter from "./routes/nameservice";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
@@ -39,6 +40,9 @@ app.use("/api/agent", timelineRouter);
 app.use("/api/lcd", lcdRouter);
 app.use("/api/portfolio", portfolioRouter);
 app.use("/api/recipients", recipientsRouter);
+app.use("/api/nameservice", nameserviceRouter);
+
+console.log(`   Network: ${process.env.INITIA_NETWORK ?? "testnet"} (LCD: ${process.env.INITIA_REST ?? "https://lcd.testnet.initia.xyz"})\n`);
 
 // ── 404 ──────────────────────────────────────────────────────
 app.use((_req, res) => {
