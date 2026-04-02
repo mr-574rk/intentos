@@ -2,11 +2,11 @@
   "name": "intentos-backend",
   "version": "1.0.0",
   "description": "Express REST API — orchestration middleware for IntentOS",
-  "main": "dist/index.js",
+  "main": "dist/backend/src/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/backend/src/index.js",
     "clean": "rm -rf dist"
   },
   "dependencies": {

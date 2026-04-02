@@ -15,7 +15,7 @@ export function useWalletGuard() {
 
   useEffect(() => {
     if (!address) {
-      router.replace("/onboarding");
+      router.replace("/app/onboarding");
     }
   }, [address, router]);
 

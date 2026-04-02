@@ -35,7 +35,7 @@ export default function WalletConnect({
     // Connected — send straight to the app
     return (
       <Link
-        href="/onboarding"
+        href="/app/onboarding"
         id="nav-open-dashboard-btn"
         className="flex items-center gap-2 bg-[#00F5D4]/10 border border-[#00F5D4]/30 text-[#00F5D4] font-bold text-sm px-5 py-2 rounded-full transition-all hover:bg-[#00F5D4]/20 hover:shadow-[0_0_14px_rgba(0,245,212,0.3)] hover:scale-[1.02]"
       >

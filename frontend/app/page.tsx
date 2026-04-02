@@ -1,16 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import WalletConnect from "@/components/WalletConnect";
 import { BrainCircuit, Zap, ShieldAlert, Layers, Circle, ArrowRight, PlayCircle } from "lucide-react";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { ProblemSolutionSection } from "@/components/ProblemSolutionSection";
+import { VideoModal } from "@/components/VideoModal";
 
 export default function LandingPage() {
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
   return (
     <main className="relative min-h-[100dvh] overflow-hidden flex flex-col bg-[#0D0F14]">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes flowDown {
           from { stroke-dashoffset: 24; }
           to { stroke-dashoffset: 0; }
@@ -59,8 +63,8 @@ export default function LandingPage() {
           </div>
           <p className="text-sm font-semibold tracking-widest uppercase text-[#00F5D4] mb-4">The AI operating system for DeFi on Initia.</p>
           <h1 className="text-5xl md:text-7xl font-black leading-tight mb-6 tracking-tight text-white drop-shadow-2xl">
-            Your Goals.<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F5D4] to-[#7C3AED]">On-Chain.</span><br/>
+            Your Goals.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F5D4] to-[#7C3AED]">On-Chain.</span><br />
             Autonomously.
           </h1>
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mt-6 leading-relaxed font-medium">
@@ -70,56 +74,56 @@ export default function LandingPage() {
 
         {/* AI Data Loom Visualization */}
         <div className="w-full max-w-5xl h-64 relative flex items-center justify-between px-4 sm:px-10 mt-12 mb-12 pointer-events-none z-10">
-          
+
           {/* Connecting Lines (Background) */}
           <div className="absolute inset-0 flex items-center justify-center z-0">
-             <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent absolute top-1/2 -translate-y-1/2" />
+            <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent absolute top-1/2 -translate-y-1/2" />
           </div>
 
           {/* Left Side: Input Data Packets */}
           <div className="flex flex-col justify-between h-full w-full max-w-[280px] z-10">
             <div className="flex flex-col gap-6 w-full justify-center h-full">
-               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-4">
-                 <p className="text-sm text-white font-medium">&quot;stake 1 init&quot;</p>
-               </motion.div>
-               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 4, delay: 0.5 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-center">
-                 <p className="text-sm text-white font-medium">&quot;swap usdc to init&quot;</p>
-               </motion.div>
-               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3.5, delay: 1 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-2">
-                 <p className="text-sm text-white font-medium">&quot;grow my portfolio&quot;</p>
-               </motion.div>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-4">
+                <p className="text-sm text-white font-medium">&quot;stake 1 init&quot;</p>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 4, delay: 0.5 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-center">
+                <p className="text-sm text-white font-medium">&quot;swap usdc to init&quot;</p>
+              </motion.div>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3.5, delay: 1 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-2">
+                <p className="text-sm text-white font-medium">&quot;grow my portfolio&quot;</p>
+              </motion.div>
             </div>
           </div>
 
           {/* Center: The AI Core */}
           <div className="relative flex items-center justify-center z-20 mx-4">
-             <div className="absolute w-32 h-32 md:w-40 md:h-40 rounded-full border border-[#00F5D4]/10 animate-[spin_10s_linear_infinite]" />
-             <div className="absolute w-24 h-24 md:w-32 md:h-32 rounded-full border border-[#00F5D4]/20 animate-[spin_7s_linear_infinite_reverse]" />
-             <div className="w-16 h-16 md:w-24 md:h-24 bg-[#13161D] border border-[#00F5D4]/40 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(0,245,212,0.4)] animate-pulse relative z-10">
-                <span className="font-black text-xl md:text-2xl text-[#00F5D4] tracking-widest drop-shadow-[0_0_10px_#00F5D4]">AI</span>
-             </div>
+            <div className="absolute w-32 h-32 md:w-40 md:h-40 rounded-full border border-[#00F5D4]/10 animate-[spin_10s_linear_infinite]" />
+            <div className="absolute w-24 h-24 md:w-32 md:h-32 rounded-full border border-[#00F5D4]/20 animate-[spin_7s_linear_infinite_reverse]" />
+            <div className="w-16 h-16 md:w-24 md:h-24 bg-[#13161D] border border-[#00F5D4]/40 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(0,245,212,0.4)] animate-pulse relative z-10">
+              <span className="font-black text-xl md:text-2xl text-[#00F5D4] tracking-widest drop-shadow-[0_0_10px_#00F5D4]">AI</span>
+            </div>
           </div>
 
           {/* Right Side: Execution Threads/Rollups */}
           <div className="flex flex-col justify-between h-full z-10 w-[140px] md:w-[180px]">
             <div className="flex flex-col gap-6 h-full justify-center items-end">
               <div className="flex items-center gap-3">
-                 <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Simulating Risk</div>
-                 <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
-                    <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
-                 </motion.div>
+                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Simulating Risk</div>
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
+                  <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
+                </motion.div>
               </div>
               <div className="flex items-center gap-3">
-                 <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Routing to Dex</div>
-                 <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.7 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
-                    <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
-                 </motion.div>
+                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Routing to Dex</div>
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.7 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
+                  <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
+                </motion.div>
               </div>
               <div className="flex items-center gap-3">
-                 <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Executing on Initia</div>
-                 <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 1.4 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
-                    <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
-                 </motion.div>
+                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Executing on Initia</div>
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 1.4 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
+                  <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
+                </motion.div>
               </div>
             </div>
           </div>
@@ -127,18 +131,16 @@ export default function LandingPage() {
 
         {/* CTA */}
         <div className="flex flex-col sm:flex-row gap-5 items-center justify-center relative z-30 mb-8 mt-4">
-          <Link href="/onboarding" className="bg-[#00F5D4] text-gray-900 rounded-full font-bold text-base px-8 py-4 transition-all hover:scale-[1.02] hover:bg-[#00E5C4] hover:shadow-[0_0_20px_rgba(0,245,212,0.4)] tracking-wide pointer-events-auto">
+          <Link href="/app/onboarding" className="bg-[#00F5D4] text-gray-900 rounded-full font-bold text-base px-8 py-4 transition-all hover:scale-[1.02] hover:bg-[#00E5C4] hover:shadow-[0_0_20px_rgba(0,245,212,0.4)] tracking-wide pointer-events-auto">
             Launch App
           </Link>
-          <a
-            href="https://github.com/intentos/intentos"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setIsVideoOpen(true)}
             className="flex items-center justify-center bg-[#13161D] border border-white/10 text-white rounded-full font-semibold text-base px-8 py-4 transition-all hover:bg-white/10 pointer-events-auto group"
           >
             <PlayCircle className="w-5 h-5 mr-2 text-gray-400 group-hover:text-white transition-colors" />
             Watch Demo
-          </a>
+          </button>
         </div>
       </section>
 
@@ -149,10 +151,10 @@ export default function LandingPage() {
         <h2 className="text-sm uppercase tracking-widest text-[#00F5D4] mb-8 text-center font-bold">
           How IntentOS works under the hood
         </h2>
-        
+
         {/* Animated Architecture Graph */}
         <div className="relative flex flex-col items-center mt-4 mb-6 w-full max-w-3xl mx-auto pointer-events-none lg:scale-[0.9] lg:origin-top">
-          
+
           {/* Node 1 */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <div className="bg-[#13161D]/90 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_15px_rgba(255,255,255,0.05)] relative z-10">
@@ -168,11 +170,11 @@ export default function LandingPage() {
 
           {/* Node 2 */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
-             <div className="bg-[#13161D]/90 backdrop-blur-xl border border-[#00F5D4]/30 px-8 py-4 rounded-2xl flex flex-col items-center shadow-[0_0_30px_rgba(0,245,212,0.15)] relative z-10">
-               <BrainCircuit className="w-8 h-8 text-[#00F5D4] mb-2" />
-               <span className="text-base font-bold text-white tracking-wide">IntentOS AI Agent Engine</span>
-               <span className="text-xs text-[#00F5D4]/80 mt-1 uppercase tracking-widest font-medium">Validates & Builds Strategy</span>
-             </div>
+            <div className="bg-[#13161D]/90 backdrop-blur-xl border border-[#00F5D4]/30 px-8 py-4 rounded-2xl flex flex-col items-center shadow-[0_0_30px_rgba(0,245,212,0.15)] relative z-10">
+              <BrainCircuit className="w-8 h-8 text-[#00F5D4] mb-2" />
+              <span className="text-base font-bold text-white tracking-wide">IntentOS AI Agent Engine</span>
+              <span className="text-xs text-[#00F5D4]/80 mt-1 uppercase tracking-widest font-medium">Validates & Builds Strategy</span>
+            </div>
           </motion.div>
 
           {/* Split Connections */}
@@ -183,16 +185,16 @@ export default function LandingPage() {
 
           {/* Nodes 3A and 3B */}
           <div className="flex justify-between w-full max-w-md relative z-10 gap-6">
-             {/* 3A */}
-             <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="flex-1 bg-[#13161D]/90 backdrop-blur-xl border border-[#F59E0B]/30 px-4 py-3 rounded-xl flex flex-col items-center shadow-[0_0_20px_rgba(245,158,11,0.1)]">
-               <ShieldAlert className="w-5 h-5 text-[#F59E0B] mb-2" />
-               <span className="text-sm font-bold text-white mb-1">Risk & Yield Simulation</span>
-             </motion.div>
-             {/* 3B */}
-             <motion.div initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="flex-1 bg-[#13161D]/90 backdrop-blur-xl border border-[#8B5CF6]/30 px-4 py-3 rounded-xl flex flex-col items-center shadow-[0_0_20px_rgba(139,92,246,0.1)]">
-               <Layers className="w-5 h-5 text-[#8B5CF6] mb-2" />
-               <span className="text-sm font-bold text-white mb-1">Transaction Bundler</span>
-             </motion.div>
+            {/* 3A */}
+            <motion.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="flex-1 bg-[#13161D]/90 backdrop-blur-xl border border-[#F59E0B]/30 px-4 py-3 rounded-xl flex flex-col items-center shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+              <ShieldAlert className="w-5 h-5 text-[#F59E0B] mb-2" />
+              <span className="text-sm font-bold text-white mb-1">Risk & Yield Simulation</span>
+            </motion.div>
+            {/* 3B */}
+            <motion.div initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }} className="flex-1 bg-[#13161D]/90 backdrop-blur-xl border border-[#8B5CF6]/30 px-4 py-3 rounded-xl flex flex-col items-center shadow-[0_0_20px_rgba(139,92,246,0.1)]">
+              <Layers className="w-5 h-5 text-[#8B5CF6] mb-2" />
+              <span className="text-sm font-bold text-white mb-1">Transaction Bundler</span>
+            </motion.div>
           </div>
 
           {/* Merging Connections */}
@@ -203,13 +205,13 @@ export default function LandingPage() {
 
           {/* Final Node */}
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}>
-             <div className="bg-[#13161D]/95 backdrop-blur-xl border border-[#00F5D4]/50 px-10 py-4 rounded-2xl flex flex-col items-center shadow-[0_0_40px_rgba(0,245,212,0.25)] relative z-10 w-64 lg:w-80">
-               <div className="flex items-center gap-3 mb-1">
-                 <Zap className="w-5 h-5 text-[#00F5D4]" fill="currentColor" />
-                 <span className="text-lg font-black text-white tracking-widest uppercase">Initia L1 Execution</span>
-               </div>
-               <span className="text-xs text-[#00F5D4]/80 uppercase tracking-[0.2em] font-medium">Gasless · 1-Click Deploy</span>
-             </div>
+            <div className="bg-[#13161D]/95 backdrop-blur-xl border border-[#00F5D4]/50 px-10 py-4 rounded-2xl flex flex-col items-center shadow-[0_0_40px_rgba(0,245,212,0.25)] relative z-10 w-64 lg:w-80">
+              <div className="flex items-center gap-3 mb-1">
+                <Zap className="w-5 h-5 text-[#00F5D4]" fill="currentColor" />
+                <span className="text-lg font-black text-white tracking-widest uppercase">Initia L1 Execution</span>
+              </div>
+              <span className="text-xs text-[#00F5D4]/80 uppercase tracking-[0.2em] font-medium">Gasless · 1-Click Deploy</span>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -225,10 +227,10 @@ export default function LandingPage() {
         <div className="flex flex-col md:flex-row justify-center gap-10 md:gap-8 relative">
           {/* The Glowing Track (Hidden on Mobile) */}
           <div className="hidden md:flex absolute top-[11px] left-0 right-[16.6%] h-[2px] z-0">
-             <div className="w-[20%] h-full bg-gradient-to-r from-transparent to-[#00F5D4]/50" />
-             <div className="w-[80%] h-full bg-white/10" />
+            <div className="w-[20%] h-full bg-gradient-to-r from-transparent to-[#00F5D4]/50" />
+            <div className="w-[80%] h-full bg-white/10" />
           </div>
-          
+
           {/* Card 1: Q2 2026 */}
           <div className="flex-1 flex flex-col relative z-10 w-full group">
             <div className="w-6 h-6 rounded-full bg-[#00F5D4] border-[4px] border-[#0D0F14] animate-pulse shadow-[0_0_15px_#00F5D4] mx-auto mb-10 shrink-0 relative z-20" />
@@ -281,6 +283,9 @@ export default function LandingPage() {
         <span>© 2026 IntentOS · MIT License</span>
         <span>Built on Initia</span>
       </footer>
+
+      {/* Embedded Video Demo Modal */}
+      <VideoModal isOpen={isVideoOpen} onClose={() => setIsVideoOpen(false)} />
     </main>
   );
 }
