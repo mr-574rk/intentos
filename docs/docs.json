@@ -2,15 +2,12 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "IntentOS Documentation",
-
   "colors": {
     "primary": "#14F195",
     "light": "#2FFFCF",
     "dark": "#0FBF95"
   },
-
   "favicon": "/favicon.svg",
-
   "navigation": {
     "tabs": [
       {
@@ -65,7 +62,6 @@
         ]
       }
     ],
-
     "global": {
       "anchors": [
         {
@@ -86,12 +82,10 @@
       ]
     }
   },
-
   "logo": {
-    "light": "/logo-light.svg",
-    "dark": "/logo-dark.svg"
+    "light": "/dark-logo.svg",
+    "dark": "/light-logo.svg"
   },
-
   "navbar": {
     "links": [
       {
@@ -103,14 +97,12 @@
         "href": "https://intentox.vercel.app"
       }
     ],
-
     "primary": {
       "type": "button",
       "label": "Launch IntentOS",
       "href": "https://intentox.vercel.app"
     }
   },
-
   "contextual": {
     "options": [
       "copy",
@@ -122,7 +114,6 @@
       "vscode"
     ]
   },
-
   "footer": {
     "socials": {
       "x": "https://x.com/intentosai",
