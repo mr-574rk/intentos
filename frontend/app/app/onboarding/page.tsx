@@ -1,7 +1,7 @@
 "use client";
 
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
@@ -9,6 +9,11 @@ import { IntentOSLogo } from "@/components/IntentOSLogo";
 export default function OnboardingPage() {
   const { address, openConnect } = useInterwovenKit();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // If already connected, drop them instantly into the workspace
   useEffect(() => {
@@ -16,6 +21,15 @@ export default function OnboardingPage() {
       router.replace("/app/intent");
     }
   }, [address, router]);
+
+  // Prevent flash of onboarding UI if already connected or hydratiing
+  if (!mounted || address) {
+    return (
+      <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#00F5D4]/20 border-t-[#00F5D4] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center px-4 relative overflow-hidden">

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 
 interface VideoModalProps {
   isOpen: boolean;
@@ -9,6 +10,13 @@ interface VideoModalProps {
 }
 
 export function VideoModal({ isOpen, onClose }: VideoModalProps) {
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+
+  // Reset loading state if modal is toggled
+  if (!isOpen && !isVideoLoading) {
+    setIsVideoLoading(true);
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -31,14 +39,22 @@ export function VideoModal({ isOpen, onClose }: VideoModalProps) {
             >
               <X className="w-5 h-5" />
             </button>
+
+            {/* Spinner Loader */}
+            {isVideoLoading && (
+              <div className="absolute inset-0 z-[98] flex items-center justify-center bg-black">
+                <Loader2 className="w-8 h-8 text-[#00F5D4] animate-spin" />
+              </div>
+            )}
             
             {/* YouTube Iframe */}
             <iframe
               src={`${process.env.NEXT_PUBLIC_YOUTUBE_URL || "https://www.youtube.com/embed/urCzIw0fHck"}?autoplay=1&rel=0&modestbranding=1`}
               allow="autoplay; encrypted-media; picture-in-picture"
-              className="w-full h-full"
+              className={`w-full h-full relative z-[99] transition-opacity duration-500 ${isVideoLoading ? 'opacity-0' : 'opacity-100'}`}
               frameBorder="0"
               allowFullScreen
+              onLoad={() => setIsVideoLoading(false)}
             />
           </motion.div>
         </div>

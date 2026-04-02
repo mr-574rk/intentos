@@ -67,8 +67,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <OfflineToast />
 
         {/* Global Page Footer */}
-        <div className="absolute bottom-3 right-6 pointer-events-none hidden md:block">
-           <p className="text-[10px] font-black text-text-muted/30 uppercase tracking-[0.2em]">
+        <div className="absolute bottom-3 right-4 md:right-6 pointer-events-none">
+           <p className="text-[10px] sm:text-[10px] font-black text-text-muted/30 uppercase tracking-[0.2em]">
              Powered by Initia
            </p>
         </div>

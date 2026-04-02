@@ -67,7 +67,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
         className="rounded-2xl transition-all duration-500"
         style={{
           padding: "1.5px",
-          background: glowGradient,
+          backgroundImage: glowGradient,
           backgroundSize: "300% 300%",
           animation: focused ? "glowRingRotate 3s ease-in-out infinite" : "none",
           boxShadow: focused
@@ -77,8 +77,8 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
       >
         {/* Inner card — dark background so text stays readable */}
         <div
-          className="rounded-2xl overflow-hidden transition-all duration-300"
-          style={{ background: "#13161D" }}
+          className="rounded-2xl overflow-hidden transition-all duration-300 relative flex flex-col justify-between"
+          style={{ background: "#13161D", height: (focused || text.length > 0) ? "160px" : "80px" }}
         >
           <textarea
             ref={textareaRef}
@@ -90,15 +90,15 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
             }}
-            placeholder="e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"
+            placeholder="e.g. stake 0.5 INIT · swap USDC to INIT · enable autopilot"
             disabled={loading || disabled || !isOnline}
-            rows={3}
-            className="w-full bg-transparent px-5 pt-5 pb-3 text-base text-text-primary
-                       placeholder:text-text-muted resize-none focus:outline-none leading-relaxed"
+            className="w-full bg-transparent pt-4 px-5 pb-16 text-base text-text-primary
+                       placeholder:text-text-muted resize-none focus:outline-none focus:ring-0 focus:border-transparent border-none align-top leading-relaxed
+                       transition-all duration-300 ease-in-out h-full"
           />
 
           {/* Toolbar row */}
-          <div className="flex items-center justify-between px-5 pb-5 pt-2">
+          <div className="absolute bottom-3 left-5 right-3 flex items-center justify-between">
             <span className="text-xs text-text-muted">
               {!isOnline ? (
                 <span className="text-red-400/70">Offline — reconnect to send</span>

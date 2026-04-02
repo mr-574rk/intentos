@@ -10,9 +10,11 @@ import { ProblemSolutionSection } from "@/components/ProblemSolutionSection";
 import { VideoModal } from "@/components/VideoModal";
 import DeepSpaceBackground from "@/components/DeepSpaceBackground";
 import LoadingCover from "@/components/LoadingCover";
+import { useInterwovenKit } from "@initia/interwovenkit-react";
 
 export default function LandingPage() {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const { address } = useInterwovenKit();
   return (
     <main className="relative min-h-[100dvh] overflow-hidden flex flex-col bg-[#0D0F14]">
       <LoadingCover />
@@ -130,8 +132,8 @@ export default function LandingPage() {
 
         {/* CTA */}
         <div className="flex flex-col sm:flex-row gap-5 items-center justify-center relative z-30 mb-8 mt-4">
-          <Link href="/app/onboarding" className="bg-[#00F5D4] text-gray-900 rounded-full font-bold text-base px-8 py-4 transition-all hover:scale-[1.02] hover:bg-[#00E5C4] hover:shadow-[0_0_20px_rgba(0,245,212,0.4)] tracking-wide pointer-events-auto">
-            Launch App
+          <Link href={address ? "/app/intent" : "/app/onboarding"} className="bg-[#00F5D4] text-gray-900 rounded-full font-bold text-base px-8 py-4 transition-all hover:scale-[1.02] hover:bg-[#00E5C4] hover:shadow-[0_0_20px_rgba(0,245,212,0.4)] tracking-wide pointer-events-auto text-center">
+            {address ? "Go to Dashboard" : "Launch App"}
           </Link>
           <button
             onClick={() => setIsVideoOpen(true)}
@@ -296,10 +298,10 @@ export default function LandingPage() {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
-              href="/app/onboarding" 
-              className="bg-[#00F5D4] text-gray-900 font-bold text-lg px-8 py-4 rounded-full hover:bg-white transition-colors duration-300 shadow-[0_0_30px_rgba(0,245,212,0.3)] w-full sm:w-auto"
+              href={address ? "/app/intent" : "/app/onboarding"}
+              className="bg-[#00F5D4] text-gray-900 font-bold text-lg px-8 py-4 rounded-full hover:bg-white transition-colors duration-300 shadow-[0_0_30px_rgba(0,245,212,0.3)] w-full sm:w-auto text-center"
             >
-              Launch App
+              {address ? "Go to Dashboard" : "Launch App"}
             </Link>
           </div>
         </div>

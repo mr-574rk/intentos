@@ -30,6 +30,7 @@ import {
   ExternalLink,
   AlertTriangle,
   SendHorizonal,
+  Maximize2,
 } from "lucide-react";
 
 // ── Detect goal-based (no explicit amount) intents ───────────────────────────
@@ -129,55 +130,111 @@ function needsDeploymentModal(text: string): boolean {
   return GOAL_PATTERNS.test(text) && !HAS_AMOUNT.test(text);
 }
 
-// ── Premium Receive Card ───────────────────────────────────────────────────────
+// ── Premium Receive Card (Compact + Modal) ────────────────────────────────────
 function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () => void }) {
   const [copied, setCopied] = useState(false);
   const [activeToken, setActiveToken] = useState<"INIT" | "USDC">("INIT");
-  const copy = async () => {
+  const [showFullQR, setShowFullQR] = useState(false);
+  
+  const copy = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     await navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+  
   return (
-    <div className="relative rounded-3xl p-5 sm:p-6 bg-[#13161D]/80 backdrop-blur-md border border-white/10 shadow-2xl flex flex-col items-center my-4 max-h-[80vh] overflow-y-auto w-full">
-      <button onClick={onDismiss} className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-full z-10">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
-      </button>
-
-      <div className="flex flex-col gap-4 items-center w-full mt-2">
-        <div className="flex bg-black/40 p-1 rounded-full w-full max-w-[200px] border border-white/5">
-          {(["INIT", "USDC"] as const).map(t => (
-            <button key={t} onClick={() => setActiveToken(t)}
-              className={`flex-1 py-1.5 text-[11px] font-bold rounded-full transition-all flex items-center justify-center gap-1.5 ${activeToken === t ? "bg-[#00F5D4] text-black shadow-sm" : "text-text-muted hover:text-white"}`}>
-              {t === "INIT" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/INIT.png" className="w-3.5 h-3.5 rounded-full" />}
-              {t === "USDC" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/USDC.png" className="w-3.5 h-3.5 rounded-full" />}
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <div className="w-48 h-48 sm:w-56 sm:h-56 bg-white p-3 rounded-2xl flex items-center justify-center shadow-xl shrink-0">
-          <div className="w-full h-full rounded-xl overflow-hidden flex items-center justify-center bg-gray-50/50">
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${address}`} alt="Wallet QR Code" className="w-full h-full object-contain" />
-          </div>
-        </div>
-
-        <div className="w-full flex flex-col gap-2 items-center shrink-0">
-          <p className="text-sm font-bold text-white text-center">Your {activeToken} Address</p>
-          <div className="w-full bg-black/40 rounded-xl p-1.5 flex items-center border border-white/5 relative group transition-all hover:border-[#00F5D4]/30">
-            <div className="flex-1 overflow-x-auto pl-3 pr-10 py-2">
-              <p className="font-mono text-[13px] tracking-tight text-gray-300 break-all">{address}</p>
+    <>
+      <div className="flex flex-row items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl relative my-4 transition-all hover:bg-white-[0.07]">
+        {/* Left Side: Thumbnail QR + Label */}
+        <div className="flex flex-col items-center gap-1.5 shrink-0">
+          <div 
+            onClick={() => setShowFullQR(true)}
+            className="w-16 h-16 bg-white p-1.5 rounded-xl cursor-pointer relative group shadow-lg"
+          >
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${address}`} alt="Wallet QR Code" className="w-full h-full object-contain" />
+            <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+              <Maximize2 className="w-5 h-5 text-white" />
             </div>
-            <button onClick={copy}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/5 hover:bg-[#00F5D4]/10 text-gray-400 hover:text-[#00F5D4] transition-all">
-              {copied
-                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>}
-            </button>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 opacity-60">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-[#00F5D4]"><path d="m18 15-6-6-6 6"/></svg>
+            <span className="text-[8px] font-black uppercase tracking-widest text-[#00F5D4] whitespace-nowrap">Tap to expand</span>
           </div>
         </div>
+
+        {/* Right Side: Details */}
+        <div className="flex flex-col flex-1 min-w-0 pr-6 mt-1">
+          <div className="flex bg-black/40 p-0.5 rounded-full w-fit border border-white/5 mb-2 shrink-0">
+            {(["INIT", "USDC"] as const).map(t => (
+              <button key={t} onClick={() => setActiveToken(t)}
+                className={`px-2.5 py-1 text-[10px] font-bold rounded-full transition-all flex items-center gap-1 ${activeToken === t ? "bg-[#00F5D4] text-black shadow-sm" : "text-text-muted hover:text-white"}`}>
+                {t === "INIT" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/INIT.png" className="w-3 h-3 rounded-full" />}
+                {t === "USDC" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/USDC.png" className="w-3 h-3 rounded-full" />}
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center w-full gap-2 group cursor-pointer" onClick={copy}>
+            <p className="font-mono text-[13px] tracking-tight text-gray-400 truncate w-full">{address}</p>
+            <div className="text-gray-500 group-hover:text-[#00F5D4] transition-colors shrink-0">
+              {copied
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>}
+            </div>
+          </div>
+        </div>
+
+        <button onClick={onDismiss} className="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-1.5 rounded-full z-10">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+        </button>
       </div>
-    </div>
+
+      {/* Full Screen QR Modal */}
+      <AnimatePresence>
+        {showFullQR && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center p-6"
+            onClick={() => setShowFullQR(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="bg-white p-5 rounded-3xl shadow-[0_0_50px_rgba(0,245,212,0.15)] outline outline-1 outline-white/20"
+              onClick={e => e.stopPropagation()}
+            >
+              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${address}`} alt="Wallet QR Code Full" className="w-64 h-64 sm:w-80 sm:h-80 object-contain" />
+            </motion.div>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-white mt-8 font-mono text-sm tracking-widest break-all text-center max-w-sm bg-white/10 px-4 py-2 rounded-xl backdrop-blur-md border border-white/10"
+            >
+              {address}
+            </motion.p>
+            
+            <motion.button 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.15 }}
+              onClick={() => setShowFullQR(false)}
+              className="mt-8 px-8 py-3 rounded-full bg-white/10 text-white font-bold tracking-wide hover:bg-white/20 transition-all border border-white/20 hover:scale-[1.02] active:scale-95"
+            >
+              Close
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
@@ -462,12 +519,12 @@ export default function IntentPage() {
     fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS })
       .then(r => r.json())
       .then((json: PortfolioAPIData) => {
-        const totalBalance = json.wallet?.reduce((s, a) => s + (a.valueUSD ?? 0), 0) ?? 0;
         const initBal = json.wallet?.find(a => a.symbol === "INIT")?.balance ?? 0;
-        setWalletEmpty(totalBalance === 0);
+        const isEmpty = !json.wallet || json.wallet.length === 0;
+        setWalletEmpty(isEmpty);
         setWalletInitBalance(initBal);
       })
-      .catch(() => { /* ignore */ });
+      .catch(() => { setWalletEmpty(false); });
   }, [address]);
 
   // Auto-scroll to tx result card when it appears
