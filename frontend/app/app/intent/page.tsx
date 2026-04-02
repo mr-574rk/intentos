@@ -756,7 +756,7 @@ export default function IntentPage() {
   };
 
   const timelineActive = loading || !!timeline || !!error;
-  const anyActive = timelineActive || !!systemResponse || !!validationError || validating || !!transferConfirm;
+  const anyActive = timelineActive || !!systemResponse || !!validationError || validating || !!transferConfirm || !!intentType;
 
   return (
     <>
