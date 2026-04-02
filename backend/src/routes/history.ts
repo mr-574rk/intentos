@@ -9,8 +9,8 @@ const router = Router();
  * GET /api/history
  * Returns all completed strategies from the persistent SQLite store.
  */
-router.get("/", (_req: Request, res: Response) => {
-  const rows: HistoryRow[] = getAllHistory();
+router.get("/", async (_req: Request, res: Response) => {
+  const rows: HistoryRow[] = await getAllHistory();
 
   const history: HistoryEntry[] = rows.map((row) => ({
     id: row.id,

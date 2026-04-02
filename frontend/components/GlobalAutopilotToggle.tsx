@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { readAutopilotState, writeAutopilotState } from "@/lib/autopilotState";
 import { Bot } from "lucide-react";
 
-export default function GlobalAutopilotToggle() {
+export default function GlobalAutopilotToggle({ inline = false }: { inline?: boolean }) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(false);
 
@@ -30,9 +30,13 @@ export default function GlobalAutopilotToggle() {
   };
 
   return (
-    <div 
+    <div
       onClick={openSettings}
-      className="absolute top-4 right-4 md:top-6 md:right-8 z-50 flex items-center gap-3 px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200"
+      className={`${
+        inline
+          ? "relative flex"
+          : "absolute top-4 right-4 md:top-6 md:right-8 z-50"
+      } flex items-center gap-3 px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200`}
       style={{
         background: enabled ? "rgba(0,245,212,0.08)" : "rgba(255,255,255,0.03)",
         border: `1px solid ${enabled ? "rgba(0,245,212,0.2)" : "rgba(255,255,255,0.08)"}`,
@@ -40,7 +44,7 @@ export default function GlobalAutopilotToggle() {
     >
       <div className="flex items-center gap-1.5">
         <Bot className="w-4 h-4" style={{ color: enabled ? "#00F5D4" : "#828A9E" }} />
-        <span className="text-xs font-semibold" style={{ color: enabled ? "#00F5D4" : "#828A9E" }}>
+        <span className="hidden sm:inline-block text-xs font-medium" style={{ color: enabled ? "#00F5D4" : "#828A9E" }}>
           Autopilot
         </span>
       </div>

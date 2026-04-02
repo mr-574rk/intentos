@@ -34,7 +34,7 @@ export function VideoModal({ isOpen, onClose }: VideoModalProps) {
             
             {/* YouTube Iframe */}
             <iframe
-              src="https://www.youtube.com/embed/urCzIw0fHck?autoplay=1&rel=0&modestbranding=1"
+              src={`${process.env.NEXT_PUBLIC_YOUTUBE_URL || "https://www.youtube.com/embed/urCzIw0fHck"}?autoplay=1&rel=0&modestbranding=1`}
               allow="autoplay; encrypted-media; picture-in-picture"
               className="w-full h-full"
               frameBorder="0"
