@@ -9,15 +9,21 @@ const pool = new Pool({
 // Initialise schema on first connection
 pool.query(`
   CREATE TABLE IF NOT EXISTS history (
-    id          TEXT PRIMARY KEY,
-    "intentText" TEXT NOT NULL,
-    bundle      TEXT NOT NULL,
-    simulation  TEXT NOT NULL,
-    result      TEXT NOT NULL,
-    performance TEXT,
-    "createdAt"  TEXT NOT NULL
+    id              TEXT PRIMARY KEY,
+    "intentText"     TEXT NOT NULL,
+    bundle          TEXT NOT NULL,
+    simulation      TEXT NOT NULL,
+    result          TEXT NOT NULL,
+    performance     TEXT,
+    "createdAt"      TEXT NOT NULL,
+    "walletAddress"  TEXT
   );
-`).catch((err: any) => console.error("[DB] Schema init error:", err));
+`)
+  .then(() =>
+    // Safe migration for existing tables that predate the walletAddress column
+    pool.query(`ALTER TABLE history ADD COLUMN IF NOT EXISTS "walletAddress" TEXT`)
+  )
+  .catch((err: any) => console.error("[DB] Schema init error:", err));
 
 export interface HistoryRow {
   id: string;
@@ -37,17 +43,19 @@ export async function saveHistory(entry: {
   result: object;
   performance?: string;
   createdAt: string;
+  walletAddress?: string;
 }) {
   await pool.query(
-    `INSERT INTO history (id, "intentText", bundle, simulation, result, performance, "createdAt")
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO history (id, "intentText", bundle, simulation, result, performance, "createdAt", "walletAddress")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (id) DO UPDATE
-     SET "intentText" = EXCLUDED."intentText",
-         bundle = EXCLUDED.bundle,
-         simulation = EXCLUDED.simulation,
-         result = EXCLUDED.result,
-         performance = EXCLUDED.performance,
-         "createdAt" = EXCLUDED."createdAt"`,
+     SET "intentText"    = EXCLUDED."intentText",
+         bundle          = EXCLUDED.bundle,
+         simulation      = EXCLUDED.simulation,
+         result          = EXCLUDED.result,
+         performance     = EXCLUDED.performance,
+         "createdAt"     = EXCLUDED."createdAt",
+         "walletAddress" = EXCLUDED."walletAddress"`,
     [
       entry.id,
       entry.intentText,
@@ -56,16 +64,30 @@ export async function saveHistory(entry: {
       JSON.stringify(entry.result),
       entry.performance ?? null,
       entry.createdAt,
+      entry.walletAddress ?? null,
     ]
   );
 }
 
 export async function getAllHistory(): Promise<HistoryRow[]> {
   const result = await pool.query(
-    `SELECT id, "intentText", bundle, simulation, result, performance, "createdAt"
+    `SELECT id, "intentText", bundle, simulation, result, performance, "createdAt", "walletAddress"
      FROM history
      ORDER BY "createdAt" DESC
      LIMIT 100`
+  );
+  return result.rows as HistoryRow[];
+}
+
+/** Returns only rows belonging to a specific wallet address. */
+export async function getHistoryByAddress(address: string): Promise<HistoryRow[]> {
+  const result = await pool.query(
+    `SELECT id, "intentText", bundle, simulation, result, performance, "createdAt", "walletAddress"
+     FROM history
+     WHERE "walletAddress" = $1
+     ORDER BY "createdAt" DESC
+     LIMIT 100`,
+    [address]
   );
   return result.rows as HistoryRow[];
 }

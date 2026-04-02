@@ -58,10 +58,13 @@ router.post("/:strategyId", async (req: Request, res: Response) => {
   const { strategyId } = req.params;
   const { sessionKey, strategy } = req.body as { sessionKey?: string; strategy?: Strategy };
 
+  // sessionKey is the connected wallet address passed from the frontend
+  const walletAddress = sessionKey && sessionKey.startsWith("init") ? sessionKey : undefined;
+
   try {
     const result = await executeStrategy(strategyId, sessionKey ?? "");
 
-    // Persist to history SQLite DB if strategy snapshot was sent with the request
+    // Persist to history DB if strategy snapshot was sent with the request
     if (strategy) {
       saveHistory({
         id: strategyId,
@@ -71,6 +74,7 @@ router.post("/:strategyId", async (req: Request, res: Response) => {
         result,
         performance: result.status === "success" ? `+${(Math.random() * 4 + 1).toFixed(1)}%` : undefined,
         createdAt: new Date().toISOString(),
+        walletAddress,
       });
     }
 

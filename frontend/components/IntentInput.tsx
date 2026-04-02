@@ -26,15 +26,18 @@ interface IntentInputProps {
   loading?: boolean;
   disabled?: boolean;
   defaultValue?: string;
-  /** Pass true when wallet has no assets — suggestions switch to onboarding flow */
-  walletEmpty?: boolean;
+  /** Pass true when wallet has no assets — switches to onboarding flow. Null means loading so suppress pills. */
+  walletEmpty?: boolean | null;
 }
 
 export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty }: IntentInputProps) {
   const [text, setText] = useState(defaultValue ?? "");
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const suggestions = walletEmpty ? SUGGESTIONS_EMPTY : SUGGESTIONS_FUNDED;
+  
+  // Suppress suggestions until balance check completes (walletEmpty !== null)
+  const suggestions = walletEmpty === null ? [] : (walletEmpty ? SUGGESTIONS_EMPTY : SUGGESTIONS_FUNDED);
+  
   const isOnline = useOnlineStatus();
 
   const handleSubmit = () => {

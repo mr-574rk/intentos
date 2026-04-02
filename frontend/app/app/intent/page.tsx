@@ -426,7 +426,7 @@ export default function IntentPage() {
   const [showDeploy, setShowDeploy] = useState(false);
   const [rawText, setRawText] = useState("");
   const [systemResponse, setSystemResponse] = useState<SystemResponse | null>(null);
-  const [walletEmpty, setWalletEmpty] = useState(false);
+  const [walletEmpty, setWalletEmpty] = useState<boolean | null>(null);
   const [walletInitBalance, setWalletInitBalance] = useState<number>(0);
   const [activeStrategy, setActiveStrategy] = useState<Strategy | null>(null);
 
