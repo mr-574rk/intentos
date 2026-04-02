@@ -2,12 +2,19 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { RESTClient, bcs } from "@initia/initia.js";
 import { NETWORK_CONFIG } from "../../../config/networkConfig";
+import { toBech32 } from "@cosmjs/encoding";
 
 const router = Router();
 const restClient = new RESTClient(NETWORK_CONFIG.lcd);
 
 // Module address for testnet usernames contract
 const MODULE_ADDRESS = "0x42cd8467b1c86e59bf319e5664a09b6b5840bb3fac64f5ce690b5041c530565a";
+
+function hexToInitAddress(hex: string): string {
+  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const bytes = Buffer.from(clean, "hex");
+  return toBech32("init", bytes);
+}
 
 /**
  * GET /api/nameservice/resolve/:username
@@ -68,7 +75,14 @@ router.get("/resolve/:username", async (req: Request, res: Response) => {
       });
     }
 
-    return res.json({ success: true, address: resolvedAddress, username: `${username}.init` });
+    const initAddress = hexToInitAddress(resolvedAddress);
+
+    return res.json({
+      success: true,
+      address: initAddress,
+      hexAddress: resolvedAddress,
+      username: `${username}.init`
+    });
   } catch (err: any) {
     console.error("[nameservice] error:", err?.response?.data || err?.message || err);
     return res.status(502).json({

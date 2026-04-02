@@ -85,7 +85,7 @@ IntentOS integrates deeply with the Initia ecosystem:
 
 - **InterwovenKit Wallet Integration** — native Initia wallet UX and Cosmos transaction signing via `@initia/interwovenkit-react`
 - **Move Smart Contracts** — `StrategyExecutor` and adapter modules written in Initia Move, deployed on `initiation-2`
-- **`.init` Username Resolution** — send assets by typing `alice.init` or `@alice.init`; IntentOS resolves the username to an on-chain address via the Initia nameservice (`/initia/nameservice/v1/names/{username}`) before any transaction is built — invalid usernames are blocked early, before the Agent Timeline starts
+- **`.init` Username Resolution** — send assets by typing `alice.init` or `@alice.init`; IntentOS deeply integrates with the Initia Move VM, using proprietary BCS-serialized view functions against the core on-chain smart contracts to resolve identity precisely before the Agent Timeline ever begins; invalid addresses are blocked instantaneously.
 - **Native Staking Integration** — direct interaction with Cosmos staking modules (`MsgDelegate`, `MsgUndelegate`, `MsgWithdrawDelegatorReward`)
 - **Native DEX Routing** — `dex_adapter.move` routes swaps through Initia's built-in AMM without third-party bridges
 - **Initia Testnet Execution** — all strategies executed on-chain (`initiation-2`) via `https://rpc.testnet.initia.xyz`
@@ -263,7 +263,7 @@ IntentOS is built specifically for the Initia ecosystem — not a generic EVM to
 | Integration Point | Implementation |
 |---|---|
 | **Wallet Connection** | `@initia/interwovenkit-react` — native Initia wallet UX with Cosmos signing |
-| **Username Resolution** | `.init` usernames resolved via `GET /initia/nameservice/v1/names/{username}` on the Initia LCD before any transfer is built; invalid usernames are blocked early with a clear inline error |
+| **Username Resolution** | `.init` usernames resolved via direct Move VM view functions and BCS serialization, querying the core on-chain smart contracts directly without relying on generic HTTP name wrappers |
 | **Testnet Transactions** | All executions target `initiation-2` via `https://rpc.testnet.initia.xyz` |
 | **Move Smart Contracts** | Custom Move modules deployed on Initia for strategy execution |
 | **DEX Integration** | `dex_adapter.move` routes through Initia's native DEX |

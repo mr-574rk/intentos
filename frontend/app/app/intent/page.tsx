@@ -384,73 +384,69 @@ function ConfirmTransactionCard({
       style={{ background: "#13161D" }}
     >
       {/* Header strip */}
-      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/5"
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-3 border-b border-white/5"
         style={{ background: "rgba(0,245,212,0.04)" }}>
-        <span className="flex items-center justify-center w-7 h-7 rounded-xl flex-shrink-0"
+        <span className="flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0"
           style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.2)" }}>
-          <SendHorizonal className="w-3.5 h-3.5" style={{ color: "#00F5D4" }} />
+          <SendHorizonal className="w-3 h-3" style={{ color: "#00F5D4" }} />
         </span>
-        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#00F5D4" }}>Confirm Transaction</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#00F5D4" }}>Confirm Transaction</p>
       </div>
 
-      <div className="px-5 py-5 space-y-4">
+      <div className="p-3 sm:p-4">
         {/* Transfer summary */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-1">
+          <div className="py-1.5 flex justify-between items-center border-b border-white/5 last:border-0">
             <span className="text-xs text-text-muted">Sending</span>
-            <span className="text-base font-black text-text-primary">
+            <span className="text-sm font-black text-text-primary">
               {transfer.amount} <span style={{ color: "#00F5D4" }}>{transfer.token}</span>
             </span>
           </div>
-          <div className="flex justify-between items-start">
+          <div className="py-1.5 flex justify-between items-start border-b border-white/5 last:border-0">
             <span className="text-xs text-text-muted">Recipient</span>
-            <span className="text-xs font-mono text-text-secondary text-right max-w-[200px] break-all">
+            <span className="text-[11px] font-mono text-text-secondary text-right max-w-[200px] break-all leading-tight mt-0.5">
               {transfer.recipient}
             </span>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="py-1.5 flex justify-between items-center border-b border-white/5 last:border-0">
             <span className="text-xs text-text-muted">Network Fee</span>
-            <span className="text-xs font-semibold text-emerald-400">Gasless (Initia)</span>
+            <span className="text-[11px] font-semibold text-emerald-400">Gasless (Initia)</span>
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="h-px bg-white/5" />
-
         {/* Warning */}
-        <div className="flex gap-2.5 items-start rounded-xl p-3"
-          style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}>
+        <div className="mt-3 p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-start gap-2">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-400/80 leading-relaxed">
+          <p className="text-[10px] sm:text-xs text-orange-200/80 leading-tight">
             Transactions are irreversible. Verify the recipient address before proceeding.
           </p>
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 mt-4">
           <button
             onClick={onReject}
             disabled={loading}
-            className="flex-1 py-3 text-sm font-bold rounded-full border border-white/10 bg-white/5
+            className="flex-1 py-2 text-xs font-bold rounded-xl border border-white/10 bg-white/5
                        hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400
-                       text-text-secondary transition-all duration-200 disabled:opacity-40"
+                       text-text-secondary transition-colors duration-200 disabled:opacity-40"
           >
             Reject
           </button>
           <button
             onClick={onProceed}
             disabled={loading}
-            className="flex-1 py-3 text-sm font-bold rounded-full transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60"
+            className="flex-1 py-2 text-xs font-bold rounded-xl transition-colors duration-200 flex items-center justify-center gap-1.5 disabled:opacity-60"
             style={{
               background: loading ? "rgba(0,245,212,0.3)" : "#00F5D4",
               color: "#000",
-              boxShadow: loading ? "none" : "0 0 20px rgba(0,245,212,0.3)",
+              boxShadow: loading ? "none" : "0 0 15px rgba(0,245,212,0.3)",
             }}
           >
             {loading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" />Sending…</>
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" />Sending…</>
             ) : (
-              <>Proceed <ArrowUpRight className="w-4 h-4" /></>
+              <>Proceed <ArrowUpRight className="w-3.5 h-3.5" /></>
             )}
           </button>
         </div>
@@ -759,6 +755,8 @@ export default function IntentPage() {
   const handleTransferProceed = async () => {
     if (!transferConfirm) return;
     setTransferLoading(true);
+    setTransferResult(null);
+    setRecipientError(null);
     try {
       // Use the resolved address for execution, not the raw input
       const recipientAddr = transferConfirm.resolvedAddress ?? transferConfirm.recipient;
@@ -1067,7 +1065,7 @@ export default function IntentPage() {
                   <div>
                     <p className="text-sm font-bold text-red-300">Transaction failed</p>
                     <p className="text-xs text-red-400/70 mt-1">Please try again or check your connection.</p>
-                    <button onClick={resetTransferFlow} className="text-xs text-red-400 underline mt-2">Try again</button>
+                    <button onClick={handleTransferProceed} className="text-xs text-red-400 underline mt-2">Try again</button>
                   </div>
                 </motion.div>
               )}

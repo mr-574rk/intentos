@@ -9,17 +9,17 @@ When submitting a send intent, IntentOS accepts two recipient formats:
 
 | Format | Example | How it works |
 |---|---|---|
-| `.init` username | `alice.init` or `@alice.init` | Resolved via Initia nameservice before the transaction is built |
+| `.init` username | `alice.init` or `@alice.init` | Resolved securely against the Initia Move VM before the transaction is built |
 | Initia address | `init1abc123...` | Validated (prefix, length, character set) before execution |
 
 ---
 
 ## .init Username Resolution
 
-IntentOS talks directly to the Initia nameservice to resolve usernames:
+IntentOS secures identity by communicating entirely via proprietary BCS binary-encoded payloads fired directly at the on-chain Initia Move VM modules:
 
-```
-GET https://lcd.testnet.initia.xyz/initia/nameservice/v1/names/{username}
+```javascript
+restClient.move.view(MODULE_ADDRESS, ...args)
 ```
 
 The `@` prefix is stripped automatically — both `alice.init` and `@alice.init` work identically.
@@ -42,7 +42,7 @@ send 5 init to init1qnk2uqgfhe3h4tur0e3wlrlnf7gkb5tgr6kq...
 
 **Username (.init)**
 - Must end with `.init`
-- Resolved via Initia nameservice — must return a valid `init1` address
+- Resolved against the underlying smart contract — must return a valid `init1` or `0x` hex address
 
 **Raw Initia address**
 - Must start with `init1`
