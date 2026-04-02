@@ -1,8 +1,15 @@
 {
+  "project_name": "IntentOS",
   "name": "IntentOS",
-  "description": "An AI-powered financial operating system built on Initia. Users describe goals in natural language and IntentOS converts them into executable on-chain DeFi strategies — from staking and swapping to full portfolio management.",
+  "team_name": "NodeBase",
+  "description": "IntentOS is an AI financial operating system built on Initia that converts natural-language goals into executable DeFi strategies.",
+  "category": "AI & Tooling",
+  "contract_language": "Move",
+  "chain": "Initia",
+  "repo_url": "https://github.com/mr-574rk/intentos",
   "repository": "https://github.com/mr-574rk/intentos",
-  "demo": "https://app.intent-os.xyz",
+  "demo": "https://intentox.vercel.app/",
+  "demo_video": "https://youtube.com/watch?v=tVpuoN79Lgs",
   "video": "https://youtu.be/tVpuoN79Lgs",
   "contracts": [
     {
@@ -27,7 +34,6 @@
     "Framer Motion",
     "Recharts"
   ],
-  "chain": "initiation-2",
   "rpc": "https://rpc.testnet.initia.xyz",
   "lcd": "https://lcd.testnet.initia.xyz"
 }
