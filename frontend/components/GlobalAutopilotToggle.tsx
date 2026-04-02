@@ -34,17 +34,17 @@ export default function GlobalAutopilotToggle({ inline = false }: { inline?: boo
       onClick={openSettings}
       className={`${
         inline
-          ? "relative flex"
-          : "absolute top-4 right-4 md:top-6 md:right-8 z-50"
-      } flex items-center gap-3 px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200`}
-      style={{
+          ? "flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-2 py-1 sm:px-3 sm:py-1.5 cursor-pointer"
+          : "hidden md:flex absolute top-4 right-4 md:top-6 md:right-8 z-50 items-center gap-3 px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200"
+      }`}
+      style={!inline ? {
         background: enabled ? "rgba(0,245,212,0.08)" : "rgba(255,255,255,0.03)",
         border: `1px solid ${enabled ? "rgba(0,245,212,0.2)" : "rgba(255,255,255,0.08)"}`,
-      }}
+      } : undefined}
     >
       <div className="flex items-center gap-1.5">
-        <Bot className="w-4 h-4" style={{ color: enabled ? "#00F5D4" : "#828A9E" }} />
-        <span className="hidden sm:inline-block text-xs font-medium" style={{ color: enabled ? "#00F5D4" : "#828A9E" }}>
+        <Bot className="w-4 h-4" style={{ color: inline ? "#9CA3AF" : (enabled ? "#00F5D4" : "#828A9E") }} />
+        <span className={inline ? "hidden sm:inline-block text-xs text-gray-400" : "hidden sm:inline-block text-xs font-medium"} style={!inline ? { color: enabled ? "#00F5D4" : "#828A9E" } : undefined}>
           Autopilot
         </span>
       </div>
@@ -52,7 +52,7 @@ export default function GlobalAutopilotToggle({ inline = false }: { inline?: boo
       {/* Apple-style Switch */}
       <button 
         onClick={toggle}
-        className="relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none"
+        className="relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none shrink-0"
         style={{
           background: enabled ? "#00F5D4" : "rgba(255,255,255,0.15)",
         }}
