@@ -8,7 +8,7 @@ import {
 } from "./strategyLifecycle";
 import { runIntentWorkflow } from "./intentWorkflow";
 import { guardExecution } from "./executionGuard";
-import { executeBundle } from "intentos-execution-engine/src/bundleExecutor";
+import { executeBundle } from "../../execution-engine/src/bundleExecutor";
 // ── Agent Controller ─────────────────────────────────────────
 
 /**
