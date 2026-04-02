@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import WalletConnect from "@/components/WalletConnect";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { BrainCircuit, PieChart, History, X } from "lucide-react";
+import { BrainCircuit, PieChart, History, X, BookOpen, ExternalLink } from "lucide-react";
 
 const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}>
@@ -41,7 +41,7 @@ import { IntentOSLogo } from "@/components/IntentOSLogo";
 const NAV_ITEMS = [
   { href: "/app/intent",    icon: BrainCircuit, label: "Chat" },
   { href: "/app/portfolio", icon: PieChart,     label: "Portfolio" },
-  { href: "/app/history",   icon: History,      label: "History" },
+  { href: "/app/activity",  icon: History,      label: "Activity" },
 ];
 
 function shortenAddress(addr: string) {
@@ -103,6 +103,28 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             </Link>
           );
         })}
+
+        {/* Divider */}
+        <div className="my-4 border-t border-white/5 mx-3" />
+
+        {/* Docs Link with Tooltip */}
+        <div className="relative group/tooltip px-0">
+          <a
+            href="https://intentos.mintlify.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-all duration-150 group"
+          >
+            <BookOpen className="w-[18px] h-[18px] text-text-secondary group-hover:text-[#00F5D4] transition-colors" strokeWidth={2} />
+            <span className="flex-1">Docs</span>
+            <ExternalLink className="w-3 h-3 opacity-30 group-hover:opacity-100 transition-opacity" />
+          </a>
+          
+          {/* Custom Tooltip */}
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 rounded-lg bg-[#13161D]/90 backdrop-blur-md border border-white/10 text-[10px] font-bold text-[#00F5D4] uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-all duration-200 shadow-2xl z-50 translate-x-[-8px] group-hover/tooltip:translate-x-0">
+            Developer Documentation
+          </div>
+        </div>
       </nav>
 
       {/* ── Bottom Section ─────────────────────────────────── */}

@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Copy } from "lucide-react";
 import { Pagination } from "./Pagination";
-import type { HistoryEntry } from "../types";
+import type { ActivityEntry } from "../types";
 import { API_URL, EXPLORER } from "@/lib/config";
 
 
 
-export default function StrategyHistory({ entries, address }: { entries?: HistoryEntry[]; address?: string }) {
-  const [list, setList] = useState<HistoryEntry[]>(entries ?? []);
+export default function StrategyActivity({ entries, address }: { entries?: ActivityEntry[]; address?: string }) {
+  const [list, setList] = useState<ActivityEntry[]>(entries ?? []);
   const [loading, setLoading] = useState(!entries);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,7 +19,7 @@ export default function StrategyHistory({ entries, address }: { entries?: Histor
   useEffect(() => {
     if (entries) return; // caller provided data — skip fetch
     let cancelled = false;
-    const cacheKey = `intentos_history_cache_${address || "all"}`;
+    const cacheKey = `intentos_activity_cache_${address || "all"}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached && list.length === 0) {
       try {
@@ -59,7 +59,7 @@ export default function StrategyHistory({ entries, address }: { entries?: Histor
   if (error) {
     return (
       <div className="glass-card p-12 text-center text-red-400 text-sm">
-        Failed to load history: {error}
+        Failed to load activity: {error}
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function StrategyHistory({ entries, address }: { entries?: Histor
   if (list.length === 0) {
     return (
       <div className="glass-card p-12 text-center text-text-muted text-sm">
-        No strategy history yet. Execute your first strategy to see results here.
+        No strategy activity yet. Execute your first strategy to see results here.
       </div>
     );
   }

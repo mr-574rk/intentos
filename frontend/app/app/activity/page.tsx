@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
-import StrategyHistory from "@/components/StrategyHistory";
+import StrategyActivity from "@/components/StrategyActivity";
 import { Zap, Bot, Terminal } from "lucide-react";
 import { Pagination } from "@/components/Pagination";
 
@@ -20,7 +20,7 @@ function SystemEvents({ address }: { address: string }) {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(`intentos_system_events_${address}`);
+      const raw = localStorage.getItem(`intentos_system_activity_${address}`);
       if (raw) setEvents(JSON.parse(raw) as SystemEvent[]);
       else setEvents([]);
     } catch { /* ignore */ }
@@ -33,7 +33,7 @@ function SystemEvents({ address }: { address: string }) {
           style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.15)" }}>
           <Bot className="w-5 h-5" style={{ color: "#7C3AED" }} />
         </div>
-        <p className="text-sm font-semibold text-text-primary mb-1">No system events yet</p>
+        <p className="text-sm font-semibold text-text-primary mb-1">No system activity yet</p>
         <p className="text-xs text-text-muted">Try: <span className="font-mono">&quot;enable autopilot&quot;</span> on the Intent page</p>
       </div>
     );
@@ -84,7 +84,7 @@ function SystemEvents({ address }: { address: string }) {
 
 type Tab = "transactions" | "system";
 
-export default function HistoryPage() {
+export default function ActivityPage() {
   const { isConnected, address } = useWalletGuard();
   const [tab, setTab] = useState<Tab>("transactions");
 
@@ -93,7 +93,7 @@ export default function HistoryPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div>
-        <h1 className="text-2xl font-black text-text-primary mb-1">History</h1>
+        <h1 className="text-2xl font-black text-text-primary mb-1">Activity</h1>
         <p className="text-text-secondary text-sm">All past transactions and system events.</p>
       </div>
 
@@ -122,7 +122,7 @@ export default function HistoryPage() {
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.15 }}
         >
-          {tab === "transactions" ? <StrategyHistory address={address} /> : <SystemEvents address={address} />}
+          {tab === "transactions" ? <StrategyActivity address={address} /> : <SystemEvents address={address} />}
         </motion.div>
       </AnimatePresence>
     </div>

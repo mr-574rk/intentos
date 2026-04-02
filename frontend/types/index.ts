@@ -167,9 +167,9 @@ export interface AgentTimeline {
   completedAt?: string;
 }
 
-// ── History ──────────────────────────────────────────────────
+// ── Activity ─────────────────────────────────────────────────
 
-export interface HistoryEntry {
+export interface ActivityEntry {
   id: string;
   intentText: string;
   bundle: StrategyBundle;
