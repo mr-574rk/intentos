@@ -48,16 +48,95 @@ const HAS_AMOUNT = /\b\d+(\.\d+)?\b/;
 interface TransferIntent {
   amount: string;
   token: string;
-  recipient: string;
+  recipient: string;         // raw input (may be username or address)
+  resolvedAddress?: string;  // validated on-chain address
+  displayName?: string;      // friendly label for the UI
 }
 
 function parseTransferIntent(text: string): TransferIntent | null {
-  // Matches: "send 5 INIT to init1xyz..." or "transfer 0.5 USDC to 0xABC..."
+  // Matches init1 addresses, .init usernames (@alice.init or alice.init), 0x addresses
   const match = text.match(
-    /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+(init1[a-zA-Z0-9]{30,}|0x[a-fA-F0-9]{8,}|[a-zA-Z0-9._-]{3,}@[a-zA-Z0-9._-]{2,})/i
+    /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+((?:@?[a-zA-Z0-9._-]+\.init)|init1[a-zA-Z0-9]{30,}|0x[a-fA-F0-9]{8,}|[a-zA-Z0-9._-]{3,}@[a-zA-Z0-9._-]{2,})/i
   );
   if (!match) return null;
   return { amount: match[2], token: match[3].toUpperCase(), recipient: match[4] };
+}
+
+// ── Recipient verification ──────────────────────────────────────────────────────
+const INITIA_LCD = "https://lcd.testnet.initia.xyz";
+
+type RecipientResult =
+  | { ok: true; address: string; displayName: string }
+  | { ok: false; error: string; sub: string };
+
+async function resolveRecipient(raw: string): Promise<RecipientResult> {
+  const cleaned = raw.trim();
+
+  // ── Case 1: .init username ──────────────────────────────────────────────────
+  if (cleaned.toLowerCase().endsWith(".init")) {
+    const username = cleaned.replace(/^@/, "").toLowerCase();
+    try {
+      const res = await fetch(`${INITIA_LCD}/initia/nameservice/v1/names/${username}`);
+      if (!res.ok) {
+        return { ok: false, error: "Username not found", sub: `"${username}" is not registered on the Initia network.` };
+      }
+      const json = await res.json();
+      const addr: string | undefined = json?.name?.owner || json?.address || json?.owner;
+      if (!addr || !addr.startsWith("init1")) {
+        return { ok: false, error: "Username not found", sub: `Could not resolve an Initia address for "${username}".` };
+      }
+      return { ok: true, address: addr, displayName: username };
+    } catch {
+      return { ok: false, error: "Username resolution failed", sub: "Could not reach the Initia nameservice. Check your connection." };
+    }
+  }
+
+  // ── Case 2: raw init1 address ───────────────────────────────────────────────
+  if (cleaned.startsWith("init1")) {
+    if (cleaned.length < 39) {
+      return { ok: false, error: "Invalid Initia address", sub: "Address is too short. init1 addresses are at least 39 characters." };
+    }
+    // Optional: basic bech32 character check (alphanumeric, no uppercase after prefix)
+    if (!/^init1[a-z0-9]{38,}$/.test(cleaned)) {
+      return { ok: false, error: "Invalid Initia address format", sub: "Address contains invalid characters. Initia addresses use lowercase bech32 encoding." };
+    }
+    // Verify address exists on-chain via bank endpoint (light touch)
+    try {
+      const res = await fetch(`${INITIA_LCD}/cosmos/bank/v1beta1/balances/${cleaned}`);
+      if (!res.ok && res.status !== 200) {
+        return { ok: false, error: "Address not recognised", sub: "Could not verify this address on the Initia testnet." };
+      }
+    } catch {
+      // Network error — don't block; let the tx fail on-chain with a clear error
+    }
+    const short = `${cleaned.slice(0, 8)}…${cleaned.slice(-6)}`;
+    return { ok: true, address: cleaned, displayName: short };
+  }
+
+  // ── Case 3: 0x or anything else — unsupported format ───────────────────────
+  return {
+    ok: false,
+    error: "Invalid address format",
+    sub: `"${cleaned}" is not a valid Initia address or .init username. Initia addresses start with init1, or use a .init username like alice.init.`,
+  };
+}
+
+// ── Recent recipients — saved to backend DB ──────────────────────────────────────────────
+async function saveRecentRecipient(
+  walletOwner: string,
+  name: string,
+  address: string,
+  apiUrl: string
+) {
+  try {
+    await fetch(`${apiUrl}/api/recipients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ walletOwner, name, address }),
+    });
+  } catch {
+    // Non-critical — silent fail
+  }
 }
 
 // ── Portfolio API response shape ───────────────────────────────────────────────
@@ -520,6 +599,8 @@ export default function IntentPage() {
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferResult, setTransferResult] = useState<string | null>(null); // txHash
   const [showTxToast, setShowTxToast] = useState(false);
+  const [recipientVerifying, setRecipientVerifying] = useState(false);
+  const [recipientError, setRecipientError] = useState<{ message: string; sub: string } | null>(null);
 
   // Auto-scroll ref for the tx result card
   const txResultRef = useRef<HTMLDivElement>(null);
@@ -579,6 +660,19 @@ export default function IntentPage() {
         headers: API_HEADERS,
         body: JSON.stringify({ text }),
       });
+
+      // Rate limit
+      if (res.status === 429) {
+        const data = await res.json();
+        const seconds = Math.ceil((data.retryAfterMs ?? 30000) / 1000);
+        setValidationError({
+          message: "Slow down a little ✋",
+          sub: `You've sent too many intents. Please wait ${seconds}s before trying again.`,
+        });
+        setLoading(false);
+        return;
+      }
+
       const data: ApiResponse<Strategy | AmbiguityResponse> = await res.json();
       if (!data.success || !data.data) throw new Error(data.error ?? "Pipeline failed");
 
@@ -609,8 +703,9 @@ export default function IntentPage() {
     if (!transferConfirm) return;
     setTransferLoading(true);
     try {
-      // Step 1: Parse the transfer intent → get a strategy with an ID
-      const intentText = `send ${transferConfirm.amount} ${transferConfirm.token} to ${transferConfirm.recipient}`;
+      // Use the resolved address for execution, not the raw input
+      const recipientAddr = transferConfirm.resolvedAddress ?? transferConfirm.recipient;
+      const intentText = `send ${transferConfirm.amount} ${transferConfirm.token} to ${recipientAddr}`;
       const intentRes = await fetch(`${API_URL}/api/execute/intent`, {
         method: "POST",
         headers: API_HEADERS,
@@ -623,8 +718,6 @@ export default function IntentPage() {
 
       const strategy = intentData.data as Strategy;
 
-      // Step 2: Execute the strategy bundle via the real relayer — same endpoint
-      // the Execute button on strategy page calls
       const execRes = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
         method: "POST",
         headers: API_HEADERS,
@@ -632,18 +725,39 @@ export default function IntentPage() {
       });
       const execData: ApiResponse<ExecutionResult> = await execRes.json();
       if (!execData.success) {
+        // Surface rate-limit error
+        if (execData.error?.includes("Too many") || execData.error?.includes("wait")) {
+          throw new Error("429:" + execData.error);
+        }
         throw new Error(execData.error ?? "Execution failed");
       }
 
       const txHash =
         (execData.data as ExecutionResult & { txHash?: string })?.txHash ?? "";
 
+      // Save to backend DB — async, non-blocking
+      if (transferConfirm.resolvedAddress && address) {
+        saveRecentRecipient(
+          address,
+          transferConfirm.displayName ?? transferConfirm.recipient,
+          transferConfirm.resolvedAddress,
+          API_URL
+        );
+      }
+
       setTransferResult(txHash || "confirmed");
       setShowTxToast(true);
       setTimeout(() => setShowTxToast(false), 4000);
     } catch (err) {
       console.error("[Transfer] execution failed:", err);
-      setTransferResult("error");
+      // Surface rate-limit errors to the user clearly
+      const msg = (err as Error).message ?? "";
+      if (msg.includes("429") || msg.toLowerCase().includes("too many")) {
+        setTransferResult(null);
+        setRecipientError({ message: "Slow down", sub: "You're submitting too fast. Please wait a moment and try again." });
+      } else {
+        setTransferResult("error");
+      }
     } finally {
       setTransferLoading(false);
     }
@@ -652,11 +766,13 @@ export default function IntentPage() {
   const handleTransferReject = () => {
     setTransferConfirm(null);
     setTransferResult(null);
+    setRecipientError(null);
   };
 
   const resetTransferFlow = () => {
     setTransferConfirm(null);
     setTransferResult(null);
+    setRecipientError(null);
     setRawText("");
   };
 
@@ -716,6 +832,7 @@ export default function IntentPage() {
     setSystemResponse(null);
     setError(null);
     setValidationError(null);
+    setRecipientError(null);
     setActiveStrategy(null);
     setTransferConfirm(null);
     setTransferResult(null);
@@ -728,10 +845,21 @@ export default function IntentPage() {
       return;
     }
 
-    // 1. Transfer/send to wallet — skip strategy, show confirm card
+    // 1. Transfer/send — verify recipient BEFORE showing confirm card
     const transferIntent = parseTransferIntent(text);
     if (transferIntent) {
-      setTransferConfirm(transferIntent);
+      setRecipientVerifying(true);
+      const result = await resolveRecipient(transferIntent.recipient);
+      setRecipientVerifying(false);
+      if (!result.ok) {
+        setRecipientError({ message: result.error, sub: result.sub });
+        return;
+      }
+      setTransferConfirm({
+        ...transferIntent,
+        resolvedAddress: result.address,
+        displayName: result.displayName,
+      });
       return;
     }
 
@@ -764,7 +892,7 @@ export default function IntentPage() {
   };
 
   const timelineActive = loading || !!timeline || !!error;
-  const anyActive = timelineActive || !!systemResponse || !!validationError || validating || !!transferConfirm || !!intentType;
+  const anyActive = timelineActive || !!systemResponse || !!validationError || validating || recipientVerifying || !!recipientError || !!transferConfirm || !!intentType;
 
   return (
     <>
@@ -1057,6 +1185,53 @@ export default function IntentPage() {
                       )}
                     </div>
                     <button onClick={() => setValidationError(null)} className="text-text-muted hover:text-text-primary mt-0.5 flex-shrink-0"><X className="w-4 h-4 ml-1 inline-block" /></button>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Recipient verification spinner */}
+              {recipientVerifying && (
+                <motion.div
+                  key="recipient-verifying"
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex items-center gap-2.5 text-xs text-text-muted px-1"
+                >
+                  <svg className="animate-spin w-3 h-3 text-[#00F5D4]" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span>Resolving recipient address…</span>
+                </motion.div>
+              )}
+
+              {/* Recipient validation error */}
+              {recipientError && (
+                <motion.div
+                  key="recipient-error"
+                  layout
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                  className="rounded-2xl p-4"
+                  style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.22)" }}
+                >
+                  <div className="flex gap-3 items-start">
+                    <XCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-red-300">{recipientError.message}</p>
+                      <p className="text-xs text-red-400/70 mt-1 leading-relaxed">{recipientError.sub}</p>
+                      <p className="text-[10px] text-text-muted mt-2.5 font-mono">
+                        Supported: <span className="text-[#00F5D4]/70">alice.init</span> · <span className="text-[#00F5D4]/70">init1abc…</span>
+                      </p>
+                    </div>
+                    <button onClick={() => setRecipientError(null)} className="text-text-muted hover:text-white mt-0.5 flex-shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </motion.div>
               )}
