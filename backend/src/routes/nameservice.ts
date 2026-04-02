@@ -15,49 +15,66 @@ const MODULE_ADDRESS = "0x42cd8467b1c86e59bf319e5664a09b6b5840bb3fac64f5ce690b50
  * Resolves an Initia username to an address by triggering a view function on the Move VM.
  */
 router.get("/resolve/:username", async (req: Request, res: Response) => {
-  const raw = req.params.username ?? "";
+  const rawQuery = req.params.username ?? "";
   // Ensure we strip trailing .init and leading @
-  const username = raw.replace(/^@/, "").replace(/\.init$/, "").toLowerCase().trim();
+  const username = rawQuery.replace(/^@/, "").replace(/\.init$/, "").toLowerCase().trim();
 
   if (!username) {
     return res.status(400).json({ success: false, error: "Invalid username." });
   }
 
-  console.log(`[nameservice] Resolving "${username}.init" on ${NETWORK_CONFIG.network} via Move VM`);
-  
   try {
+    const bcsArg = bcs.string().serialize(username).toBase64();
+    console.log(`[nameservice] Resolving "${username}.init" on ${NETWORK_CONFIG.network} (BCS: ${bcsArg})`);
+
     const result = await restClient.move.view(
       MODULE_ADDRESS,
       "usernames",
       "get_address_from_name",
       [],
-      [bcs.string().serialize(username).toBase64()]
+      [bcsArg]
     );
 
-    // Option<address> parsing
     let resolvedAddress: string | null = null;
-    if (Array.isArray(result) && result.length > 0) {
-      const opt = result[0];
-      if (opt?.vec && Array.isArray(opt.vec) && opt.vec.length > 0) {
-        resolvedAddress = opt.vec[0];
+    
+    // SDK wraps response in { data, events, gas_used }
+    // data is a JSON-stringified value, e.g. "\"0x3dd7b...\""  or  "null"  or  "{\"vec\":[...]}"
+    const raw = (result as any)?.data;
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw); // unwraps the extra quotes
+
+        if (typeof parsed === "string" && parsed.length > 0) {
+          // Direct address (Option was already unwrapped by the node — most common)
+          resolvedAddress = parsed;
+        } else if (parsed?.vec && Array.isArray(parsed.vec) && parsed.vec.length > 0) {
+          // Option<address> still in vec form
+          resolvedAddress = parsed.vec[0];
+        }
+        // parsed === null or parsed?.vec === [] means name not found / expired
+      } catch {
+        console.warn("[nameservice] unexpected data shape:", raw);
       }
+    } else if (Array.isArray(raw) && raw.length > 0) {
+      // Future-proof: if a newer SDK version returns the array directly
+      resolvedAddress = raw[0]?.vec?.[0] ?? (typeof raw[0] === "string" ? raw[0] : null);
     }
 
-    if (!resolvedAddress || (!resolvedAddress.startsWith("init1") && !resolvedAddress.startsWith("0x"))) {
+    if (!resolvedAddress) {
       return res.status(404).json({
         success: false,
         error: "Username not found",
-        detail: `The name "${username}.init" is not registered.`,
+        detail: `"${username}.init" is not registered or has expired.`,
       });
     }
 
     return res.json({ success: true, address: resolvedAddress, username: `${username}.init` });
   } catch (err: any) {
-    console.error("[nameservice] proxy error:", err?.response?.data || err?.message || err);
+    console.error("[nameservice] error:", err?.response?.data || err?.message || err);
     return res.status(502).json({
       success: false,
-      error: "Could not reach or resolve Initia nameservice.",
-      detail: err?.response?.data?.message || err?.message || "Unknown proxy error",
+      error: "Could not reach Initia nameservice.",
+      detail: err?.response?.data?.message || err?.message || "Unknown error",
     });
   }
 });
