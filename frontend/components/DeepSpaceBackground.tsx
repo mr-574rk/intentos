@@ -12,7 +12,7 @@ class Particle {
   density: number;
   alpha: number;
 
-  constructor(width: number, height: number, isGrid: boolean = false) {
+  constructor(width: number, height: number) {
     this.x = Math.random() * width;
     this.y = Math.random() * height;
     this.baseX = this.x;
@@ -35,30 +35,30 @@ class Particle {
 
   update(mouse: { x: number; y: number; radius: number }) {
     // Distance from mouse
-    let dx = mouse.x - this.x;
-    let dy = mouse.y - this.y;
-    let distance = Math.sqrt(dx * dx + dy * dy);
+    const dx = mouse.x - this.x;
+    const dy = mouse.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
     
     // Wave/Repulsion effect
     if (distance < mouse.radius) {
-      let forceDirectionX = dx / distance;
-      let forceDirectionY = dy / distance;
-      let force = (mouse.radius - distance) / mouse.radius;
+      const forceDirectionX = dx / distance;
+      const forceDirectionY = dy / distance;
+      const force = (mouse.radius - distance) / mouse.radius;
       
       // Gentle wave pushing away from cursor
-      let directionX = forceDirectionX * force * this.density;
-      let directionY = forceDirectionY * force * this.density;
+      const directionX = forceDirectionX * force * this.density;
+      const directionY = forceDirectionY * force * this.density;
       
       this.x -= directionX;
       this.y -= directionY;
     } else {
       // Return to original base position slowly (elasticity)
       if (this.x !== this.baseX) {
-        let dx = this.x - this.baseX;
+        const dx = this.x - this.baseX;
         this.x -= dx / 25;
       }
       if (this.y !== this.baseY) {
-        let dy = this.y - this.baseY;
+        const dy = this.y - this.baseY;
         this.y -= dy / 25;
       }
     }
@@ -125,7 +125,7 @@ export default function DeepSpaceBackground() {
     const init = () => {
       particlesArray = [];
       // Hyper-optimized density: max 120 particles to guarantee 60fps on potato devices
-      let numberOfParticles = Math.min(Math.floor((canvas.width * canvas.height) / 10000), 120);
+      const numberOfParticles = Math.min(Math.floor((canvas.width * canvas.height) / 10000), 120);
       for (let i = 0; i < numberOfParticles; i++) {
         particlesArray.push(new Particle(canvas.width, canvas.height));
       }
