@@ -88,20 +88,20 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
 
   const greetings = ["hello", "hi", "hey", "gm", "good morning", "good evening", "howdy", "sup", "how are you"];
   if (greetings.some(g => lower === g || lower.startsWith(g + " "))) {
-    logSystemEvent("Greeting", text);
+    logSystemEvent("Greeting", text, address);
     return { icon: <Hand className="w-5 h-5 text-emerald-400" />, message: "Hi! I'm IntentOS.", type: "greeting", walletBalance };
   }
 
   const helps = ["help", "commands", "what can you do", "get started", "how do i", "what is intentos", "beginner", "tutorial", "new here", "how does this work", "what can i do"];
   if (helps.some(h => lower.includes(h))) {
-    logSystemEvent("Help", text);
+    logSystemEvent("Help", text, address);
     return { icon: <Lightbulb className="w-5 h-5 text-amber-400" />, message: "Here are things I can help with:", type: "help" };
   }
 
   if (/\b(enable|turn on|activate|start).{0,20}autopilot\b/.test(lower)) {
     const state = enableAutopilot();
     const labels = getActiveStrategyLabels(state);
-    logSystemEvent("Autopilot Enabled", text);
+    logSystemEvent("Autopilot Enabled", text, address);
     return {
       icon: <Bot className="w-5 h-5 text-blue-400" />,
       message: "Autopilot enabled.",
@@ -111,24 +111,26 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
   }
   if (/\b(disable|turn off|deactivate|stop).{0,20}autopilot\b/.test(lower)) {
     disableAutopilot();
-    logSystemEvent("Autopilot Disabled", text);
+    logSystemEvent("Autopilot Disabled", text, address);
     return { icon: <Pause className="w-5 h-5 text-gray-400" />, message: "Autopilot disabled.", sub: "All automated strategies are paused. Re-enable anytime.", type: "autopilot" };
   }
   if (/\b(receive|deposit|fund|get)\b.{0,20}\b(init|usdc|token|crypto|funds?|money|asset)\b/.test(lower)
     || /^(receive|deposit|fund|get init|get usdc)$/.test(lower)) {
-    logSystemEvent("Receive Address", text);
+    logSystemEvent("Receive Address", text, address);
     return { icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia wallet address", sub: address ?? "Connect wallet to see address", type: "receive", address };
   }
 
-  logSystemEvent("Unknown", text);
+  logSystemEvent("Unknown", text, address);
   return { icon: <AlertTriangle className="w-5 h-5 text-amber-400" />, message: "I couldn't understand that command.", type: "unknown" };
 }
 
-function logSystemEvent(label: string, raw: string) {
+function logSystemEvent(label: string, raw: string, address?: string) {
+  if (!address) return;
   try {
-    const existing = JSON.parse(localStorage.getItem("intentos_system_events") ?? "[]") as object[];
+    const key = `intentos_system_events_${address}`;
+    const existing = JSON.parse(localStorage.getItem(key) ?? "[]") as object[];
     existing.unshift({ label, raw, timestamp: new Date().toISOString() });
-    localStorage.setItem("intentos_system_events", JSON.stringify(existing.slice(0, 50)));
+    localStorage.setItem(key, JSON.stringify(existing.slice(0, 50)));
   } catch { /* ignore */ }
 }
 

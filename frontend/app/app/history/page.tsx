@@ -13,17 +13,18 @@ interface SystemEvent {
   timestamp: string;
 }
 
-function SystemEvents() {
+function SystemEvents({ address }: { address: string }) {
   const [events, setEvents] = useState<SystemEvent[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("intentos_system_events");
+      const raw = localStorage.getItem(`intentos_system_events_${address}`);
       if (raw) setEvents(JSON.parse(raw) as SystemEvent[]);
+      else setEvents([]);
     } catch { /* ignore */ }
-  }, []);
+  }, [address]);
 
   if (events.length === 0) {
     return (
@@ -84,10 +85,10 @@ function SystemEvents() {
 type Tab = "transactions" | "system";
 
 export default function HistoryPage() {
-  const { isConnected } = useWalletGuard();
+  const { isConnected, address } = useWalletGuard();
   const [tab, setTab] = useState<Tab>("transactions");
 
-  if (!isConnected) return null;
+  if (!isConnected || !address) return null;
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -121,7 +122,7 @@ export default function HistoryPage() {
           initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.15 }}
         >
-          {tab === "transactions" ? <StrategyHistory /> : <SystemEvents />}
+          {tab === "transactions" ? <StrategyHistory address={address} /> : <SystemEvents address={address} />}
         </motion.div>
       </AnimatePresence>
     </div>

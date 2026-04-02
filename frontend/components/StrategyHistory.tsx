@@ -9,7 +9,7 @@ import { API_URL, EXPLORER } from "@/lib/config";
 
 
 
-export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] }) {
+export default function StrategyHistory({ entries, address }: { entries?: HistoryEntry[]; address?: string }) {
   const [list, setList] = useState<HistoryEntry[]>(entries ?? []);
   const [loading, setLoading] = useState(!entries);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
     if (entries) return; // caller provided data — skip fetch
     let cancelled = false;
     setLoading(true);
-    fetch(`${API_URL}/api/history`)
+    fetch(`${API_URL}/api/history${address ? `?address=${address}` : ""}`)
       .then((r) => r.json())
       .then((json) => {
         if (!cancelled) {
@@ -35,7 +35,7 @@ export default function StrategyHistory({ entries }: { entries?: HistoryEntry[] 
         }
       });
     return () => { cancelled = true; };
-  }, [entries]);
+  }, [entries, address]);
 
   if (loading) {
     return (

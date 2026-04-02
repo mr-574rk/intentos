@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { getAllHistory, type HistoryRow } from "../db/historyRepo";
+import { getAllHistory, getHistoryByAddress, type HistoryRow } from "../db/historyRepo";
 import type { ApiResponse, HistoryEntry } from "../../../types";
 
 const router = Router();
@@ -9,8 +9,9 @@ const router = Router();
  * GET /api/history
  * Returns all completed strategies from the persistent SQLite store.
  */
-router.get("/", async (_req: Request, res: Response) => {
-  const rows: HistoryRow[] = await getAllHistory();
+router.get("/", async (req: Request, res: Response) => {
+  const address = req.query.address as string | undefined;
+  const rows: HistoryRow[] = address ? await getHistoryByAddress(address) : await getAllHistory();
 
   const history: HistoryEntry[] = rows.map((row) => ({
     id: row.id,
