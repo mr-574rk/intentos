@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import IntentInput from "@/components/IntentInput";
-import AgentTimeline from "@/components/AgentTimeline";
+import ProcessingHUD from "@/components/ProcessingHUD";
 import AmbiguityModal from "@/components/AmbiguityModal";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
@@ -576,6 +576,8 @@ export default function IntentPage() {
   const isOnline = useOnlineStatus();
 
   const [loading, setLoading] = useState(false);
+  const [hudVisible, setHudVisible] = useState(false);
+  const [showPlanCard, setShowPlanCard] = useState(false);
   const [validating, setValidating] = useState(false);
   const [timeline, setTimeline] = useState<TimelineType | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -645,6 +647,8 @@ export default function IntentPage() {
   // ── Submit to backend (strategy flow) ────────────────────────────────────────
   const submitToApi = async (text: string) => {
     setLoading(true);
+    setHudVisible(true);
+    setShowPlanCard(false);
     setError(null);
     setTimeline(null);
     setAmbiguity(null);
@@ -666,6 +670,7 @@ export default function IntentPage() {
           sub: `Too many intents submitted. Please wait ${seconds}s before trying again.`,
         });
         setLoading(false);
+        setHudVisible(false);
         return;
       }
 
@@ -675,23 +680,25 @@ export default function IntentPage() {
       if ("ambiguous" in data.data && data.data.ambiguous) {
         setAmbiguity(data.data as AmbiguityResponse);
         setLoading(false);
+        setHudVisible(false);
         return;
       }
 
       const strategy = data.data as Strategy;
       setActiveStrategy(strategy);
-
-      const tlRes = await fetch(`${API_URL}/api/agent/timeline/${strategy.id}`, { headers: API_HEADERS });
-      const tlData: ApiResponse<TimelineType> = await tlRes.json();
-      if (tlData.success && tlData.data) setTimeline(tlData.data);
-
       sessionStorage.setItem("intentos_strategy", JSON.stringify(strategy));
-      setTimeout(() => router.push("/app/strategy"), 9000);
     } catch (err) {
       setError((err as Error).message);
+      setHudVisible(false);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHudComplete = () => {
+    setHudVisible(false);
+    setShowPlanCard(true);
+    setTimeout(() => router.push("/app/strategy"), 9000);
   };
 
   // ── Transfer execution (mirrors strategy page two-step flow exactly) ──────────
@@ -832,6 +839,8 @@ export default function IntentPage() {
     setActiveStrategy(null);
     setTransferConfirm(null);
     setTransferResult(null);
+    setHudVisible(false);
+    setShowPlanCard(false);
 
     // 0. System commands
     const sysResponse = getSystemResponse(text, address, walletInitBalance);
@@ -887,7 +896,7 @@ export default function IntentPage() {
     submitToApi(`${pendingText} — ${option}`);
   };
 
-  const timelineActive = loading || !!timeline || !!error;
+  const timelineActive = hudVisible || showPlanCard || !!error;
   const anyActive = timelineActive || !!systemResponse || !!validationError || validating || recipientVerifying || !!recipientError || !!transferConfirm || !!intentType;
 
   return (
@@ -1025,31 +1034,51 @@ export default function IntentPage() {
                     <span className="font-bold mr-2">Error:</span> {error}
                   </div>
                 )}
-                {activeStrategy && (
-                  <motion.div layout initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4 }} className="bg-[#13161D] border border-white/10 p-5 rounded-2xl shadow-xl">
-                    <h3 className="text-xs font-bold text-[#00F5D4] uppercase tracking-widest mb-3">IntentOS Plan</h3>
-                    <p className="text-sm text-white font-medium leading-relaxed mb-5">{activeStrategy.bundle.explanation}</p>
-                    <div className="space-y-2 mb-5">
-                      {activeStrategy.bundle.steps.map(step => (
-                        <div key={step.index} className="flex gap-3 text-sm">
-                          <span className="text-text-muted font-mono whitespace-nowrap">Step {step.index} —</span>
-                          <span className="text-gray-300 font-medium">{step.description}</span>
+                <AnimatePresence mode="wait">
+                  {hudVisible && !error && (
+                    <motion.div
+                      key="hud"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ProcessingHUD apiPending={loading} onComplete={handleHudComplete} />
+                    </motion.div>
+                  )}
+
+                  {showPlanCard && activeStrategy && !error && (
+                    <motion.div
+                      key="plan-card"
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1, duration: 0.4 }}
+                      className="bg-[#13161D] border border-white/10 p-5 rounded-2xl shadow-xl"
+                    >
+                      <h3 className="text-xs font-bold text-[#00F5D4] uppercase tracking-widest mb-3">IntentOS Plan</h3>
+                      <p className="text-sm text-white font-medium leading-relaxed mb-5">{activeStrategy.bundle.explanation}</p>
+                      <div className="space-y-2 mb-5">
+                        {activeStrategy.bundle.steps.map(step => (
+                          <div key={step.index} className="flex gap-3 text-sm">
+                            <span className="text-text-muted font-mono whitespace-nowrap">Step {step.index} —</span>
+                            <span className="text-gray-300 font-medium">{step.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-6 border-t border-white/5 pt-4">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-0.5">Estimated Yield</span>
+                          <span className="text-[15px] font-black text-[#00F5D4]">{activeStrategy.bundle.estimatedYield > 0 ? `${(activeStrategy.bundle.estimatedYield * 100).toFixed(1)}% APY` : "—"}</span>
                         </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-6 border-t border-white/5 pt-4">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-0.5">Estimated Yield</span>
-                        <span className="text-[15px] font-black text-[#00F5D4]">{activeStrategy.bundle.estimatedYield > 0 ? `${(activeStrategy.bundle.estimatedYield * 100).toFixed(1)}% APY` : "—"}</span>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-0.5">Risk Level</span>
+                          <span className="text-[15px] font-black text-white capitalize">{activeStrategy.bundle.riskScore}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold mb-0.5">Risk Level</span>
-                        <span className="text-[15px] font-black text-white capitalize">{activeStrategy.bundle.riskScore}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-                <AgentTimeline timeline={timeline} loading={loading} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )}
 
