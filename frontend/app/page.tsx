@@ -73,15 +73,18 @@ export default function LandingPage() {
         </div>
 
         {/* AI Data Loom Visualization */}
-        <div className="w-full max-w-5xl h-64 relative flex items-center justify-between px-4 sm:px-10 mt-12 mb-12 pointer-events-none z-10">
+        <div className="w-full max-w-5xl h-auto md:h-64 relative flex flex-col md:flex-row items-center justify-center md:justify-between gap-12 md:gap-4 px-4 sm:px-10 mt-12 mb-12 pointer-events-none z-10">
 
           {/* Connecting Lines (Background) */}
           <div className="absolute inset-0 flex items-center justify-center z-0">
-            <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent absolute top-1/2 -translate-y-1/2" />
+            {/* Desktop horizontal line */}
+            <div className="hidden md:block w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent absolute top-1/2 -translate-y-1/2" />
+            {/* Mobile vertical line */}
+            <div className="block md:hidden w-[1px] h-full bg-gradient-to-b from-transparent via-[#00F5D4]/30 to-transparent absolute left-1/2 -translate-x-1/2" />
           </div>
 
           {/* Left Side: Input Data Packets */}
-          <div className="flex flex-col justify-between h-full w-full max-w-[280px] z-10">
+          <div className="flex flex-col justify-between h-auto md:h-full w-full max-w-[280px] z-10">
             <div className="flex flex-col gap-6 w-full justify-center h-full">
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-4">
                 <p className="text-sm text-white font-medium">&quot;stake 1 init&quot;</p>
@@ -105,22 +108,22 @@ export default function LandingPage() {
           </div>
 
           {/* Right Side: Execution Threads/Rollups */}
-          <div className="flex flex-col justify-between h-full z-10 w-[140px] md:w-[180px]">
-            <div className="flex flex-col gap-6 h-full justify-center items-end">
+          <div className="flex flex-col justify-between h-auto md:h-full z-10 w-full md:w-[180px]">
+            <div className="flex flex-col gap-6 h-full justify-center items-center md:items-end">
               <div className="flex items-center gap-3">
-                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Simulating Risk</div>
+                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Simulating Risk</div>
                 <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
                   <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
                 </motion.div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Routing to Dex</div>
+                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Routing to Dex</div>
                 <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.7 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
                   <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
                 </motion.div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 hidden sm:block whitespace-nowrap">Executing on Initia</div>
+                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Executing on Initia</div>
                 <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 1.4 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
                   <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
                 </motion.div>
