@@ -1,13 +1,6 @@
 {
   "name": "IntentOS",
-  "logo": {
-    "dark": "/logo-dark.png",
-    "light": "/logo-light.png"
-  },
-  "colors": {
-    "primary": "#14F195",
-    "background": "#0B0F17"
-  },
+  "theme": "mint",
   "navigation": {
     "Introduction": ["index"],
     "Guides": [
