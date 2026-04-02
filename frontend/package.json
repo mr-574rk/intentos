@@ -6,7 +6,8 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "sed -i '' 's/useEffectEvent/useCallback/g' ./node_modules/@initia/interwovenkit-react/dist/index.js 2>/dev/null || sed -i 's/useEffectEvent/useCallback/g' ./node_modules/@initia/interwovenkit-react/dist/index.js || true"
   },
   "dependencies": {
     "@initia/initia.js": "^1.0.21",

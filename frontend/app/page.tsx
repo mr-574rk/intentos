@@ -73,59 +73,55 @@ export default function LandingPage() {
         </div>
 
         {/* AI Data Loom Visualization */}
-        <div className="w-full max-w-5xl h-auto md:h-64 relative flex flex-col md:flex-row items-center justify-center md:justify-between gap-12 md:gap-4 px-4 sm:px-10 mt-12 mb-12 pointer-events-none z-10">
-
-          {/* Connecting Lines (Background) */}
-          <div className="absolute inset-0 flex items-center justify-center z-0">
-            {/* Desktop horizontal line */}
-            <div className="hidden md:block w-full h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent absolute top-1/2 -translate-y-1/2" />
-            {/* Mobile vertical line */}
-            <div className="block md:hidden w-[1px] h-full bg-gradient-to-b from-transparent via-[#00F5D4]/30 to-transparent absolute left-1/2 -translate-x-1/2" />
-          </div>
+        <div className="w-full max-w-5xl h-auto md:h-64 relative flex flex-row items-center justify-center gap-2 sm:gap-4 md:gap-8 w-full px-4 sm:px-10 mt-12 mb-12 pointer-events-none z-10">
 
           {/* Left Side: Input Data Packets */}
           <div className="flex flex-col justify-between h-auto md:h-full w-full max-w-[280px] z-10">
-            <div className="flex flex-col gap-6 w-full justify-center h-full">
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-4">
-                <p className="text-sm text-white font-medium">&quot;stake 1 init&quot;</p>
+            <div className="flex flex-col gap-2 md:gap-6 w-full justify-center h-full">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-2 py-1 md:px-4 md:py-2 shadow-lg w-fit self-end mr-4">
+                <p className="text-[9px] sm:text-xs md:text-sm text-white font-medium">&quot;stake 1 init&quot;</p>
               </motion.div>
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 4, delay: 0.5 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-center">
-                <p className="text-sm text-white font-medium">&quot;swap usdc to init&quot;</p>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 4, delay: 0.5 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-2 py-1 md:px-4 md:py-2 shadow-lg w-fit self-center">
+                <p className="text-[9px] sm:text-xs md:text-sm text-white font-medium">&quot;swap usdc to init&quot;</p>
               </motion.div>
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3.5, delay: 1 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-4 py-2 shadow-lg w-fit self-end mr-2">
-                <p className="text-sm text-white font-medium">&quot;grow my portfolio&quot;</p>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0, transition: { repeat: Infinity, repeatType: "reverse", duration: 3.5, delay: 1 } }} className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl rounded-bl-sm px-2 py-1 md:px-4 md:py-2 shadow-lg w-fit self-end mr-2">
+                <p className="text-[9px] sm:text-xs md:text-sm text-white font-medium">&quot;grow my portfolio&quot;</p>
               </motion.div>
             </div>
           </div>
 
+          <div className="w-12 md:w-24 h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent shrink-0" />
+
           {/* Center: The AI Core */}
-          <div className="relative flex items-center justify-center z-20 mx-4">
-            <div className="absolute w-32 h-32 md:w-40 md:h-40 rounded-full border border-[#00F5D4]/10 animate-[spin_10s_linear_infinite]" />
-            <div className="absolute w-24 h-24 md:w-32 md:h-32 rounded-full border border-[#00F5D4]/20 animate-[spin_7s_linear_infinite_reverse]" />
-            <div className="w-16 h-16 md:w-24 md:h-24 bg-[#13161D] border border-[#00F5D4]/40 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(0,245,212,0.4)] animate-pulse relative z-10">
-              <span className="font-black text-xl md:text-2xl text-[#00F5D4] tracking-widest drop-shadow-[0_0_10px_#00F5D4]">AI</span>
+          <div className="relative flex items-center justify-center z-20 mx-1 md:mx-4 shrink-0">
+            <div className="absolute w-24 h-24 md:w-32 md:h-32 rounded-full border border-[#00F5D4]/10 animate-[spin_10s_linear_infinite]" />
+            <div className="absolute w-16 h-16 md:w-24 md:h-24 rounded-full border border-[#00F5D4]/20 animate-[spin_7s_linear_infinite_reverse]" />
+            <div className="w-10 h-10 md:w-16 md:h-16 bg-[#13161D] border border-[#00F5D4]/40 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(0,245,212,0.4)] animate-pulse relative z-10 text-center">
+              <span className="font-black text-sm md:text-2xl text-[#00F5D4] tracking-widest drop-shadow-[0_0_10px_#00F5D4]">AI</span>
             </div>
           </div>
+
+          <div className="w-12 md:w-24 h-[1px] bg-gradient-to-r from-transparent via-[#00F5D4]/30 to-transparent shrink-0" />
 
           {/* Right Side: Execution Threads/Rollups */}
           <div className="flex flex-col justify-between h-auto md:h-full z-10 w-full md:w-[180px]">
-            <div className="flex flex-col gap-6 h-full justify-center items-center md:items-end">
-              <div className="flex items-center gap-3">
-                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Simulating Risk</div>
-                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
+            <div className="flex flex-col gap-1 md:gap-6 h-full justify-center items-center md:items-end">
+              <div className="flex items-center gap-1 md:gap-3">
+                <div className="bg-[#13161D]/50 rounded text-[8px] sm:text-[10px] md:text-sm font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Simulating Risk</div>
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="w-4 h-4 md:w-6 md:h-6 bg-white/5 border border-[#00F5D4]/20 rounded-md md:rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#00F5D4]/50 rounded-full -rotate-45" />
                 </motion.div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Routing to Dex</div>
-                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.7 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
+              <div className="flex items-center gap-1 md:gap-3">
+                <div className="bg-[#13161D]/50 rounded text-[8px] sm:text-[10px] md:text-sm font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Routing to Dex</div>
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 0.7 }} className="w-4 h-4 md:w-6 md:h-6 bg-white/5 border border-[#00F5D4]/20 rounded-md md:rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#00F5D4]/50 rounded-full -rotate-45" />
                 </motion.div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="bg-[#13161D]/50 rounded text-[10px] md:text-xs font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Executing on Initia</div>
-                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 1.4 }} className="w-8 h-8 md:w-10 md:h-10 bg-white/5 border border-[#00F5D4]/20 rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
-                  <div className="w-3 h-3 md:w-4 md:h-4 bg-[#00F5D4]/50 rounded-full -rotate-45" />
+              <div className="flex items-center gap-1 md:gap-3">
+                <div className="bg-[#13161D]/50 rounded text-[8px] sm:text-[10px] md:text-sm font-mono text-text-secondary p-1 px-2 border border-white/5 whitespace-nowrap">Executing on Initia</div>
+                <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2, delay: 1.4 }} className="w-4 h-4 md:w-6 md:h-6 bg-white/5 border border-[#00F5D4]/20 rounded-md md:rounded-xl flex items-center justify-center shadow-[0_0_10px_rgba(0,245,212,0.15)] rotate-45 shrink-0">
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#00F5D4]/50 rounded-full -rotate-45" />
                 </motion.div>
               </div>
             </div>

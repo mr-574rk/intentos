@@ -11,7 +11,7 @@ import { API_URL, API_HEADERS } from "@/lib/config";
 
 export default function ExecutePage() {
   const router = useRouter();
-  const { isConnected } = useWalletGuard();
+  useWalletGuard();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [timeline, setTimeline] = useState<TimelineType | null>(null);
   const [result, setResult] = useState<ExecutionResult | null>(null);

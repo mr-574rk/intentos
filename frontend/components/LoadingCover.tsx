@@ -6,10 +6,19 @@ import { IntentOSLogo } from "@/components/IntentOSLogo";
 export default function LoadingCover() {
   const [loading, setLoading] = useState(true);
   const [fade, setFade] = useState(false);
+  const [dash, setDash] = useState("-");
 
   useEffect(() => {
     // Lock scrolling while loading
     document.body.style.overflow = "hidden";
+
+    // Animated dash for terminal effect
+    const frames = ["-", "\\", "|", "/"];
+    let i = 0;
+    const dashTimer = setInterval(() => {
+      i = (i + 1) % frames.length;
+      setDash(frames[i]);
+    }, 100);
 
     // Wait for the heavy lifting (React hydration, DOM painting, Canvas initialization)
     const loadTimer = setTimeout(() => {
@@ -20,9 +29,10 @@ export default function LoadingCover() {
         setLoading(false);
         document.body.style.overflow = "unset";
       }, 600);
-    }, 1500);
+    }, 2800);
 
     return () => {
+      clearInterval(dashTimer);
       clearTimeout(loadTimer);
       document.body.style.overflow = "unset";
     };
@@ -39,7 +49,7 @@ export default function LoadingCover() {
 
       {/* The Logo Pulse */}
       <div className="relative z-10 scale-[2] mb-12 animate-[pulse_2s_ease-in-out_infinite]">
-        <IntentOSLogo />
+        <IntentOSLogo spin />
       </div>
 
       {/* Premium Gradient Loading Bar */}
@@ -62,9 +72,12 @@ export default function LoadingCover() {
         </div>
       </div>
       
-      <p className="mt-6 text-xs text-[#00F5D4] font-mono tracking-[0.3em] uppercase animate-pulse">
-        Initializing System...
-      </p>
+      <div className="mt-6 flex items-center justify-center gap-2">
+        <p className="text-xs text-[#00F5D4] font-mono tracking-[0.3em] uppercase animate-pulse">
+          Initializing System
+        </p>
+        <span className="text-[#00F5D4] font-mono text-xs w-2 text-center">{dash}</span>
+      </div>
     </div>
   );
 }

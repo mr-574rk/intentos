@@ -1,15 +1,15 @@
 import React from "react";
 
-export function IntentOSLogo({ className = "" }: { className?: string }) {
+export function IntentOSLogo({ className = "", spin = false }: { className?: string; spin?: boolean }) {
   return (
-    <div className={`group flex items-center gap-x-2 cursor-pointer ${className}`}>
+    <div className={`group flex items-center gap-x-2 ${!spin && "cursor-pointer"} ${className}`}>
       {/* 1. The OS Orbit Icon (SVG) */}
       <div className="relative flex items-center justify-center">
         <svg
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="w-8 h-8 transition-transform duration-700 ease-in-out group-hover:rotate-180 drop-shadow-[0_0_8px_rgba(0,245,212,0.6)]"
+          className={`w-8 h-8 drop-shadow-[0_0_8px_rgba(0,245,212,0.6)] ${spin ? "animate-[spin_3s_linear_infinite]" : "transition-transform duration-700 ease-in-out group-hover:rotate-180"}`}
         >
           {/* Faint background track */}
           <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.08)" strokeWidth="1.5" />
