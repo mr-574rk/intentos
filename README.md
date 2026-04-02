@@ -216,6 +216,8 @@ Submitted to Initia testnet RPC
 Portfolio refreshes with new state
 ```
 
+> **Note on transaction signing:** Transactions are executed through a backend relayer for the hackathon demo to simplify UX. In production, transactions will be signed directly by the user's wallet.
+
 ---
 
 ## ⛓️ Initia Integration
