@@ -18,7 +18,8 @@
             "pages": [
               "index",
               "quick-demo",
-              "getting-started"
+              "getting-started",
+              "security"
             ]
           },
           {

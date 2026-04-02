@@ -158,6 +158,44 @@ Follow these steps to test the full system end-to-end:
 | **Intent History** | Full log of every submitted intent and execution result |
 | **Strategy Simulation** | Risk and yield simulation before any real funds move |
 
+## 🛡️ Security Model
+
+IntentOS is designed with a security-first approach to ensure user safety when interacting with on-chain financial strategies.
+
+**Non-Custodial Design**
+IntentOS never stores or controls user private keys.
+All transactions are authorized through the user’s wallet using Initia’s wallet infrastructure. Users maintain full custody of their assets at all times.
+
+**Wallet-Based Authorization**
+Every strategy execution is tied to a connected wallet session. Transactions require wallet-level authorization and are signed through the user’s wallet interface.
+
+**Pre-Execution Validation**
+Before executing any strategy, IntentOS performs pre-flight checks to reduce failed or unsafe transactions:
+- Wallet balance validation
+- Strategy feasibility checks
+- Transaction simulation
+- Execution preview for user confirmation
+
+These checks help prevent accidental execution of strategies that cannot be completed.
+
+**Transparent On-Chain Execution**
+All actions performed by IntentOS result in verifiable on-chain transactions.
+Users can inspect transaction details directly through the Initia explorer.
+
+**Session-Based Interaction**
+IntentOS uses session-based interaction patterns to streamline execution while maintaining wallet-level security.
+Users can disconnect sessions at any time.
+
+### Security Principles
+IntentOS follows several guiding principles:
+- **User custody first** — users always control their funds
+- **Transparent execution** — every action is verifiable on-chain
+- **Fail-safe validation** — invalid strategies are blocked before execution
+- **Clear confirmation flows** — users review strategies before execution
+
+### Limitations
+IntentOS is currently a hackathon prototype. Additional security reviews, protocol integrations, and audits will be required before production deployment.
+
 ---
 
 ## 🏗️ Architecture
@@ -199,19 +237,17 @@ IntentOS has three main layers that work together in a clear pipeline.
 
 **Request flow for a typical intent:**
 ```
-User types "stake 1 init"
+User Intent
      ↓
-Pre-flight check (is balance sufficient?)
+Intent Recognition
      ↓
-Intent router classifies action type
+Strategy Planner
      ↓
-Strategy generator builds execution plan
+Strategy Simulation
      ↓
-Transaction builder constructs Cosmos Msg payload
+IntentOS Agent (transaction construction + safety checks)
      ↓
-InterwovenKit signs transaction
-     ↓
-Submitted to Initia testnet RPC
+Initia Blockchain Execution
      ↓
 Portfolio refreshes with new state
 ```

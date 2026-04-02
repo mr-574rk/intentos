@@ -76,8 +76,17 @@ export default function LandingPage() {
             Autonomously.
           </h1>
           <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mt-6 leading-relaxed font-medium">
-            IntentOS converts your natural language goals into safe, simulated DeFi strategies. You review, AI executes.
+            The IntentOS Agent converts your natural language goals into safe, simulated DeFi strategies. You review, AI executes.
           </p>
+
+          <div className="mt-8 flex flex-col items-center gap-2 border border-white/10 bg-[#13161D]/50 px-6 py-4 rounded-2xl backdrop-blur-sm max-w-xl">
+            <span className="text-[#00F5D4] font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4" /> Security First
+            </span>
+            <p className="text-gray-400 text-sm text-center font-medium">
+              IntentOS is fully non-custodial. Users retain control of their assets while all strategies are transparently executed on-chain.
+            </p>
+          </div>
         </div>
 
         {/* AI Data Loom Visualization */}
@@ -179,8 +188,8 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
             <div className="bg-[#13161D]/90 backdrop-blur-xl border border-[#00F5D4]/30 px-8 py-4 rounded-2xl flex flex-col items-center shadow-[0_0_30px_rgba(0,245,212,0.15)] relative z-10">
               <BrainCircuit className="w-8 h-8 text-[#00F5D4] mb-2" />
-              <span className="text-base font-bold text-white tracking-wide">IntentOS AI Agent Engine</span>
-              <span className="text-xs text-[#00F5D4]/80 mt-1 uppercase tracking-widest font-medium">Validates & Builds Strategy</span>
+              <span className="text-base font-bold text-white tracking-wide">IntentOS Agent</span>
+              <span className="text-xs text-[#00F5D4]/80 mt-1 uppercase tracking-widest font-medium">Validates • Builds Strategy</span>
             </div>
           </motion.div>
 
@@ -215,9 +224,9 @@ export default function LandingPage() {
             <div className="bg-[#13161D]/95 backdrop-blur-xl border border-[#00F5D4]/50 px-10 py-4 rounded-2xl flex flex-col items-center shadow-[0_0_40px_rgba(0,245,212,0.25)] relative z-10 w-64 lg:w-80">
               <div className="flex items-center gap-3 mb-1">
                 <Zap className="w-5 h-5 text-[#00F5D4]" fill="currentColor" />
-                <span className="text-lg font-black text-white tracking-widest uppercase">Initia L1 Execution</span>
+                <span className="text-lg font-black text-white tracking-widest">Initia L1 Execution</span>
               </div>
-              <span className="text-xs text-[#00F5D4]/80 uppercase tracking-[0.2em] font-medium">Gasless · 1-Click Deploy</span>
+              <span className="text-xs text-[#00F5D4]/80 uppercase tracking-[0.2em] font-medium">Verifiable On-Chain Transactions</span>
             </div>
           </motion.div>
         </div>

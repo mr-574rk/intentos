@@ -45,6 +45,39 @@ export default function WalletConnect({
     }
   };
 
+  const menuItems = (
+    <>
+      <button
+        onClick={handleCopy}
+        className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
+      >
+        {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+        <span>Copy Address</span>
+      </button>
+      <a
+        href={`https://scan.testnet.initia.xyz/address/${address}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
+        onClick={() => setIsMenuOpen(false)}
+      >
+        <ExternalLink className="w-4 h-4" />
+        <span>View on Explorer</span>
+      </a>
+      <div className="border-t border-white/5 mt-1 pt-1" />
+      <button
+        onClick={() => {
+          disconnect?.();
+          setIsMenuOpen(false);
+        }}
+        className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+      >
+        <LogOut className="w-4 h-4" />
+        <span>Disconnect</span>
+      </button>
+    </>
+  );
+
   // ── Landing page nav mode ──────────────────────────────────────────────────
   if (navMode && !isConnected) {
     return (
@@ -55,6 +88,34 @@ export default function WalletConnect({
       >
         Launch App
       </Link>
+    );
+  }
+
+  if (navMode && isConnected) {
+    return (
+      <div className="relative" ref={menuRef}>
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="rounded-full overflow-hidden border border-white/10 hover:border-[#00F5D4]/50 transition-all shadow-md block"
+          title="Manage Wallet"
+        >
+          <UserAvatar username={username} address={address} size={38} />
+        </button>
+
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute top-full right-0 mt-3 w-48 bg-[#0D0F14]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-1.5 z-50 origin-top-right whitespace-nowrap"
+            >
+              {menuItems}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     );
   }
 
@@ -123,34 +184,7 @@ export default function WalletConnect({
             transition={{ duration: 0.2 }}
             className="absolute bottom-full left-0 mb-2 w-full bg-[#0D0F14]/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] p-1.5 z-50"
           >
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-            >
-              {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-              <span>Copy Address</span>
-            </button>
-            <a
-              href={`https://scan.testnet.initia.xyz/address/${address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>View on Explorer</span>
-            </a>
-            <div className="border-t border-white/5 mt-1 pt-1" />
-            <button
-              onClick={() => {
-                disconnect?.();
-                setIsMenuOpen(false);
-              }}
-              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Disconnect</span>
-            </button>
+            {menuItems}
           </motion.div>
         )}
       </AnimatePresence>
