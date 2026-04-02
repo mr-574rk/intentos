@@ -277,6 +277,42 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      {/* Bottom of Funnel CTA */}
+      <section className="py-24 md:py-32 relative overflow-hidden">
+        {/* The Glow */}
+        <div className="w-full max-w-2xl h-64 bg-[#00F5D4]/10 blur-[100px] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+        
+        {/* Content Card */}
+        <div className="max-w-4xl mx-auto text-center px-8 py-16 bg-white/[0.02] border border-white/5 rounded-3xl backdrop-blur-sm relative z-10 mx-6 md:mx-auto">
+          <span className="text-[#00F5D4] text-xs font-mono tracking-widest uppercase mb-6 block">
+            THE FUTURE OF DEFI
+          </span>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+            Ready to put your portfolio on autopilot?
+          </h2>
+          <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10">
+            Join the IntentOS testnet today. Stop managing positions, start commanding them.
+          </p>
+          
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link 
+              href="/app/onboarding" 
+              className="bg-[#00F5D4] text-gray-900 font-bold text-lg px-8 py-4 rounded-full hover:bg-white transition-colors duration-300 shadow-[0_0_30px_rgba(0,245,212,0.3)] w-full sm:w-auto"
+            >
+              Launch App
+            </Link>
+            <a 
+              href="https://github.com/mr-574rk/intentos" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="border border-white/20 text-white font-medium text-lg px-8 py-4 rounded-full hover:bg-white/10 transition-colors duration-300 w-full sm:w-auto"
+            >
+              View GitHub
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Premium Footer */}
       <footer className="relative z-10 bg-[#0D0F14] py-10 md:py-16 mt-20">
