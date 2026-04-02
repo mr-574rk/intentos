@@ -1,0 +1,20 @@
+{
+  "name": "IntentOS",
+  "theme": "mint",
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": ["index"]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        "quick-demo",
+        "getting-started",
+        "example-intents",
+        "how-it-works",
+        "architecture"
+      ]
+    }
+  ]
+}
