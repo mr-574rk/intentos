@@ -1,14 +1,25 @@
 {
   "name": "IntentOS",
   "theme": "mint",
+  "colors": {
+    "primary": "#14F195"
+  },
   "navigation": {
-    "Introduction": ["index"],
-    "Guides": [
-      "quick-demo",
-      "getting-started",
-      "example-intents",
-      "how-it-works",
-      "architecture"
+    "groups": [
+      {
+        "group": "Introduction",
+        "pages": ["index"]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "quick-demo",
+          "getting-started",
+          "example-intents",
+          "how-it-works",
+          "architecture"
+        ]
+      }
     ]
   }
 }
