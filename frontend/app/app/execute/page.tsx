@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import AgentTimeline from "@/components/AgentTimeline";
+import AgentTimeline from "@/components/AgentTimeline_Deprecated";
 import ExecuteButton from "@/components/ExecuteButton";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import { XCircle, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
