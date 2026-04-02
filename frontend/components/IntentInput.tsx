@@ -40,6 +40,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
   const handleSubmit = () => {
     if (!text.trim() || loading || disabled || !isOnline) return;
     onSubmit(text.trim());
+    setText("");
     // Immediately blur so keyboard dismisses and signals "locked"
     textareaRef.current?.blur();
   };

@@ -85,7 +85,7 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
     return { icon: "👋", message: "Hi! I'm IntentOS.", type: "greeting", walletBalance };
   }
 
-  const helps = ["help", "commands", "what can you do"];
+  const helps = ["help", "commands", "what can you do", "get started", "how do i", "what is intentos", "beginner", "tutorial", "new here", "how does this work", "what can i do"];
   if (helps.some(h => lower.includes(h))) {
     logSystemEvent("Help", text);
     return { icon: "💡", message: "Here are things I can help with:", type: "help" };
