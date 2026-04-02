@@ -1,100 +1,63 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import https from "https";
+import { RESTClient, bcs } from "@initia/initia.js";
 import { NETWORK_CONFIG } from "../../../config/networkConfig";
 
 const router = Router();
+const restClient = new RESTClient(NETWORK_CONFIG.lcd);
+
+// Module address for testnet usernames contract
+const MODULE_ADDRESS = "0x42cd8467b1c86e59bf319e5664a09b6b5840bb3fac64f5ce690b5041c530565a";
 
 /**
  * GET /api/nameservice/resolve/:username
  *
- * Server-side proxy to the Initia nameservice LCD endpoint.
- * Avoids CORS issues from direct browser calls.
- *
- * Strips leading "@" from username before lookup.
- * Returns: { success: true, address: "init1..." }
- *      or: { success: false, error: "..." }
+ * Resolves an Initia username to an address by triggering a view function on the Move VM.
  */
 router.get("/resolve/:username", async (req: Request, res: Response) => {
   const raw = req.params.username ?? "";
-  const username = raw.replace(/^@/, "").toLowerCase().trim();
+  // Ensure we strip trailing .init and leading @
+  const username = raw.replace(/^@/, "").replace(/\.init$/, "").toLowerCase().trim();
 
-  if (!username || !username.endsWith(".init")) {
-    return res.status(400).json({ success: false, error: "Invalid .init username." });
+  if (!username) {
+    return res.status(400).json({ success: false, error: "Invalid username." });
   }
 
-  const lcdBase = new URL(NETWORK_CONFIG.lcd);
-
-  const path = `/initia/nameservice/v1/names/${encodeURIComponent(username)}`;
-
-  console.log(`[nameservice] Resolving "${username}" on ${NETWORK_CONFIG.network} → ${lcdBase.hostname}${path}`);
-
-  const options = {
-    hostname: lcdBase.hostname,
-    port: lcdBase.port ? parseInt(lcdBase.port, 10) : 443,
-    path,
-    method: "GET",
-    headers: { Accept: "application/json" },
-  };
-
-  const makeRequest = () =>
-    new Promise<{ status: number; body: string }>((resolve, reject) => {
-      const reqHttp = https.request(options, (upstream) => {
-        let data = "";
-        upstream.on("data", (chunk: string) => { data += chunk; });
-        upstream.on("end", () => resolve({ status: upstream.statusCode ?? 0, body: data }));
-      });
-      reqHttp.on("error", reject);
-      reqHttp.end();
-    });
-
+  console.log(`[nameservice] Resolving "${username}.init" on ${NETWORK_CONFIG.network} via Move VM`);
+  
   try {
-    const { status, body } = await makeRequest();
+    const result = await restClient.move.view(
+      MODULE_ADDRESS,
+      "usernames",
+      "get_address_from_name",
+      [],
+      [bcs.string().serialize(username).toBase64()]
+    );
 
-    if (status === 404 || status === 400) {
+    // Option<address> parsing
+    let resolvedAddress: string | null = null;
+    if (Array.isArray(result) && result.length > 0) {
+      const opt = result[0];
+      if (opt?.vec && Array.isArray(opt.vec) && opt.vec.length > 0) {
+        resolvedAddress = opt.vec[0];
+      }
+    }
+
+    if (!resolvedAddress || (!resolvedAddress.startsWith("init1") && !resolvedAddress.startsWith("0x"))) {
       return res.status(404).json({
         success: false,
         error: "Username not found",
-        detail: `"${username}" is not registered on the Initia ${NETWORK_CONFIG.network}.`,
+        detail: `The name "${username}.init" is not registered.`,
       });
     }
 
-    if (status !== 200) {
-      return res.status(502).json({
-        success: false,
-        error: "Nameservice unavailable",
-        detail: `LCD returned HTTP ${status}. Network: ${NETWORK_CONFIG.network}`,
-      });
-    }
-
-    let json: Record<string, unknown>;
-    try {
-      json = JSON.parse(body);
-    } catch {
-      return res.status(502).json({ success: false, error: "Invalid response from nameservice." });
-    }
-
-    // Initia nameservice response shape: { name: { owner: "init1...", ... } }
-    const address: string | undefined =
-      (json?.name as Record<string, string>)?.owner ??
-      (json?.address as string) ??
-      (json?.owner as string);
-
-    if (!address || !address.startsWith("init1")) {
-      return res.status(404).json({
-        success: false,
-        error: "Username not found",
-        detail: `Could not resolve an init1 address for "${username}".`,
-      });
-    }
-
-    return res.json({ success: true, address, username });
-  } catch (err) {
-    console.error("[nameservice] proxy error:", err);
+    return res.json({ success: true, address: resolvedAddress, username: `${username}.init` });
+  } catch (err: any) {
+    console.error("[nameservice] proxy error:", err?.response?.data || err?.message || err);
     return res.status(502).json({
       success: false,
-      error: "Could not reach Initia nameservice.",
-      detail: `Network: ${NETWORK_CONFIG.network} (${NETWORK_CONFIG.lcd})`,
+      error: "Could not reach or resolve Initia nameservice.",
+      detail: err?.response?.data?.message || err?.message || "Unknown proxy error",
     });
   }
 });
