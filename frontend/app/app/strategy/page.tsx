@@ -129,6 +129,7 @@ export default function StrategyPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string | undefined>();
   const [loaded, setLoaded] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("intentos_strategy");
@@ -152,16 +153,61 @@ export default function StrategyPage() {
   const apyPct = Math.min(Math.round(projectedApy), 100);
   const blocked = sim && !sim.passed;
 
+  /**
+   * Sums the INIT required by this strategy's steps.
+   * Covers: stake, swap-from-INIT, and any step with from=="INIT".
+   * Falls back to 0.1 INIT minimum (covers gas) when no explicit amounts exist.
+   */
+  function calcRequiredINIT(s: typeof strategy): number {
+    if (!s) return 0.1;
+    let total = 0;
+    for (const step of s.bundle.steps) {
+      const action = String(step.action ?? "").toLowerCase();
+      const from   = String(step.from  ?? "").toUpperCase();
+      const amt    = typeof step.amount === "number" ? step.amount : parseFloat(String(step.amount ?? 0));
+      const spendingINIT =
+        from === "INIT" ||
+        action === "stake" ||
+        action === "delegate" ||
+        action === "compound" ||
+        action === "leverage_stake";
+      if (spendingINIT && !isNaN(amt) && amt > 0) {
+        total += amt;
+      }
+    }
+    return total > 0 ? total : 0.1;
+  }
+
   const handleExecute = async () => {
     if (!strategy || blocked) return;
-    setExecState("executing");
     setErrorReason(null);
-    try {
-      // Session registration is now handled atomically by the backend relayer
-      // inside the same transaction as execute_bundle — no frontend wallet call needed.
+    setBalanceError(null);
 
+    // ── Pre-flight: check connected wallet INIT balance ──────────────────────
+    if (address) {
+      try {
+        const portfolioRes = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
+        const portfolioJson = await portfolioRes.json();
+        const walletINIT: number =
+          portfolioJson.wallet?.find((a: { symbol: string }) => a.symbol === "INIT")?.balance ?? 0;
+        const required = calcRequiredINIT(strategy);
+
+        if (walletINIT < required) {
+          setBalanceError(
+            `Your connected wallet has ${walletINIT.toFixed(4)} INIT but this strategy requires ≈${required.toFixed(4)} INIT. ` +
+            `Please fund your wallet before executing.`
+          );
+          return; // ← hard stop — never reaches the backend
+        }
+      } catch {
+        // If portfolio check fails don't block — network hiccup shouldn't stop execution
+        console.warn("[BalanceCheck] Portfolio fetch failed — proceeding anyway.");
+      }
+    }
+
+    setExecState("executing");
+    try {
       console.log("[DEBUG] Dispatching strategy to backend relayer...");
-      // Step 2: Execute the strategy bundle via the backend relayer
       const res = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
         method: "POST",
         headers: API_HEADERS,
@@ -357,6 +403,39 @@ export default function StrategyPage() {
         <div className="fixed md:static bottom-0 left-0 right-0 z-40 md:z-auto p-4 md:p-0 md:mt-4"
           style={{ background: "linear-gradient(to top, #000 60%, transparent)" }}>
           <div className="max-w-2xl mx-auto space-y-2">
+
+            {/* ── Insufficient balance error ───────────────────────── */}
+            <AnimatePresence>
+              {balanceError && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 340, damping: 26 }}
+                  className="rounded-2xl border px-5 py-4 space-y-2 mb-1"
+                  style={{
+                    background: "rgba(239,68,68,0.06)",
+                    borderColor: "rgba(239,68,68,0.25)",
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center justify-center w-6 h-6 rounded-full flex-shrink-0"
+                      style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.2)" }}>
+                      <XCircle className="w-3.5 h-3.5 text-red-400" />
+                    </span>
+                    <p className="text-sm font-bold text-red-400">Insufficient INIT Balance</p>
+                  </div>
+                  <p className="text-xs text-red-400/70 leading-relaxed pl-8">{balanceError}</p>
+                  <button
+                    onClick={() => setBalanceError(null)}
+                    className="pl-8 text-xs text-red-400/50 hover:text-red-400 transition-colors underline"
+                  >
+                    Dismiss
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <ExecuteButton
               onExecute={handleExecute}
               disabled={!!blocked || execState === "success" || !isOnline}
