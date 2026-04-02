@@ -2,115 +2,157 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2 } from "lucide-react";
 
-// ── Steps ──────────────────────────────────────────────────────────────────────
-const HUD_STEPS = [
-  "Parsing natural language intent...",
-  "Verifying wallet balances...",
-  "Generating DeFi strategy...",
-  "Simulating risk and yield...",
-  "Bundling transactions...",
-  "Finalizing strategy parameters...",
-] as const;
-
-const TOTAL_STEPS = HUD_STEPS.length;
-
-/** Interval between step advances (ms) */
-const STEP_INTERVAL_MS = 800;
-
-/** Minimum time the HUD must stay visible (ms) — prevents "AI did nothing" flash */
-const MIN_DISPLAY_MS = 2400;
-
-/** Brief pause on the final step before firing onComplete */
-const FINAL_PAUSE_MS = 400;
+// ── Types ──────────────────────────────────────────────────────────────────────
+export interface ReasoningStep {
+  action: string;
+  discovery?: string;
+}
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 interface ProcessingHUDProps {
   /** True while the API call is in-flight */
   apiPending: boolean;
+  /** Array of reasoning steps specific to the intent */
+  steps: ReasoningStep[];
   /** Called when the HUD has finished its minimum animation AND the API is done */
   onComplete: () => void;
 }
 
-// ── Component ──────────────────────────────────────────────────────────────────
-export default function ProcessingHUD({ apiPending, onComplete }: ProcessingHUDProps) {
-  const [stepIndex,        setStepIndex]        = useState(0);
-  const [readyToComplete,  setReadyToComplete]  = useState(false);
+/** Timing variables */
+const STEP_DELAY_MS = 800; // Time spent on 'action' before discovery
+const DISCOVERY_DELAY_MS = 600; // Time to pause on 'discovery' before moving to next step
+const FINAL_PAUSE_MS = 400; // Time before firing onComplete at the end
 
-  const startTimeRef    = useRef(Date.now());
-  const onCompleteRef   = useRef(onComplete);
+// ── Component ──────────────────────────────────────────────────────────────────
+export default function ProcessingHUD({ apiPending, steps, onComplete }: ProcessingHUDProps) {
+  const [stepIndex, setStepIndex] = useState(0);
+  const [isShowingDiscovery, setIsShowingDiscovery] = useState(false);
+  const [readyToComplete, setReadyToComplete] = useState(false);
+
+  const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
-  // ── Step auto-advance — stops at last step, never loops ──────────────────────
-  useEffect(() => {
-    if (stepIndex >= TOTAL_STEPS - 1) return;
-    const t = setTimeout(
-      () => setStepIndex(i => Math.min(i + 1, TOTAL_STEPS - 1)),
-      STEP_INTERVAL_MS
-    );
-    return () => clearTimeout(t);
-  }, [stepIndex]);
+  const totalSteps = steps.length;
+  const currentStep = steps[stepIndex];
 
-  // ── When API resolves, wait for minimum display time then set ready ───────────
+  // ── Step auto-advance logic ──────────────────────────────────────────────────
   useEffect(() => {
-    if (apiPending) return; // still in-flight
-    const elapsed  = Date.now() - startTimeRef.current;
-    const delay    = Math.max(MIN_DISPLAY_MS - elapsed, 0);
-    const t = setTimeout(() => setReadyToComplete(true), delay);
-    return () => clearTimeout(t);
+    // If we reached the end, stop advancing
+    if (!currentStep || stepIndex >= totalSteps) return;
+
+    let timeout: ReturnType<typeof setTimeout>;
+
+    if (!isShowingDiscovery) {
+      // We are showing the ACTION.
+      timeout = setTimeout(() => {
+        if (currentStep.discovery) {
+          // If there's a discovery, show it next
+          setIsShowingDiscovery(true);
+        } else {
+          // Otherwise, just move to the next step
+          if (stepIndex < totalSteps - 1) {
+            setStepIndex((i) => i + 1);
+          }
+        }
+      }, STEP_DELAY_MS);
+    } else {
+      // We are showing the DISCOVERY.
+      timeout = setTimeout(() => {
+        // Move to the next step
+        if (stepIndex < totalSteps - 1) {
+          setIsShowingDiscovery(false);
+          setStepIndex((i) => i + 1);
+        }
+      }, DISCOVERY_DELAY_MS);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [stepIndex, isShowingDiscovery, currentStep, totalSteps]);
+
+  // ── When API resolves, signal ready (no complex min-time needed anymore, HUD length dictates it) ──
+  useEffect(() => {
+    if (!apiPending) {
+      setReadyToComplete(true);
+    }
   }, [apiPending]);
 
   // ── Fire onComplete only when BOTH: last step reached AND ready ───────────────
   useEffect(() => {
-    if (!readyToComplete || stepIndex < TOTAL_STEPS - 1) return;
+    const isAtLastStep = stepIndex >= totalSteps - 1;
+    const hasShownFinalDiscoveryOrNone = !currentStep?.discovery || isShowingDiscovery;
+
+    if (!readyToComplete || !isAtLastStep || !hasShownFinalDiscoveryOrNone) return;
+
     const t = setTimeout(() => onCompleteRef.current(), FINAL_PAUSE_MS);
     return () => clearTimeout(t);
-  }, [readyToComplete, stepIndex]);
+  }, [readyToComplete, stepIndex, isShowingDiscovery, totalSteps, currentStep]);
 
   return (
     <div
-      className="h-20 w-full p-4 rounded-2xl flex items-center gap-4"
+      className="h-20 w-full p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden"
       style={{
-        background:  "#0D0F14",
-        border:      "1px solid rgba(255,255,255,0.1)",
-        boxShadow:   "0 0 20px rgba(0,245,212,0.1)",
+        background: "#0D0F14",
+        border: "1px solid rgba(255,255,255,0.1)",
+        boxShadow: "0 0 20px rgba(0,245,212,0.1)",
       }}
     >
       {/* AI Core — spinning glow orb */}
-      <Loader2
-        className="w-8 h-8 animate-spin flex-shrink-0"
-        style={{
-          color:      "#00F5D4",
-          filter:     "drop-shadow(0 0 10px rgba(0,245,212,0.8))",
-        }}
-      />
+      <motion.div
+        animate={isShowingDiscovery ? { scale: [1, 1.2, 1] } : { scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Loader2
+          className="w-8 h-8 animate-spin flex-shrink-0"
+          style={{
+            color: "#00F5D4",
+            filter: "drop-shadow(0 0 10px rgba(0,245,212,0.8))",
+          }}
+        />
+      </motion.div>
 
       {/* Right side — text + dashes */}
-      <div className="flex flex-col flex-1 gap-2 min-w-0">
-
+      <div className="flex flex-col flex-1 gap-2 min-w-0 z-10">
         {/* Cross-fading step text */}
-        <div className="relative h-5 overflow-hidden">
+        <div className="relative h-5 overflow-hidden flex items-center">
           <AnimatePresence mode="wait">
-            <motion.span
-              key={stepIndex}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute inset-0 text-sm font-medium tracking-wide whitespace-nowrap overflow-hidden text-ellipsis"
-              style={{ color: "#fff" }}
-            >
-              {HUD_STEPS[stepIndex]}
-            </motion.span>
+            {!isShowingDiscovery ? (
+              <motion.div
+                key={`action-${stepIndex}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center gap-2"
+              >
+                <span className="text-sm font-medium tracking-wide whitespace-nowrap overflow-hidden text-ellipsis text-white">
+                  {currentStep?.action ?? "Processing..."}
+                </span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={`discovery-${stepIndex}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4 text-[#00F5D4]" />
+                <span className="text-sm font-medium tracking-wide whitespace-nowrap overflow-hidden text-ellipsis text-[#00F5D4]">
+                  {currentStep?.discovery}
+                </span>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
         {/* Horizontal progress dashes */}
         <div className="flex gap-1.5 w-full">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => {
-            const isActive  = i < stepIndex;
-            const isCurrent = i === stepIndex;
+          {Array.from({ length: totalSteps }).map((_, i) => {
+            const isActive = i < stepIndex || (i === stepIndex && isShowingDiscovery);
+            const isCurrent = i === stepIndex && !isShowingDiscovery;
             return (
               <div
                 key={i}
@@ -126,7 +168,6 @@ export default function ProcessingHUD({ apiPending, onComplete }: ProcessingHUDP
             );
           })}
         </div>
-
       </div>
     </div>
   );

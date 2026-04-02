@@ -647,6 +647,16 @@ export default function IntentPage() {
   // ── Submit to backend (strategy flow) ────────────────────────────────────────
   const submitToApi = async (text: string) => {
     setLoading(true);
+
+    // Provide immediate intent feedback
+    const lower = text.toLowerCase();
+    let type = "general";
+    if (/\bstake\b/.test(lower)) type = "stake";
+    else if (/\bswap\b/.test(lower)) type = "swap";
+    else if (/\bsend\b|\btransfer\b/.test(lower)) type = "send";
+    else if (/\bgrow\b|\binvest\b|\bearn\b/.test(lower)) type = "grow";
+    setIntentType(type);
+
     setHudVisible(true);
     setShowPlanCard(false);
     setError(null);
@@ -699,6 +709,50 @@ export default function IntentPage() {
     setHudVisible(false);
     setShowPlanCard(true);
     setTimeout(() => router.push("/app/strategy"), 9000);
+  };
+
+  // ── Reasoning Engine Flow ────────────────────────────────────────────────────
+  const getReasoningFlow = () => {
+    switch (intentType) {
+      case "stake":
+        return [
+          { action: "Understanding staking request..." },
+          { action: "Checking wallet balance...", discovery: `${walletInitBalance.toFixed(2)} INIT available` },
+          { action: "Selecting validator...", discovery: "Validator: Initia Labs" },
+          { action: "Preparing delegation transaction..." },
+        ];
+      case "swap":
+        return [
+          { action: "Understanding swap request..." },
+          { action: "Checking balances...", discovery: `${walletInitBalance.toFixed(2)} INIT available` },
+          { action: "Finding best swap route...", discovery: "Route: INIT → USDC" },
+          { action: "Estimating risk and potential return..." },
+          { action: "Preparing swap transaction..." },
+        ];
+      case "send": // Note: typically sends are handled before this, but if it reaches here:
+        return [
+          { action: "Understanding transfer request..." },
+          { action: "Resolving recipient identity...", discovery: "Address verified" },
+          { action: "Checking wallet balance...", discovery: `${walletInitBalance.toFixed(2)} INIT available` },
+          { action: "Preparing transfer transaction..." },
+        ];
+      case "grow":
+        return [
+          { action: "Understanding financial goal..." },
+          { action: "Analyzing current portfolio..." },
+          { action: "Evaluating yield opportunities..." },
+          { action: "Building strategy plan..." },
+          { action: "Simulating possible outcomes..." },
+        ];
+      default:
+        return [
+          { action: "Parsing natural language intent..." },
+          { action: "Verifying wallet balances..." },
+          { action: "Generating DeFi strategy..." },
+          { action: "Estimating risk and potential return..." },
+          { action: "Finalizing strategy parameters..." },
+        ];
+    }
   };
 
   // ── Transfer execution (mirrors strategy page two-step flow exactly) ──────────
@@ -1043,7 +1097,7 @@ export default function IntentPage() {
                       exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
                       transition={{ duration: 0.3 }}
                     >
-                      <ProcessingHUD apiPending={loading} onComplete={handleHudComplete} />
+                      <ProcessingHUD apiPending={loading} steps={getReasoningFlow()} onComplete={handleHudComplete} />
                     </motion.div>
                   )}
 
