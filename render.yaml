@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: intentos-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: NODE_ENV
+        value: production
+      - key: EXECUTION_MODE
+        value: testnet
+      - key: INITIA_RPC
+        value: https://rpc.testnet.initia.xyz
+      - key: CHAIN_ID
+        value: initiation-2
+      - key: FRONTEND_URL
+        value: "update-me-to-vercel-url" # Update this in the dashboard later
