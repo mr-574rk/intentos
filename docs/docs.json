@@ -1,25 +1,132 @@
 {
-  "name": "IntentOS",
+  "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
+  "name": "IntentOS Documentation",
+
   "colors": {
-    "primary": "#14F195"
+    "primary": "#14F195",
+    "light": "#2FFFCF",
+    "dark": "#0FBF95"
   },
+
+  "favicon": "/favicon.svg",
+
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "Introduction",
-        "pages": ["index"]
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "index",
+              "quick-demo",
+              "getting-started"
+            ]
+          },
+          {
+            "group": "Using IntentOS",
+            "pages": [
+              "example-intents",
+              "autopilot",
+              "portfolio-dashboard"
+            ]
+          },
+          {
+            "group": "How It Works",
+            "pages": [
+              "intent-engine",
+              "strategy-execution",
+              "architecture"
+            ]
+          }
+        ]
       },
       {
-        "group": "Guides",
-        "pages": [
-          "quick-demo",
-          "getting-started",
-          "example-intents",
-          "how-it-works",
-          "architecture"
+        "tab": "Developer",
+        "groups": [
+          {
+            "group": "Architecture",
+            "pages": [
+              "dev/overview",
+              "dev/ai-engine",
+              "dev/execution-pipeline"
+            ]
+          },
+          {
+            "group": "API",
+            "pages": [
+              "api/introduction",
+              "api/portfolio",
+              "api/intent",
+              "api/execute"
+            ]
+          }
         ]
       }
+    ],
+
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Live Demo",
+          "href": "https://intentox.vercel.app",
+          "icon": "rocket"
+        },
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/mr-574rk/intentos",
+          "icon": "github"
+        },
+        {
+          "anchor": "Hackathon",
+          "href": "https://dorahacks.io",
+          "icon": "trophy"
+        }
+      ]
+    }
+  },
+
+  "logo": {
+    "light": "/logo-light.svg",
+    "dark": "/logo-dark.svg"
+  },
+
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/mr-574rk/intentos"
+      },
+      {
+        "label": "Demo",
+        "href": "https://intentox.vercel.app"
+      }
+    ],
+
+    "primary": {
+      "type": "button",
+      "label": "Launch IntentOS",
+      "href": "https://intentox.vercel.app"
+    }
+  },
+
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "cursor",
+      "vscode"
     ]
+  },
+
+  "footer": {
+    "socials": {
+      "x": "https://x.com/intentosai",
+      "github": "https://github.com/mr-574rk/intentos"
+    }
   }
 }
