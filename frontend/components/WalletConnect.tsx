@@ -150,9 +150,12 @@ export default function WalletConnect({
             <p className="text-xs font-mono font-semibold text-text-primary truncate">
               {displayName}
             </p>
-            <p className="text-[10px] font-medium text-text-muted mt-0.5">
-               Initia Testnet
-            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-[10px] font-medium text-text-muted">
+                Initia Testnet
+              </p>
+              <span className="px-1.5 py-[1px] bg-[#00F5D4]/10 text-[#00F5D4] text-[8px] font-bold uppercase rounded border border-[#00F5D4]/30 tracking-widest leading-none">DEMO </span>
+            </div>
           </div>
         </div>
 

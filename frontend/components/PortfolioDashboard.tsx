@@ -379,8 +379,12 @@ export default function PortfolioDashboard() {
 
   const load = async () => {
     if (!address) { setLoading(false); return; }
+    
+    // DEMO: Use relayer address for the hackathon demo since all executions use the backend relayer
+    const targetAddress = process.env.NEXT_PUBLIC_RELAYER_ADDRESS || address;
+    
     setError(null);
-    const cacheKey = `intentos_portfolio_cache_${address}`;
+    const cacheKey = `intentos_portfolio_cache_${targetAddress}`;
     const cached = localStorage.getItem(cacheKey);
     // Optimistic UI cache load
     if (cached && !data) {
@@ -401,7 +405,7 @@ export default function PortfolioDashboard() {
     }
 
     try {
-      const res  = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
+      const res  = await fetch(`${API_URL}/api/portfolio/${targetAddress}`, { headers: API_HEADERS });
       const json = await res.json();
       const pd: PortfolioData = {
         wallet:        json.wallet  || [],
