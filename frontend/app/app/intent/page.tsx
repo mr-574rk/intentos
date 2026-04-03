@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -16,6 +16,7 @@ import type {
   AmbiguityResponse,
   ExecutionResult,
 } from "@/types";
+import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { API_URL, API_HEADERS } from "@/lib/config";
 import {
   enableAutopilot,
@@ -54,9 +55,9 @@ interface TransferIntent {
 }
 
 function parseTransferIntent(text: string): TransferIntent | null {
-  // Matches init1 addresses, .init usernames (@alice.init or alice.init), 0x addresses
+  // Matches init1 addresses, .init usernames (@alice.init or simple stark), 0x addresses
   const match = text.match(
-    /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+((?:@?[a-zA-Z0-9._-]+\.init)|init1[a-zA-Z0-9]{30,}|0x[a-fA-F0-9]{8,}|[a-zA-Z0-9._-]{3,}@[a-zA-Z0-9._-]{2,})/i
+    /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+((?:@?[a-zA-Z0-9._-]+)|0x[a-fA-F0-9]{8,})/i
   );
   if (!match) return null;
   return { amount: match[2], token: match[3].toUpperCase(), recipient: match[4] };
@@ -68,7 +69,12 @@ type RecipientResult =
   | { ok: false; error: string; sub: string };
 
 async function resolveRecipient(raw: string, apiUrl: string): Promise<RecipientResult> {
-  const cleaned = raw.trim();
+  let cleaned = raw.trim();
+
+  // Auto-append .init for bare usernames (not acting as init1 or hex address)
+  if (!cleaned.startsWith("0x") && !cleaned.startsWith("init1") && !cleaned.toLowerCase().endsWith(".init")) {
+    cleaned += ".init";
+  }
 
   // ── Case 1: .init username ──────────────────────────────────────────────────
   if (cleaned.toLowerCase().endsWith(".init")) {
@@ -98,8 +104,8 @@ async function resolveRecipient(raw: string, apiUrl: string): Promise<RecipientR
 
   // ── Case 2: raw init1 address ───────────────────────────────────────────────
   if (cleaned.startsWith("init1")) {
-    if (cleaned.length < 39) {
-      return { ok: false, error: "Invalid Initia address", sub: "Address is too short. init1 addresses are at least 39 characters." };
+    if (cleaned.length < 41) {
+      return { ok: false, error: "Invalid Initia address", sub: "Address is too short. init1 addresses are at least 41 characters." };
     }
     // Optional: basic bech32 character check (alphanumeric, no uppercase after prefix)
     if (!/^init1[a-z0-9]{38,}$/.test(cleaned)) {
@@ -118,6 +124,7 @@ async function resolveRecipient(raw: string, apiUrl: string): Promise<RecipientR
 }
 
 // ── Recent recipients — saved to backend DB ──────────────────────────────────────────────
+// Note: Intentionally fails silently so any network drop doesn't block fast UX execution.
 async function saveRecentRecipient(
   walletOwner: string,
   name: string,
@@ -202,13 +209,16 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
 function logSystemEvent(label: string, raw: string, address?: string) {
   if (!address) return;
   try {
-    const key = `intentos_system_events_${address}`;
+    const safeAddressId = address.slice(0, 8); // Hashed/sliced to prevent strict fingerprinting
+    const key = `intentos_system_events_${safeAddressId}`;
     const existing = JSON.parse(localStorage.getItem(key) ?? "[]") as object[];
     existing.unshift({ label, raw, timestamp: new Date().toISOString() });
     localStorage.setItem(key, JSON.stringify(existing.slice(0, 50)));
   } catch { /* ignore */ }
 }
 
+// Note: Transfer + deployment modal paths technically overlap on generic "yield" + "to" texts,
+// but parseTransferIntent runs prior to this, trapping matches and making this completely safe.
 function needsDeploymentModal(text: string): boolean {
   return GOAL_PATTERNS.test(text) && !HAS_AMOUNT.test(text);
 }
@@ -235,7 +245,7 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
             onClick={() => setShowFullQR(true)}
             className="w-16 h-16 bg-white p-1.5 rounded-xl cursor-pointer relative group shadow-lg"
           >
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${address}`} alt="Wallet QR Code" className="w-full h-full object-contain" />
+            <QRCodeSVG value={address} size={52} className="w-full h-full" />
             <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
               <Maximize2 className="w-5 h-5 text-white" />
             </div>
@@ -252,8 +262,8 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
             {(["INIT", "USDC"] as const).map(t => (
               <button key={t} onClick={() => setActiveToken(t)}
                 className={`px-2.5 py-1 text-[10px] font-bold rounded-full transition-all flex items-center gap-1 ${activeToken === t ? "bg-[#00F5D4] text-black shadow-sm" : "text-text-muted hover:text-white"}`}>
-                {t === "INIT" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/INIT.png" className="w-3 h-3 rounded-full" />}
-                {t === "USDC" && activeToken === t && <img src="https://registry.testnet.initia.xyz/images/USDC.png" className="w-3 h-3 rounded-full" />}
+                {t === "INIT" && activeToken === t && <img src={`${process.env.NEXT_PUBLIC_REGISTRY_BASE_URL || "https://registry.testnet.initia.xyz"}/images/INIT.png`} className="w-3 h-3 rounded-full" />}
+                {t === "USDC" && activeToken === t && <img src={`${process.env.NEXT_PUBLIC_REGISTRY_BASE_URL || "https://registry.testnet.initia.xyz"}/images/USDC.png`} className="w-3 h-3 rounded-full" />}
                 {t}
               </button>
             ))}
@@ -290,10 +300,10 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="bg-white p-5 rounded-3xl shadow-[0_0_50px_rgba(0,245,212,0.15)] outline outline-1 outline-white/20"
+              className="bg-white p-5 rounded-3xl shadow-[0_0_50px_rgba(0,245,212,0.15)] outline outline-1 outline-white/20 flex items-center justify-center"
               onClick={e => e.stopPropagation()}
             >
-              <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${address}`} alt="Wallet QR Code Full" className="w-64 h-64 sm:w-80 sm:h-80 object-contain" />
+              <QRCodeCanvas value={address} size={256} className="w-64 h-64 sm:w-80 sm:h-80 object-contain" />
             </motion.div>
             
             <motion.p 
@@ -353,7 +363,7 @@ function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) =>
             ))}
           </div>
           <input type="range" min={1} max={100} value={pct} onChange={e => setPct(Number(e.target.value))} className="w-full cursor-pointer accent-[#00F5D4]"
-            style={{ appearance: "none", height: "6px", borderRadius: "999px", background: `linear-gradient(to right, #00F5D4 ${pct}%, rgba(255,255,255,0.1) ${pct}%)`, outline: "none" }} />
+            style={useMemo(() => ({ appearance: "none", height: "6px", borderRadius: "999px", background: `linear-gradient(to right, #00F5D4 ${pct}%, rgba(255,255,255,0.1) ${pct}%)`, outline: "none" }), [pct])} />
           <button onClick={() => onConfirm(pct)} className="w-full py-4 font-bold text-sm tracking-wide rounded-full bg-[#00F5D4] text-black transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(0,245,212,0.4)] hover:bg-[#0cf6d6]">
             Build Strategy with {pct === 100 ? "Full" : `${pct}%`} Deployment →
           </button>
@@ -404,9 +414,14 @@ function ConfirmTransactionCard({
           </div>
           <div className="py-1.5 flex justify-between items-start border-b border-white/5 last:border-0">
             <span className="text-xs text-text-muted">Recipient</span>
-            <span className="text-[11px] font-mono text-text-secondary text-right max-w-[200px] break-all leading-tight mt-0.5">
-              {transfer.recipient}
-            </span>
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-semibold text-text-primary">
+                {transfer.displayName ?? transfer.recipient}
+              </span>
+              <span className="text-[10px] font-mono text-text-muted mt-0.5 max-w-[200px] break-all text-right leading-tight">
+                {transfer.resolvedAddress ?? transfer.recipient}
+              </span>
+            </div>
           </div>
           <div className="py-1.5 flex justify-between items-center border-b border-white/5 last:border-0">
             <span className="text-xs text-text-muted">Network Fee</span>
@@ -603,10 +618,10 @@ export default function IntentPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (intentType) {
+    if (intentType && (hudVisible || showPlanCard)) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [intentType]);
+  }, [intentType, hudVisible, showPlanCard]);
 
   // Pre-fill from ?prefill= URL param
   useEffect(() => {
@@ -841,6 +856,7 @@ export default function IntentPage() {
     setTransferResult(null);
     setRecipientError(null);
     setRawText("");
+    setIntentType(null);
   };
 
   // ── Pre-flight validation ─────────────────────────────────────────────────────
@@ -905,6 +921,7 @@ export default function IntentPage() {
     setTransferResult(null);
     setHudVisible(false);
     setShowPlanCard(false);
+    setIntentType(null);
 
     // 0. System commands
     const sysResponse = getSystemResponse(text, address, walletInitBalance);
@@ -974,7 +991,7 @@ export default function IntentPage() {
           question={ambiguity.question}
           options={ambiguity.options}
           onSelect={handleClarify}
-          onDismiss={() => { setAmbiguity(null); submitToApi(`${pendingText} — low risk yield`); }}
+          onDismiss={() => { setAmbiguity(null); }}
         />
       )}
 
@@ -1359,8 +1376,9 @@ export default function IntentPage() {
             disabled={!!timeline || !isOnline || transferLoading || !!transferConfirm}
             defaultValue={rawText}
             walletEmpty={walletEmpty}
-            onTextChange={(val) => setIntentType(detectIntent(val))}
+            onTextChange={setRawText}
             detectedIntent={(!timelineActive && !systemResponse && !loading && !transferConfirm) ? intentType : null}
+            placeholderOverride={transferConfirm ? "Please confirm or reject the transaction above..." : undefined}
           />
         </div>
       </div>

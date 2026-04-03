@@ -30,9 +30,10 @@ interface IntentInputProps {
   walletEmpty?: boolean | null;
   onTextChange?: (text: string) => void;
   detectedIntent?: string | null;
+  placeholderOverride?: string;
 }
 
-export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty, onTextChange, detectedIntent }: IntentInputProps) {
+export default function IntentInput({ onSubmit, loading, disabled, defaultValue, walletEmpty, onTextChange, detectedIntent, placeholderOverride }: IntentInputProps) {
   const [text, setText] = useState(defaultValue ?? "");
   const [focused, setFocused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -136,7 +137,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
               }}
-              placeholder={isMobile ? "e.g. stake 0.5 INIT..." : "e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot"}
+              placeholder={placeholderOverride || (isMobile ? "e.g. stake 0.5 INIT..." : "e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot")}
               disabled={loading || disabled || !isOnline}
               className={`w-full bg-transparent pl-5 pt-4 pb-12 pr-[100px] md:pr-[120px] text-base text-text-primary
                          placeholder:text-text-muted resize-none focus:outline-none focus:ring-0 focus:border-transparent border-none align-top leading-relaxed
