@@ -53,7 +53,7 @@ interface TransferIntent {
   displayName?: string;      // friendly label for the UI
 }
 
-export function parseTransferIntent(text: string): TransferIntent | null {
+function parseTransferIntent(text: string): TransferIntent | null {
   const match = text.match(
     /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+((?:@?[a-zA-Z0-9._-]+)|0x[a-fA-F0-9]{8,})/i
   );

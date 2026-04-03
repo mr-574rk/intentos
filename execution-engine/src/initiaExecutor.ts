@@ -29,7 +29,7 @@ async function registerSessionViaCLI(owner: string, strategyId: string, lcd: RES
 
   console.log("[INFO] Registering session via CLI for strategy:", strategyId);
 
-  await new Promise<void>((resolve, reject) => {
+  const txhash = await new Promise<string | null>((resolve, reject) => {
     execFile(
       "initiad",
       [
@@ -39,7 +39,7 @@ async function registerSessionViaCLI(owner: string, strategyId: string, lcd: RES
         "--gas", "auto", "--gas-adjustment", "1.5", "--gas-prices", "0.15uinit", "-y"
       ],
       { env: { ...process.env, PATH: `${process.env.HOME}/go/bin:/usr/local/bin:${process.env.PATH}` } },
-      async (err, stdout, stderr) => {
+      (err, stdout, stderr) => {
         if (err) {
           const out = (stderr || err.message).toLowerCase();
           const isAlreadyExists = out.includes("already exists") || out.includes("ealready") || out.includes("session already registered");
@@ -48,28 +48,28 @@ async function registerSessionViaCLI(owner: string, strategyId: string, lcd: RES
             return reject(new Error("Session registration failed via CLI"));
           }
           console.warn("[WARN] register_session CLI stderr (already exists/idempotent pass):", stderr?.substring(0, 200) || err.message);
-          return resolve();
+          return resolve(null);
         }
-        const txhash = (stdout + stderr).match(/txhash:\s*([A-F0-9]{64})/i)?.[1];
-        console.log("[INFO] register_session tx:", txhash ?? "broadcasted");
-        
-        if (txhash) {
-          try {
-            let attempts = 0;
-            while (attempts < 10) {
-              const info = await lcd.tx.txInfo(txhash).catch(() => null);
-              if (info) break;
-              await new Promise(r => setTimeout(r, 1500));
-              attempts++;
-            }
-          } catch (pollErr) {
-            console.log("[WARN] Polling waitTx failed, proceeding...", pollErr);
-          }
-        }
-        resolve();
+        const hash = (stdout + stderr).match(/txhash:\s*([A-F0-9]{64})/i)?.[1];
+        console.log("[INFO] register_session tx:", hash ?? "broadcasted");
+        resolve(hash ?? null);
       }
     );
   });
+
+  if (txhash) {
+    try {
+      let attempts = 0;
+      while (attempts < 10) {
+        const info = await lcd.tx.txInfo(txhash).catch(() => null);
+        if (info) break;
+        await new Promise(r => setTimeout(r, 1500));
+        attempts++;
+      }
+    } catch (pollErr) {
+      console.log("[WARN] Polling waitTx failed, proceeding...", pollErr);
+    }
+  }
 }
 
 /**
@@ -317,17 +317,17 @@ export async function initiaExecute(
     const moveFromDenoms = nonDexIdxs.map(i => stepFromDenoms[i]);
     const moveToDenoms   = nonDexIdxs.map(i => stepToDenoms[i]);
     const moveAmounts    = nonDexIdxs.map(i => stepAmounts[i]);
-    const moveRecipients = nonDexIdxs.map(i => {
-      if (moveActions[i] === 2 || moveActions[i] === 3) {
-        const addr = String(transactions[i].payload.to ?? ZERO_ADDR);
+    const moveRecipients = nonDexIdxs.map((globalIdx, localIdx) => {
+      if (moveActions[localIdx] === 2 || moveActions[localIdx] === 3) {
+        const addr = String(transactions[globalIdx].payload.to ?? ZERO_ADDR);
         if (!addr || addr === ZERO_ADDR) throw new Error("Transfer step missing recipient address");
         if (!addr.startsWith("init1")) throw new Error(`Transfer recipient must be a bech32 init1 address, got: ${addr}`);
         return addr;
       }
       return ZERO_ADDR;
     });
-    const moveValidators = nonDexIdxs.map(i => STAKE_ACTIONS.has(moveActions[i]) ? INITIA_CONFIG.defaultValidator : "");
-    const movePairAddrs  = nonDexIdxs.map(i => SWAP_ACTIONS.has(moveActions[i]) ? resolvePair(String(transactions[i].payload.from ?? "INIT"), String(transactions[i].payload.to ?? "USDC")) : ZERO_ADDR);
+    const moveValidators = nonDexIdxs.map((_, localIdx) => STAKE_ACTIONS.has(moveActions[localIdx]) ? INITIA_CONFIG.defaultValidator : "");
+    const movePairAddrs  = nonDexIdxs.map((globalIdx, localIdx) => SWAP_ACTIONS.has(moveActions[localIdx]) ? resolvePair(String(transactions[globalIdx].payload.from ?? "INIT"), String(transactions[globalIdx].payload.to ?? "USDC")) : ZERO_ADDR);
 
     const senderAddr = wallet.key.accAddress;
     if (!sessionRegistered) {
@@ -365,6 +365,10 @@ export async function initiaExecute(
   // 4. Sign and Broadcast
   try {
     console.log(`[DEBUG] Finalizing execution with ${msgs.length} messages...`);
+    if (msgs.length === 0) {
+      throw new Error("No executable messages were generated for this strategy.");
+    }
+
     if (process.env.DEBUG === "true") {
       for (const msg of msgs) {
         console.log(`[DEBUG] MSG Payload:`, JSON.stringify(msg, null, 2));
