@@ -7,6 +7,13 @@ import { X, ShieldCheck, ExternalLink, Loader2, Mail, ChevronDown } from "lucide
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
+// ── Types ───────────────────────────────────────────────────────────────────
+
+interface CosmosProvider {
+  enable(chainId: string): Promise<void>;
+  getOfflineSigner(chainId: string): unknown;
+}
+
 // ── Wallet static metadata ────────────────────────────────────────────────────
 // Connector IDs match wagmi connector IDs registered by InterwovenKit
 
@@ -14,19 +21,19 @@ const WALLET_METADATA: Record<string, {
   name: string;
   image: string;
   installUrl: string;
-  cosmosProvider?: () => unknown;
+  cosmosProvider?: () => CosmosProvider | undefined;
 }> = {
   "app.keplr": {
     name: "Keplr",
     image: "/Keplr.webp",
     installUrl: "https://keplr.app/get",
-    cosmosProvider: () => typeof window !== "undefined" ? (window as any).keplr : undefined,
+    cosmosProvider: () => typeof window !== "undefined" ? (window as any).keplr as CosmosProvider : undefined,
   },
   "io.leapwallet": {
     name: "Leap",
     image: "/leap.svg",
     installUrl: "https://leapwallet.io/download",
-    cosmosProvider: () => typeof window !== "undefined" ? (window as any).leap : undefined,
+    cosmosProvider: () => typeof window !== "undefined" ? (window as any).leap as CosmosProvider : undefined,
   },
   "io.metamask": {
     name: "MetaMask",
@@ -131,7 +138,6 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
     return !isPrimary && c.id !== PRIVY_ID;
   });
 
-
   const handleConnect = async (id: string) => {
     setConnectError(null);
     const item = walletItems.find(w => w.id === id);
@@ -157,8 +163,8 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
       } else if (item.meta.cosmosProvider) {
         // Cosmos extension is on window but wagmi hasn't surfaced an EIP-6963 connector for it.
         // Directly enable the Cosmos provider — this triggers the wallet's own approval popup.
-        const provider = item.meta.cosmosProvider() as any;
-        if (provider?.enable) {
+        const provider = item.meta.cosmosProvider();
+        if (provider) {
           await provider.enable("initiation-2");
           // After enabling, re-check if a connector appeared and connect via wagmi
           const freshConnectors = connectors;
@@ -173,8 +179,9 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
       } else {
         setConnectError(`${item.meta.name} not detected. Try refreshing.`);
       }
-    } catch (err: any) {
-      setConnectError(err?.message ?? "Connection failed.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Connection failed.";
+      setConnectError(message);
     }
   };
 
