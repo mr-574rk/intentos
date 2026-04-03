@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
 import IntentInput from "@/components/IntentInput";
 import ProcessingHUD from "@/components/ProcessingHUD";
 import AmbiguityModal from "@/components/AmbiguityModal";
@@ -16,7 +15,7 @@ import type {
   AmbiguityResponse,
   ExecutionResult,
 } from "@/types";
-import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react";
 import { API_URL, API_HEADERS } from "@/lib/config";
 import {
   enableAutopilot,
@@ -54,13 +53,16 @@ interface TransferIntent {
   displayName?: string;      // friendly label for the UI
 }
 
-function parseTransferIntent(text: string): TransferIntent | null {
-  // Matches init1 addresses, .init usernames (@alice.init or simple stark), 0x addresses
+export function parseTransferIntent(text: string): TransferIntent | null {
   const match = text.match(
     /\b(send|transfer|pay)\s+([\d.]+)\s+(\w+)\s+to\s+((?:@?[a-zA-Z0-9._-]+)|0x[a-fA-F0-9]{8,})/i
   );
   if (!match) return null;
-  return { amount: match[2], token: match[3].toUpperCase(), recipient: match[4] };
+  const recipient = match[4];
+  const blocklist = new Set(["the", "a", "my", "their", "your", "his", "her", "our", "an", "this", "that", "some", "someone", "anyone"]);
+  if (blocklist.has(recipient.toLowerCase())) return null;
+  
+  return { amount: match[2], token: match[3].toUpperCase(), recipient };
 }
 
 // ── Recipient verification ──────────────────────────────────────────────────────
@@ -70,10 +72,11 @@ type RecipientResult =
 
 async function resolveRecipient(raw: string, apiUrl: string): Promise<RecipientResult> {
   let cleaned = raw.trim();
+  const lower = cleaned.toLowerCase();
 
   // Auto-append .init for bare usernames (not acting as init1 or hex address)
-  if (!cleaned.startsWith("0x") && !cleaned.startsWith("init1") && !cleaned.toLowerCase().endsWith(".init")) {
-    cleaned += ".init";
+  if (!lower.startsWith("0x") && !lower.startsWith("init1") && !lower.endsWith(".init")) {
+    cleaned = lower + ".init";
   }
 
   // ── Case 1: .init username ──────────────────────────────────────────────────
@@ -303,7 +306,7 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
               className="bg-white p-5 rounded-3xl shadow-[0_0_50px_rgba(0,245,212,0.15)] outline outline-1 outline-white/20 flex items-center justify-center"
               onClick={e => e.stopPropagation()}
             >
-              <QRCodeCanvas value={address} size={256} className="w-64 h-64 sm:w-80 sm:h-80 object-contain" />
+              <QRCodeSVG value={address} size={320} className="w-64 h-64 sm:w-80 sm:h-80 object-contain" />
             </motion.div>
             
             <motion.p 
@@ -335,6 +338,15 @@ function ReceiveCard({ address, onDismiss }: { address: string; onDismiss: () =>
 function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) => void; onDismiss: () => void }) {
   const [pct, setPct] = useState(50);
   const presets = [10, 25, 50, 100];
+
+  const sliderStyle = useMemo(() => ({ 
+    appearance: "none" as const, 
+    height: "6px", 
+    borderRadius: "999px", 
+    background: `linear-gradient(to right, #00F5D4 ${pct}%, rgba(255,255,255,0.1) ${pct}%)`, 
+    outline: "none" 
+  }), [pct]);
+
   return (
     <AnimatePresence>
       <motion.div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onDismiss} />
@@ -363,7 +375,7 @@ function DeploymentModal({ onConfirm, onDismiss }: { onConfirm: (pct: number) =>
             ))}
           </div>
           <input type="range" min={1} max={100} value={pct} onChange={e => setPct(Number(e.target.value))} className="w-full cursor-pointer accent-[#00F5D4]"
-            style={useMemo(() => ({ appearance: "none", height: "6px", borderRadius: "999px", background: `linear-gradient(to right, #00F5D4 ${pct}%, rgba(255,255,255,0.1) ${pct}%)`, outline: "none" }), [pct])} />
+            style={sliderStyle} />
           <button onClick={() => onConfirm(pct)} className="w-full py-4 font-bold text-sm tracking-wide rounded-full bg-[#00F5D4] text-black transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_rgba(0,245,212,0.4)] hover:bg-[#0cf6d6]">
             Build Strategy with {pct === 100 ? "Full" : `${pct}%`} Deployment →
           </button>
@@ -597,6 +609,7 @@ export default function IntentPage() {
   const [pendingText, setPendingText] = useState<string>("");
   const [showDeploy, setShowDeploy] = useState(false);
   const [rawText, setRawText] = useState("");
+  const [inputResetKey, setInputResetKey] = useState(0);
   const [systemResponse, setSystemResponse] = useState<SystemResponse | null>(null);
   const [walletEmpty, setWalletEmpty] = useState<boolean | null>(null);
   const [walletInitBalance, setWalletInitBalance] = useState<number>(0);
@@ -628,6 +641,7 @@ export default function IntentPage() {
     const prefill = searchParams.get("prefill");
     if (prefill) {
       setRawText(decodeURIComponent(prefill));
+      setInputResetKey(k => k + 1);
     } else {
       sessionStorage.removeItem("intentos_strategy");
     }
@@ -667,9 +681,9 @@ export default function IntentPage() {
     else if (/\bswap\b/.test(lower)) type = "swap";
     else if (/\bsend\b|\btransfer\b/.test(lower)) type = "send";
     else if (/\bgrow\b|\binvest\b|\bearn\b/.test(lower)) type = "grow";
-    setIntentType(type);
-
+    
     setHudVisible(true);
+    setIntentType(type);
     setShowPlanCard(false);
     setError(null);
     setTimeline(null);
@@ -857,6 +871,7 @@ export default function IntentPage() {
     setRecipientError(null);
     setRawText("");
     setIntentType(null);
+    setInputResetKey(k => k + 1);
   };
 
   // ── Pre-flight validation ─────────────────────────────────────────────────────
@@ -921,13 +936,13 @@ export default function IntentPage() {
     setTransferResult(null);
     setHudVisible(false);
     setShowPlanCard(false);
-    setIntentType(null);
 
     // 0. System commands
     const sysResponse = getSystemResponse(text, address, walletInitBalance);
     if (sysResponse) {
       setSystemResponse(sysResponse);
       setRawText("");
+      setInputResetKey(k => k + 1);
       return;
     }
 
@@ -969,6 +984,7 @@ export default function IntentPage() {
 
   const handleDeployConfirm = (pct: number) => {
     setShowDeploy(false);
+    setInputResetKey(k => k + 1);
     submitToApi(`${rawText} — deploy ${pct}% of my savings`);
   };
 
@@ -1268,7 +1284,7 @@ export default function IntentPage() {
                           <button onClick={() => { setSystemResponse({ icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}>
-                            <img src="https://registry.testnet.initia.xyz/images/INIT.png" alt="INIT" width={14} height={14} className="rounded-full" />
+                            <img src={`${process.env.NEXT_PUBLIC_REGISTRY_BASE_URL || "https://registry.testnet.initia.xyz"}/images/INIT.png`} alt="INIT" width={14} height={14} className="rounded-full" />
                             Receive INIT
                           </button>
                         </div>
@@ -1278,13 +1294,13 @@ export default function IntentPage() {
                           <button onClick={() => { setSystemResponse({ icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             style={{ background: "rgba(0,245,212,0.1)", border: "1px solid rgba(0,245,212,0.25)", color: "#00F5D4" }}>
-                            <img src="https://registry.testnet.initia.xyz/images/INIT.png" alt="INIT" width={14} height={14} className="rounded-full" />
+                            <img src={`${process.env.NEXT_PUBLIC_REGISTRY_BASE_URL || "https://registry.testnet.initia.xyz"}/images/INIT.png`} alt="INIT" width={14} height={14} className="rounded-full" />
                             Receive INIT
                           </button>
                           <button onClick={() => { setSystemResponse({ icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia Wallet Address", type: "receive", address }); setValidationError(null); }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
                             style={{ background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.25)", color: "#7C3AED" }}>
-                            <img src="https://registry.testnet.initia.xyz/images/USDC.png" alt="USDC" width={14} height={14} className="rounded-full" />
+                            <img src={`${process.env.NEXT_PUBLIC_REGISTRY_BASE_URL || "https://registry.testnet.initia.xyz"}/images/USDC.png`} alt="USDC" width={14} height={14} className="rounded-full" />
                             Receive USDC
                           </button>
                         </div>
@@ -1370,13 +1386,25 @@ export default function IntentPage() {
         {/* Intent Input — always at bottom, disabled when offline */}
         <div className="flex-none pt-3 pb-2 relative">
           <IntentInput
-            key={rawText}
+            key={inputResetKey}
             onSubmit={handleSubmit}
             loading={loading || validating}
             disabled={!!timeline || !isOnline || transferLoading || !!transferConfirm}
             defaultValue={rawText}
             walletEmpty={walletEmpty}
-            onTextChange={setRawText}
+            onTextChange={(val) => {
+              setRawText(val);
+              // Live badge detection
+              const lower = val.toLowerCase();
+              let t: string | null = null;
+              if (/\bstake\b/.test(lower)) t = "stake";
+              else if (/\bswap\b/.test(lower)) t = "swap";
+              else if (/\bsend\b|\btransfer\b/.test(lower)) t = "send";
+              else if (/\bgrow\b|\binvest\b|\bearn\b/.test(lower)) t = "grow";
+              // Don't override transfer intent state on reset blocks if not wiping correctly
+              if (val.trim().length === 0) t = null;
+              setIntentType(t);
+            }}
             detectedIntent={(!timelineActive && !systemResponse && !loading && !transferConfirm) ? intentType : null}
             placeholderOverride={transferConfirm ? "Please confirm or reject the transaction above..." : undefined}
           />
