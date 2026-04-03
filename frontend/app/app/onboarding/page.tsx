@@ -10,6 +10,7 @@ export default function OnboardingPage() {
   const { address, openConnect } = useInterwovenKit();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -18,15 +19,37 @@ export default function OnboardingPage() {
   // If already connected, drop them instantly into the workspace
   useEffect(() => {
     if (address) {
-      router.replace("/app/intent");
+      // Small timeout fallback if redirect hangs
+      const t = setTimeout(() => router.replace("/app/intent"), 50);
+      return () => clearTimeout(t);
     }
-  }, [address, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
 
-  // Prevent flash of onboarding UI if already connected or hydratiing
-  if (!mounted || address) {
+  const handleConnect = async () => {
+    try {
+      setConnectError(null);
+      await openConnect();
+    } catch {
+      setConnectError("Could not open wallet. Make sure your wallet extension is installed.");
+    }
+  };
+
+  // Prevent flash of onboarding UI if hydrating
+  if (!mounted) {
     return (
       <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center">
         <div className="w-8 h-8 border-4 border-[#00F5D4]/20 border-t-[#00F5D4] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Address guard: explicitly redirecting
+  if (address) {
+    return (
+      <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#00F5D4]/20 border-t-[#00F5D4] rounded-full animate-spin" />
+        <p className="mt-4 text-sm text-[#00F5D4]/60 font-medium animate-pulse tracking-wide">Initializing workspace...</p>
       </div>
     );
   }
@@ -49,11 +72,11 @@ export default function OnboardingPage() {
         <div className="bg-[#13161D]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] flex flex-col items-center">
           
           {/* 3. Card Content & Typography */}
-          <div className="flex justify-center w-full mb-2 mt-4">
-            <IntentOSLogo className="scale-125 origin-center justify-center pointer-events-none" />
+          <div className="flex justify-center w-full mb-2">
+            <IntentOSLogo className="scale-125 pointer-events-none" />
           </div>
 
-          <h1 className="text-[26px] font-black tracking-tight text-white text-center mt-6">
+          <h1 className="text-[26px] font-black tracking-tight text-white text-center mt-5">
             Initialize Workspace
           </h1>
           <p className="text-sm text-gray-400 text-center mt-3 mb-10 px-2 leading-relaxed">
@@ -62,13 +85,20 @@ export default function OnboardingPage() {
 
           {/* 4. The Action Button & Trust Markers */}
           <motion.button
-            onClick={openConnect}
-            className="w-full bg-[#00F5D4] text-gray-900 font-bold text-[15px] tracking-widest rounded-full py-4 transition-all hover:bg-[#00E5C4] hover:shadow-[0_0_24px_rgba(0,245,212,0.4)]"
+            onClick={handleConnect}
+            className="w-full bg-[#00F5D4] text-gray-900 font-bold text-[15px] tracking-wider rounded-full py-4 transition-all hover:bg-[#00E5C4] hover:shadow-[0_0_24px_rgba(0,245,212,0.4)]"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             CONNECT WALLET
           </motion.button>
+          
+          {/* Output connect errors safely without blowing up DOM */}
+          {connectError && (
+             <p className="text-red-400 text-xs font-medium text-center mt-4">
+               {connectError}
+             </p>
+          )}
 
           {/* Trust Footer */}
           <p className="text-xs text-gray-500 mt-6 text-center font-medium tracking-wide">

@@ -8,6 +8,7 @@ import {
   Wallet, Lock, RefreshCw, ArrowRight, TrendingUp, Sparkles, Send, ArrowLeftRight,
   CircleDollarSign, Gift, ChevronRight, X, BarChart3, Clock
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { API_URL, API_HEADERS } from "@/lib/config";
 import UnstakeModal from "./UnstakeModal";
 
@@ -81,6 +82,8 @@ function AllocationDonut({ segments }: { segments: { label: string; pct: number;
   const [hovered, setHovered] = useState<number | null>(null);
   const size = 120; const cx = 60; const cy = 60; const r = 44; const sw = 16;
   const circ = 2 * Math.PI * r;
+  const pctSum = segments.reduce((s, g) => s + g.pct, 0) || 100;
+  const normSegments = segments.map(s => ({ ...s, pct: (s.pct / pctSum) * 100 }));
   let cum = 0;
 
   return (
@@ -88,7 +91,7 @@ function AllocationDonut({ segments }: { segments: { label: string; pct: number;
       <div className="relative flex-shrink-0">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={sw} />
-          {segments.map((seg, i) => {
+          {normSegments.map((seg, i) => {
             const rot = (cum / 100) * 360 - 90;
             const len = (seg.pct / 100) * circ;
             cum += seg.pct;
@@ -97,12 +100,11 @@ function AllocationDonut({ segments }: { segments: { label: string; pct: number;
                 stroke={seg.color} strokeWidth={hovered === i ? sw + 2 : sw}
                 strokeDasharray={`${len} ${circ}`}
                 strokeLinecap="round"
+                className="transition-all duration-150 cursor-pointer"
                 style={{
                   transformOrigin: `${cx}px ${cy}px`,
                   transform: `rotate(${rot}deg)`,
-                  transition: "stroke-width 0.15s, filter 0.15s",
                   filter: hovered === i ? `drop-shadow(0 0 8px ${seg.color})` : undefined,
-                  cursor: "pointer",
                 }}
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
@@ -110,15 +112,15 @@ function AllocationDonut({ segments }: { segments: { label: string; pct: number;
             );
           })}
           <text x={cx} y={cy - 4} textAnchor="middle" fontSize="12" fontWeight="800" fill="#F0F4FF" fontFamily="-apple-system,sans-serif">
-            {hovered !== null ? `${segments[hovered].pct.toFixed(0)}%` : `${segments.length}`}
+            {hovered !== null ? `${normSegments[hovered].pct.toFixed(0)}%` : `${normSegments.length}`}
           </text>
           <text x={cx} y={cy + 10} textAnchor="middle" fontSize="8" fill="#828A9E" fontFamily="-apple-system,sans-serif">
-            {hovered !== null ? segments[hovered].label : "assets"}
+            {hovered !== null ? normSegments[hovered].label : "assets"}
           </text>
         </svg>
       </div>
       <div className="flex-1 space-y-3">
-        {segments.map((seg, i) => (
+        {normSegments.map((seg: { label: string; pct: number; color: string; value: number }, i: number) => (
           <div key={seg.label} className="flex items-center gap-3 cursor-default p-1.5 rounded-lg transition-colors hover:bg-white/5"
             onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-shadow" style={{ background: seg.color, boxShadow: hovered === i ? `0 0 8px ${seg.color}` : undefined }} />
@@ -133,7 +135,7 @@ function AllocationDonut({ segments }: { segments: { label: string; pct: number;
 }
 
 // ── AI Insight (The Living AI Stream) ─────────────────────────────────────────
-function AIInsight({ data, onIntent }: { data: PortfolioData; onIntent: (t: string) => void }) {
+function AIInsight({ data, lastUpdated, onIntent }: { data: PortfolioData; lastUpdated: Date | null; onIntent: (t: string) => void }) {
   const totalStaked  = data.staked.reduce((s, a) => s + (a.valueUSD || 0), 0);
   const totalRewards = data.rewards.reduce((s, r) => s + (r.valueUSD || 0), 0);
   const totalWallet  = data.wallet.reduce((s, a) => s + (a.valueUSD || 0), 0);
@@ -143,31 +145,28 @@ function AIInsight({ data, onIntent }: { data: PortfolioData; onIntent: (t: stri
   const stablePct    = (usdcVal / total) * 100;
 
   let msg = "IntentOS is monitoring your portfolio.";
-  let action = "grow my portfolio";
-  let actionLabel = "Optimize with AI";
+  let cta: { action: string; label: string } | null = { action: "grow my portfolio", label: "Optimize with AI" };
 
   if (total < 0.01) {
     msg = "Your wallet is empty. Deposit INIT to start earning yield and unlock AI-driven strategies.";
-    action = "receive init"; actionLabel = "Receive INIT";
+    cta = { action: "receive init", label: "Receive INIT" };
   } else if (stakedPct === 0) {
     msg = `All ${formatUSD(totalWallet)} of your assets are idle. Stake INIT to earn protocol rewards securely.`;
-    action = "stake init"; actionLabel = "Stake INIT";
+    cta = { action: "stake init", label: "Stake INIT" };
   } else if (totalRewards > 0) {
     msg = `You have ${formatUSD(totalRewards, 4)} in pending staking rewards. Claim and re-stake to compound your yield.`;
-    action = "claim staking rewards"; actionLabel = "Claim & Re-stake";
+    cta = { action: "claim staking rewards", label: "Claim & Re-stake" };
   } else if (stablePct < 15 && total > 1) {
     msg = `Portfolio is heavily exposed to INIT. Consider swapping a portion to USDC to reduce volatility.`;
-    action = "swap init to usdc"; actionLabel = "Swap to USDC";
+    cta = { action: "swap init to usdc", label: "Swap to USDC" };
   } else {
     msg = `${stakedPct.toFixed(0)}% staked, ${(100 - stakedPct).toFixed(0)}% liquid — perfectly balanced for yield and flexibility.`;
-    action = ""; actionLabel = "";
+    cta = null;
   }
 
-  // Generate a random timestamp like "2m ago" for realism
-  const [insightTime] = useState(() => {
-    const min = Math.floor(Math.random() * 5) + 1;
-    return `${min}m ago`;
-  });
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const insightTime = mounted ? timeAgo(lastUpdated || new Date()) : "just now";
 
   return (
     <div className="relative p-[1px] rounded-3xl overflow-hidden group">
@@ -192,13 +191,13 @@ function AIInsight({ data, onIntent }: { data: PortfolioData; onIntent: (t: stri
             </div>
           </div>
           <p className="text-sm text-white/80 leading-relaxed font-medium mb-3">{msg}</p>
-          {action && (
+          {cta && (
             <button
-              onClick={() => onIntent(action)}
+              onClick={() => onIntent(cta.action)}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all border border-[#00F5D4]/30 text-[#00F5D4] bg-[#00F5D4]/10 hover:bg-[#00F5D4]/20 hover:shadow-[0_0_15px_rgba(0,245,212,0.2)]"
             >
               <Sparkles className="w-3 h-3" />
-              {actionLabel}
+              {cta.label}
             </button>
           )}
         </div>
@@ -214,7 +213,7 @@ function AssetSheet({ asset, onClose, onIntent }: { asset: WalletAsset; onClose:
   const actions = [
     ...(asset.symbol === "INIT" ? [{ label: "Stake",  Icon: Lock, intent: `stake ${asset.balance.toFixed(4)} init` }] : []),
     { label: "Swap", Icon: ArrowLeftRight, intent: `swap ${asset.balance.toFixed(4)} ${asset.symbol} to ${asset.symbol === "INIT" ? "USDC" : "INIT"}` },
-    { label: "Send", Icon: Send, intent: `send ${asset.balance.toFixed(4)} ${asset.symbol} to` },
+    { label: "Send", Icon: Send, intent: `send ${asset.symbol} to` },
   ];
   return (
     <AnimatePresence>
@@ -248,10 +247,7 @@ function AssetSheet({ asset, onClose, onIntent }: { asset: WalletAsset; onClose:
           <div className="px-5 pb-6 pt-3 space-y-2.5 bg-black/20">
             {actions.map(a => (
               <button key={a.label} onClick={() => { onClose(); onIntent(a.intent); }}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-200 group"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
+                className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-200 group bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06]">
                 <div className="flex items-center gap-4">
                   <div className="p-2 rounded-full bg-white/5 group-hover:bg-[#00F5D4]/20 group-hover:text-[#00F5D4] text-white/70 transition-colors">
                     <a.Icon className="w-4 h-4" />
@@ -367,8 +363,9 @@ export default function PortfolioDashboard() {
   const [rewardsModalOpen, setRewardsModalOpen] = useState(false);
   const [unstakeValidator, setUnstakeValidator] = useState<StakedAsset | null>(null);
   const [activeHeaderCard, setActiveHeaderCard] = useState<"equity" | "allocation">("equity");
+  const router = useRouter();
 
-  const dispatchIntent = (text: string) => window.location.href = `/app/intent?prefill=${encodeURIComponent(text)}`;
+  const dispatchIntent = (text: string) => router.push(`/app/intent?prefill=${encodeURIComponent(text)}`);
 
   useEffect(() => {
     if (!lastUpdated) return;
@@ -387,20 +384,26 @@ export default function PortfolioDashboard() {
     const cacheKey = `intentos_portfolio_cache_${targetAddress}`;
     const cached = localStorage.getItem(cacheKey);
     // Optimistic UI cache load
-    if (cached && !data) {
+    if (cached) {
       try {
-        const pd = JSON.parse(cached) as PortfolioData;
-        setData(pd);
-        setLoading(false);
-        const now = new Date();
-        const spark = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date(now); d.setDate(d.getDate() - (6 - i));
-          return { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), value: pd.totalValueUSD * (0.92 + Math.random() * 0.08) };
-        });
-        spark[6].value = pd.totalValueUSD;
-        setSparkData(spark);
+        const { ts, portfolio } = JSON.parse(cached);
+        if (Date.now() - ts < 3 * 60 * 1000) {
+          setData(portfolio);
+          setLoading(false);
+          setLastUpdated(new Date(ts));
+          const now = new Date(ts);
+          const spark = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(now); d.setDate(d.getDate() - (6 - i));
+            const pseudoRandom = Math.sin((d.getTime() / 86400000) * 12.345);
+            return { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), value: portfolio.totalValueUSD * (0.92 + Math.abs(pseudoRandom) * 0.08) };
+          });
+          spark[6].value = portfolio.totalValueUSD;
+          setSparkData(spark);
+        } else {
+          setLoading(true);
+        }
       } catch {}
-    } else if (!data) {
+    } else {
       setLoading(true);
     }
 
@@ -414,12 +417,13 @@ export default function PortfolioDashboard() {
         totalValueUSD: json.totalValueUSD || 0,
       };
       setData(pd);
-      localStorage.setItem(cacheKey, JSON.stringify(pd));
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), portfolio: pd }));
       setLastUpdated(new Date());
       const now = new Date();
       const spark = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(now); d.setDate(d.getDate() - (6 - i));
-        return { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), value: pd.totalValueUSD * (0.92 + Math.random() * 0.08) };
+        const pseudoRandom = Math.sin((d.getTime() / 86400000) * 12.345);
+        return { date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), value: pd.totalValueUSD * (0.92 + Math.abs(pseudoRandom) * 0.08) };
       });
       spark[6].value = pd.totalValueUSD;
       setSparkData(spark);
@@ -483,7 +487,8 @@ export default function PortfolioDashboard() {
           <div className="flex items-center gap-2">
             {/* The Golden Gift */}
             {(() => {
-              const hasRewards = data.rewards.length > 0 && totalRewardsBal > 0;
+              const realRewards = data.rewards.filter(r => r.balance > 0);
+              const hasRewards = realRewards.length > 0;
               return (
                 <motion.button 
                   onClick={() => setRewardsModalOpen(true)}
@@ -496,7 +501,7 @@ export default function PortfolioDashboard() {
                       <div className="absolute inset-0 rounded-full animate-pulse blur-[8px]" style={{ background: "rgba(250, 204, 21, 0.4)" }} />
                       <Gift className="w-6 h-6 text-yellow-500 relative z-10 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
                       <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center z-20 border-[2px] border-[#13161D]">
-                        {data.rewards.length}
+                        {realRewards.length}
                       </span>
                     </>
                   ) : (
@@ -619,7 +624,7 @@ export default function PortfolioDashboard() {
       </div>
 
       {/* ── AI Insight ── */}
-      <AIInsight data={data} onIntent={dispatchIntent} />
+      <AIInsight data={data} lastUpdated={lastUpdated} onIntent={dispatchIntent} />
 
       {/* ── Liquid + Staked 2-col grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -702,12 +707,8 @@ export default function PortfolioDashboard() {
           ) : (
             <div className="space-y-4">
               {data.staked.map((s, i) => {
-                const rewardForThis = data.rewards.find(r => r.symbol === s.symbol || r.symbol === "INIT");
                 return (
-                  <div key={s.validator + i} className="p-5 rounded-2xl border transition-colors relative overflow-hidden group"
-                    style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.05)" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.02)"}>
+                  <div key={s.validator + i} className="p-5 rounded-2xl border transition-colors relative overflow-hidden group bg-white/[0.02] hover:bg-white/[0.04] border-white/[0.05]">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-4">
                         <div className="relative">
@@ -726,23 +727,9 @@ export default function PortfolioDashboard() {
                         <p className="text-xs text-white/40 mt-0.5">{formatUSD(s.valueUSD, 2, s.balance > 0)}</p>
                       </div>
                     </div>
-                    {/* Inline rewards */}
-                    {rewardForThis && rewardForThis.balance > 0 && (
-                      <div className="mb-4 px-4 py-2.5 rounded-xl border flex items-center justify-between"
-                        style={{ background: "rgba(250, 204, 21, 0.05)", borderColor: "rgba(250, 204, 21, 0.15)" }}>
-                        <div className="flex items-center gap-2">
-                          <Gift className="w-3.5 h-3.5 text-yellow-500" />
-                          <span className="text-xs text-yellow-500/80 font-medium">Pending Rewards</span>
-                        </div>
-                        <span className="text-xs font-bold text-yellow-400">{rewardForThis.balance.toFixed(5)}</span>
-                      </div>
-                    )}
                     <div className="flex gap-3">
                       <button onClick={() => dispatchIntent("claim staking rewards")}
-                        className="flex-1 py-2.5 rounded-full text-xs font-bold transition-all text-center border bg-white/5 hover:bg-white/10"
-                        style={{ color: "#00F5D4", borderColor: "rgba(0,245,212,0.3)" }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,245,212,0.15)"; e.currentTarget.style.boxShadow = "0 0 15px rgba(0,245,212,0.2)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.boxShadow = "none"; }}>
+                        className="flex-1 py-2.5 rounded-full text-xs font-bold transition-all text-center border bg-white/5 hover:bg-[#00F5D4]/15 hover:shadow-[0_0_15px_rgba(0,245,212,0.2)] text-[#00F5D4] border-[#00F5D4]/30">
                         Claim
                       </button>
                       <button onClick={() => { setUnstakeValidator(s); setUnstakeOpen(true); }}
@@ -783,13 +770,15 @@ export default function PortfolioDashboard() {
 
 
 
-      <UnstakeModal
-        open={unstakeOpen}
-        validatorAddress={unstakeValidator?.validator ?? ""}
-        maxBalance={unstakeValidator?.balance ?? 0}
-        onClose={() => { setUnstakeOpen(false); setUnstakeValidator(null); }}
-        onConfirm={(amount) => { setUnstakeOpen(false); dispatchIntent(`unstake ${amount} init`); }}
-      />
+      {unstakeOpen && (
+        <UnstakeModal
+          open={unstakeOpen}
+          validatorAddress={unstakeValidator?.validator ?? ""}
+          maxBalance={unstakeValidator?.balance ?? 0}
+          onClose={() => { setUnstakeOpen(false); setUnstakeValidator(null); }}
+          onConfirm={(amount) => { setUnstakeOpen(false); dispatchIntent(`unstake ${amount} init`); }}
+        />
+      )}
     </div>
   );
 }
