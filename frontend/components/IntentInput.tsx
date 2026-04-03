@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Lock, ArrowRightLeft, TrendingUp, Gift, Unlock, Download, HelpCircle } from "lucide-react";
+import { Sparkles, Lock, ArrowRightLeft, TrendingUp, Gift, Unlock, Download, HelpCircle, X } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 
 // Suggestions when wallet has funds — action-oriented
@@ -98,13 +98,25 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="w-full px-5 pt-4 pb-2 border-b border-white/5 bg-white/[0.02]"
+                className="w-full px-5 pt-4 pb-2 border-b border-white/5 bg-white/[0.02] relative"
               >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setText("");
+                    if (onTextChange) onTextChange("");
+                    textareaRef.current?.focus();
+                  }}
+                  className="absolute top-4 right-4 text-red-500/60 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded-full transition-all duration-200"
+                  aria-label="Dismiss Intent"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#00F5D4] animate-pulse" />
                   <span className="text-[10px] font-bold text-[#00F5D4] tracking-widest uppercase">Detected Intent</span>
                 </div>
-                <p className="text-white font-medium pl-3.5 tracking-tight mb-1">{detectedIntent}</p>
+                <p className="text-white font-medium pl-3.5 pr-8 tracking-tight mb-1">{detectedIntent}</p>
               </motion.div>
             )}
           </AnimatePresence>

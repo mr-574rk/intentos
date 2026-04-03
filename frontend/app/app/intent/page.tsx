@@ -592,6 +592,7 @@ export default function IntentPage() {
   const [transferConfirm, setTransferConfirm] = useState<TransferIntent | null>(null);
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferResult, setTransferResult] = useState<string | null>(null); // txHash
+  const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
   const [showTxToast, setShowTxToast] = useState(false);
   const [recipientVerifying, setRecipientVerifying] = useState(false);
   const [recipientError, setRecipientError] = useState<{ message: string; sub: string } | null>(null);
@@ -703,6 +704,14 @@ export default function IntentPage() {
 
   const handleHudComplete = () => {
     setHudVisible(false);
+    if (pendingTxHash) {
+      setTransferResult(pendingTxHash);
+      setPendingTxHash(null);
+      setTransferConfirm(null);
+      setShowTxToast(true);
+      setTimeout(() => setShowTxToast(false), 4000);
+      return;
+    }
     setShowPlanCard(true);
     setTimeout(() => router.push("/app/strategy"), 9000);
   };
@@ -755,6 +764,9 @@ export default function IntentPage() {
   const handleTransferProceed = async () => {
     if (!transferConfirm) return;
     setTransferLoading(true);
+    setLoading(true);
+    setHudVisible(true);
+    setIntentType("send");
     setTransferResult(null);
     setRecipientError(null);
     try {
@@ -800,11 +812,10 @@ export default function IntentPage() {
         );
       }
 
-      setTransferResult(txHash || "confirmed");
-      setShowTxToast(true);
-      setTimeout(() => setShowTxToast(false), 4000);
+      setPendingTxHash(txHash || "confirmed");
     } catch (err) {
       console.error("[Transfer] execution failed:", err);
+      setHudVisible(false);
       // Surface rate-limit errors to the user clearly
       const msg = (err as Error).message ?? "";
       if (msg.includes("429") || msg.toLowerCase().includes("too many")) {
@@ -815,6 +826,7 @@ export default function IntentPage() {
       }
     } finally {
       setTransferLoading(false);
+      setLoading(false);
     }
   };
 
@@ -1020,7 +1032,7 @@ export default function IntentPage() {
             <AnimatePresence mode="popLayout">
               
               {/* ── Transfer confirm flow ─────────────────────────────────── */}
-              {transferConfirm && !transferResult && (
+              {transferConfirm && !transferResult && !hudVisible && (
                 <motion.div 
                   key="transfer-confirm" 
                   layout
