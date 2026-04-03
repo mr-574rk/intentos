@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
+import CustomWalletModal from "@/components/CustomWalletModal";
 
 export default function OnboardingPage() {
-  const { address, openConnect } = useInterwovenKit();
+  const { address } = useInterwovenKit();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [connectError, setConnectError] = useState<string | null>(null);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -19,21 +20,11 @@ export default function OnboardingPage() {
   // If already connected, drop them instantly into the workspace
   useEffect(() => {
     if (address) {
-      // Small timeout fallback if redirect hangs
       const t = setTimeout(() => router.replace("/app/intent"), 50);
       return () => clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);
-
-  const handleConnect = async () => {
-    try {
-      setConnectError(null);
-      await openConnect();
-    } catch {
-      setConnectError("Could not open wallet. Make sure your wallet extension is installed.");
-    }
-  };
 
   // Prevent flash of onboarding UI if hydrating
   if (!mounted) {
@@ -56,8 +47,11 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      
-      {/* 1. Distraction-Free Tunnel / Centered Ambient Glow */}
+
+      {/* Custom Wallet Gateway Modal */}
+      <CustomWalletModal isOpen={walletModalOpen} onClose={() => setWalletModalOpen(false)} />
+
+      {/* Distraction-Free Tunnel / Centered Ambient Glow */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
         <div className="w-[600px] h-[600px] bg-[#00F5D4] rounded-full blur-[140px] opacity-[0.06]" />
       </div>
@@ -68,10 +62,9 @@ export default function OnboardingPage() {
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 max-w-md w-full"
       >
-        {/* 2. The Premium Auth Card */}
+        {/* The Premium Auth Card */}
         <div className="bg-[#13161D]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-10 shadow-[0_24px_60px_rgba(0,0,0,0.6)] flex flex-col items-center">
-          
-          {/* 3. Card Content & Typography */}
+
           <div className="flex justify-center w-full mb-2">
             <IntentOSLogo className="scale-125 pointer-events-none" />
           </div>
@@ -83,22 +76,16 @@ export default function OnboardingPage() {
             Securely connect your Initia wallet to deploy autonomous strategies.
           </p>
 
-          {/* 4. The Action Button & Trust Markers */}
+          {/* Opens the Custom Wallet Modal */}
           <motion.button
-            onClick={handleConnect}
+            id="onboarding-connect-btn"
+            onClick={() => setWalletModalOpen(true)}
             className="w-full bg-[#00F5D4] text-gray-900 font-bold text-[15px] tracking-wider rounded-full py-4 transition-all hover:bg-[#00E5C4] hover:shadow-[0_0_24px_rgba(0,245,212,0.4)]"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             CONNECT WALLET
           </motion.button>
-          
-          {/* Output connect errors safely without blowing up DOM */}
-          {connectError && (
-             <p className="text-red-400 text-xs font-medium text-center mt-4">
-               {connectError}
-             </p>
-          )}
 
           {/* Trust Footer */}
           <p className="text-xs text-gray-500 mt-6 text-center font-medium tracking-wide">
