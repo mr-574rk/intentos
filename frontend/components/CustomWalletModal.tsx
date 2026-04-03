@@ -7,13 +7,6 @@ import { X, ShieldCheck, ExternalLink, Loader2, Mail, ChevronDown } from "lucide
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-// ── Types ───────────────────────────────────────────────────────────────────
-
-interface CosmosProvider {
-  enable(chainId: string): Promise<void>;
-  getOfflineSigner(chainId: string): unknown;
-}
-
 // ── Wallet static metadata ────────────────────────────────────────────────────
 // Connector IDs match wagmi connector IDs registered by InterwovenKit
 
@@ -27,13 +20,13 @@ const WALLET_METADATA: Record<string, {
     name: "Keplr",
     image: "/Keplr.webp",
     installUrl: "https://keplr.app/get",
-    cosmosProvider: () => typeof window !== "undefined" ? (window as any).keplr as CosmosProvider : undefined,
+    cosmosProvider: () => typeof window !== "undefined" ? window.keplr : undefined,
   },
   "io.leapwallet": {
     name: "Leap",
     image: "/leap.svg",
     installUrl: "https://leapwallet.io/download",
-    cosmosProvider: () => typeof window !== "undefined" ? (window as any).leap as CosmosProvider : undefined,
+    cosmosProvider: () => typeof window !== "undefined" ? window.leap : undefined,
   },
   "io.metamask": {
     name: "MetaMask",
