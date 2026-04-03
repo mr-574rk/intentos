@@ -212,21 +212,26 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
             onClick={onClose}
           />
 
-          {/* Modal */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          {/* Modal / Bottom Sheet Positioning Wrapper */}
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 pointer-events-none">
             <motion.div
               key="cwm-card"
-              className="w-full max-w-md bg-[#0D0F14] border border-white/10 rounded-3xl shadow-[0_0_60px_rgba(0,245,212,0.07),0_32px_64px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col relative pointer-events-auto max-h-[90vh] overflow-y-auto"
-              initial={{ scale: 0.96, y: 18, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.96, y: 10, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 360, damping: 30 }}
+              className="w-full sm:max-w-md bg-[#0D0F14] border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl shadow-[0_-10px_40px_rgba(0,245,212,0.05)] sm:shadow-[0_0_60px_rgba(0,245,212,0.07),0_32px_64px_rgba(0,0,0,0.7)] flex flex-col relative pointer-events-auto max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
             >
+              {/* Mobile Drag Handle */}
+              <div className="w-full flex justify-center pt-3 pb-1 sm:hidden">
+                <div className="w-12 h-1.5 bg-white/10 rounded-full" />
+              </div>
+
               {/* Ambient glow */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-20 bg-[#00F5D4]/10 blur-[48px] rounded-full pointer-events-none" />
 
-              {/* ── Header ── */}
-              <div className="relative flex items-start justify-between px-6 pt-6 pb-3 sticky top-0 bg-[#0D0F14] z-10">
+              {/* ── Fixed Header ── */}
+              <div className="relative flex items-start justify-between px-6 pt-4 sm:pt-6 pb-3 bg-[#0D0F14] z-10">
                 <div>
                   <h2 className="text-[18px] font-bold text-white tracking-tight mb-0.5">Connect to IntentOS</h2>
                   <p className="text-[13px] text-gray-500">The AI Operating System for DeFi</p>
@@ -240,182 +245,184 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
                 </button>
               </div>
 
-              {/* ── Trust Card ── */}
-              <div className="px-4 pt-1">
-                <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-[#00F5D4]/10 to-transparent border border-[#00F5D4]/20 rounded-2xl">
-                  <ShieldCheck className="w-4 h-4 text-[#00F5D4] drop-shadow-[0_0_8px_rgba(0,245,212,0.5)] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">Security First</p>
-                    <p className="text-xs text-gray-400 leading-relaxed mt-1">
-                      IntentOS never controls your funds. All strategies are executed through your wallet and confirmed on-chain.
-                    </p>
+              {/* ── Scrollable Body ── */}
+              <div className="overflow-y-auto flex-1 pb-6 custom-scrollbar">
+                {/* Trust Card */}
+                <div className="px-4 pt-1">
+                  <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-[#00F5D4]/10 to-transparent border border-[#00F5D4]/20 rounded-2xl">
+                    <ShieldCheck className="w-4 h-4 text-[#00F5D4] drop-shadow-[0_0_8px_rgba(0,245,212,0.5)] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-white">Security First</p>
+                      <p className="text-xs text-gray-400 leading-relaxed mt-1">
+                        IntentOS never controls your funds. All strategies are executed through your wallet and confirmed on-chain.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* ── Email / Socials ── */}
-              <div className="px-4 mt-4">
-                <motion.button
-                  id="wallet-connect-social"
-                  onClick={handleSocial}
-                  disabled={isPending}
-                  className="w-full flex items-center justify-between p-4 bg-white/[0.02] border border-white/10 rounded-2xl hover:bg-white/5 hover:border-white/20 transition-all duration-300 group disabled:opacity-50"
-                  whileHover={{ scale: 1.005 }}
-                  whileTap={{ scale: 0.995 }}
-                >
-                  <span className="text-sm font-medium text-white">Email / Socials</span>
-                  <div className="flex items-center gap-3">
-                    <GoogleIcon />
-                    <Mail className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-                    <span className="text-gray-500 group-hover:text-gray-300 transition-colors"><XIcon /></span>
-                  </div>
-                </motion.button>
-              </div>
-
-              {/* ── Divider ── */}
-              <div className="flex items-center gap-4 my-5 px-4">
-                <div className="h-px flex-1 bg-white/8" />
-                <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Or Connect Wallet</span>
-                <div className="h-px flex-1 bg-white/8" />
-              </div>
-
-              {/* ── Primary Wallet List ── */}
-              <div className="flex flex-col gap-2 px-4">
-                {walletItems.map(({ id, meta, isInstalled, isRecent, isConnecting }) => (
+                {/* Email / Socials */}
+                <div className="px-4 mt-4">
                   <motion.button
-                    key={id}
-                    id={`wallet-connect-${id.replace(/\./g, "-")}`}
-                    onClick={() => handleConnect(id)}
+                    id="wallet-connect-social"
+                    onClick={handleSocial}
                     disabled={isPending}
-                    className="w-full flex items-center justify-between p-3.5 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-[#00F5D4]/30 hover:bg-white/[0.04] transition-all duration-300 group relative overflow-hidden disabled:opacity-60"
+                    className="w-full flex items-center justify-between p-4 bg-white/[0.02] border border-white/10 rounded-2xl hover:bg-white/5 hover:border-white/20 transition-all duration-300 group disabled:opacity-50"
                     whileHover={{ scale: 1.005 }}
                     whileTap={{ scale: 0.995 }}
                   >
-                    {/* Hover shimmer */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#00F5D4]/0 via-[#00F5D4]/[0.025] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-
-                    <div className="flex items-center gap-3 relative">
-                      <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-white/5">
-                        {isConnecting ? (
-                          <Loader2 className="w-5 h-5 text-[#00F5D4] animate-spin" />
-                        ) : (
-                          <Image src={meta.image} alt={meta.name} width={36} height={36} className="object-contain" />
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm text-white font-medium leading-tight">{meta.name}</p>
-                        <p className="text-[10px] mt-0.5 font-medium">
-                          {isRecent
-                            ? <span className="text-[#00F5D4]">Recent</span>
-                            : isInstalled
-                              ? <span className="text-emerald-400/80">Installed</span>
-                              : <span className="text-gray-600">Not installed</span>
-                          }
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {id === "app.keplr" && isInstalled && !isRecent && (
-                        <span className="text-[9px] font-bold px-2 py-0.5 bg-[#00F5D4]/15 text-[#00F5D4] rounded-full border border-[#00F5D4]/20 tracking-wide">
-                          Recommended
-                        </span>
-                      )}
-                      {!isInstalled ? (
-                        <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-[#00F5D4] transition-colors" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#00F5D4]/20 transition-colors">
-                          <svg className="w-3 h-3 text-gray-600 group-hover:text-[#00F5D4] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
-                      )}
+                    <span className="text-sm font-medium text-white">Email / Socials</span>
+                    <div className="flex items-center gap-3">
+                      <GoogleIcon />
+                      <Mail className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                      <span className="text-gray-500 group-hover:text-gray-300 transition-colors"><XIcon /></span>
                     </div>
                   </motion.button>
-                ))}
-              </div>
-
-              {/* Error */}
-              {connectError && (
-                <p className="text-red-400 text-xs text-center px-4 mt-3">{connectError}</p>
-              )}
-
-              {/* ── More Wallets — inline expansion, excludes primary list ── */}
-              {moreWallets.length > 0 && (
-                <div className="px-4 mt-3">
-                  <button
-                    id="wallet-connect-more"
-                    onClick={() => setShowMore(v => !v)}
-                    className="w-full py-2.5 text-sm text-gray-500 hover:text-white bg-transparent hover:bg-white/5 rounded-xl transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showMore ? "rotate-180" : ""}`} />
-                    {showMore ? "Show fewer wallets" : `More wallets (${moreWallets.length})`}
-                  </button>
-
-                  <AnimatePresence>
-                    {showMore && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex flex-col gap-2 pt-2">
-                          {moreWallets.map(connector => {
-                            const isRecentMore = recentId === connector.id;
-                            const isConnectingMore = pendingId === connector.id;
-                            return (
-                              <motion.button
-                                key={connector.id}
-                                onClick={() => handleMoreWalletConnect(connector)}
-                                disabled={isPending}
-                                className="w-full flex items-center justify-between p-3.5 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-[#00F5D4]/30 hover:bg-white/[0.04] transition-all duration-300 group disabled:opacity-60"
-                                whileHover={{ scale: 1.005 }}
-                                whileTap={{ scale: 0.995 }}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-white/5">
-                                    {isConnectingMore ? (
-                                      <Loader2 className="w-5 h-5 text-[#00F5D4] animate-spin" />
-                                    ) : connector.icon ? (
-                                      <img src={connector.icon} alt={connector.name} className="w-9 h-9 object-contain rounded-xl" />
-                                    ) : (
-                                      <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/40 text-xs font-bold">
-                                        {connector.name.slice(0, 2).toUpperCase()}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="text-left">
-                                    <p className="text-sm text-white font-medium leading-tight">{connector.name}</p>
-                                    <p className="text-[10px] mt-0.5 font-medium">
-                                      {isRecentMore
-                                        ? <span className="text-[#00F5D4]">Recent</span>
-                                        : <span className="text-emerald-400/80">Installed</span>
-                                      }
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#00F5D4]/20 transition-colors">
-                                  <svg className="w-3 h-3 text-gray-600 group-hover:text-[#00F5D4] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                  </svg>
-                                </div>
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
-              )}
 
-              {/* Footer */}
-              <div className="border-t border-white/5 px-6 py-3 mt-4">
-                <p className="text-[10px] text-gray-500 text-center">
-                  By connecting, you agree to IntentOS terms. Your keys, your crypto.
-                </p>
+                {/* Divider */}
+                <div className="flex items-center gap-4 my-5 px-4">
+                  <div className="h-px flex-1 bg-white/8" />
+                  <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Or Connect Wallet</span>
+                  <div className="h-px flex-1 bg-white/8" />
+                </div>
+
+                {/* Primary Wallet List */}
+                <div className="flex flex-col gap-2 px-4">
+                  {walletItems.map(({ id, meta, isInstalled, isRecent, isConnecting }) => (
+                    <motion.button
+                      key={id}
+                      id={`wallet-connect-${id.replace(/\./g, "-")}`}
+                      onClick={() => handleConnect(id)}
+                      disabled={isPending}
+                      className="w-full flex items-center justify-between p-3.5 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-[#00F5D4]/30 hover:bg-white/[0.04] transition-all duration-300 group relative overflow-hidden disabled:opacity-60"
+                      whileHover={{ scale: 1.005 }}
+                      whileTap={{ scale: 0.995 }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#00F5D4]/0 via-[#00F5D4]/[0.025] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                      <div className="flex items-center gap-3 relative">
+                        <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-white/5">
+                          {isConnecting ? (
+                            <Loader2 className="w-5 h-5 text-[#00F5D4] animate-spin" />
+                          ) : (
+                            <Image src={meta.image} alt={meta.name} width={36} height={36} className="object-contain" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm text-white font-medium leading-tight">{meta.name}</p>
+                          <p className="text-[10px] mt-0.5 font-medium">
+                            {isRecent
+                              ? <span className="text-[#00F5D4]">Recent</span>
+                              : isInstalled
+                                ? <span className="text-emerald-400/80">Installed</span>
+                                : <span className="text-gray-600">Not installed</span>
+                            }
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {id === "app.keplr" && isInstalled && !isRecent && (
+                          <span className="text-[9px] font-bold px-2 py-0.5 bg-[#00F5D4]/15 text-[#00F5D4] rounded-full border border-[#00F5D4]/20 tracking-wide">
+                            Recommended
+                          </span>
+                        )}
+                        {!isInstalled ? (
+                          <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-[#00F5D4] transition-colors" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#00F5D4]/20 transition-colors">
+                            <svg className="w-3 h-3 text-gray-600 group-hover:text-[#00F5D4] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+
+                {/* Error */}
+                {connectError && (
+                  <p className="text-red-400 text-xs text-center px-4 mt-3">{connectError}</p>
+                )}
+
+                {/* More Wallets */}
+                {moreWallets.length > 0 && (
+                  <div className="px-4 mt-3">
+                    <button
+                      id="wallet-connect-more"
+                      onClick={() => setShowMore(v => !v)}
+                      className="w-full py-2.5 text-sm text-gray-500 hover:text-white bg-transparent hover:bg-white/5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showMore ? "rotate-180" : ""}`} />
+                      {showMore ? "Show fewer wallets" : `More wallets (${moreWallets.length})`}
+                    </button>
+
+                    <AnimatePresence>
+                      {showMore && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex flex-col gap-2 pt-2">
+                            {moreWallets.map(connector => {
+                              const isRecentMore = recentId === connector.id;
+                              const isConnectingMore = pendingId === connector.id;
+                              return (
+                                <motion.button
+                                  key={connector.id}
+                                  onClick={() => handleMoreWalletConnect(connector)}
+                                  disabled={isPending}
+                                  className="w-full flex items-center justify-between p-3.5 bg-white/[0.02] border border-white/5 rounded-2xl hover:border-[#00F5D4]/30 hover:bg-white/[0.04] transition-all duration-300 group disabled:opacity-60"
+                                  whileHover={{ scale: 1.005 }}
+                                  whileTap={{ scale: 0.995 }}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 bg-white/5">
+                                      {isConnectingMore ? (
+                                        <Loader2 className="w-5 h-5 text-[#00F5D4] animate-spin" />
+                                      ) : connector.icon ? (
+                                        <img src={connector.icon} alt={connector.name} className="w-9 h-9 object-contain rounded-xl" />
+                                      ) : (
+                                        <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white/40 text-xs font-bold">
+                                          {connector.name.slice(0, 2).toUpperCase()}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="text-left">
+                                      <p className="text-sm text-white font-medium leading-tight">{connector.name}</p>
+                                      <p className="text-[10px] mt-0.5 font-medium">
+                                        {isRecentMore
+                                          ? <span className="text-[#00F5D4]">Recent</span>
+                                          : <span className="text-emerald-400/80">Installed</span>
+                                        }
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#00F5D4]/20 transition-colors">
+                                    <svg className="w-3 h-3 text-gray-600 group-hover:text-[#00F5D4] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                  </div>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Footer (inside scrollable so it's not cut off on small phones) */}
+                <div className="px-6 py-3 mt-4">
+                  <p className="text-[10px] text-gray-500 text-center">
+                    By connecting, you agree to IntentOS terms. Your keys, your crypto.
+                  </p>
+                </div>
               </div>
             </motion.div>
           </div>
