@@ -233,6 +233,7 @@ export default function StrategyPage() {
         // MsgExecute args arrive from the backend as base64 strings (JSON-safe).
         // InterwovenKit's BinaryWriter.bytes() expects Uint8Array (needs .byteLength),
         // so we must decode them before handing off to the wallet.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const processedMsgs = (msgs as any[]).map(msg => {
           if (msg.value?.args && Array.isArray(msg.value.args)) {
             return {
