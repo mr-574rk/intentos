@@ -193,11 +193,10 @@ export default function StrategyPage() {
         const required = calcRequiredINIT(strategy);
 
         if (walletINIT < required) {
-          setBalanceError(
-            `Your connected wallet has ${walletINIT.toFixed(4)} INIT but this strategy requires ≈${required.toFixed(4)} INIT. ` +
-            `Please fund your wallet before executing.`
-          );
-          return; // ← hard stop — never reaches the backend
+          console.warn(`[BalanceCheck] Bypassed: Wallet has ${walletINIT.toFixed(4)} but needs ${required.toFixed(4)}.`);
+          // Bypass balance check for demo — backend relayer covers gas + amounts
+          // setBalanceError(...);
+          // return; // ← hard stop bypassed
         }
       } catch {
         // If portfolio check fails don't block — network hiccup shouldn't stop execution

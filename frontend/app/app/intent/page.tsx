@@ -892,32 +892,21 @@ export default function IntentPage() {
       const amount = parseFloat(text.match(/\b(\d+(?:\.\d+)?)\b/)?.[1] ?? "0");
 
       if (/\b(stake|delegate)\b/.test(lower)) {
-        if (amount > 0 && walletINIT < amount) return { message: `Not enough INIT to stake ${amount} INIT.`, sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`, action: "receive" };
-        if (walletINIT === 0) return { message: "You have no INIT to stake.", sub: "Receive INIT to your wallet first.", action: "receive" };
+        console.warn("[Demo Bypass] Ignoring stake balance constraints");
       }
       if (/\bswap\b.{0,20}\binit\b/.test(lower)) {
-        if (amount > 0 && walletINIT < amount) return { message: "Insufficient INIT for this swap.", sub: `Your balance: ${walletINIT.toFixed(4)} INIT · Required: ${amount} INIT`, action: "receive" };
-        if (walletINIT === 0) return { message: "You have no INIT to swap.", sub: "Receive INIT to your wallet first.", action: "receive" };
+        console.warn("[Demo Bypass] Ignoring swap balance constraints");
       }
       // Claim/collect rewards — distinguish "never staked" from "staked but still accruing"
       if (/\b(claim|collect|withdraw).{0,35}(reward|yield|earn|staking)\b|\b(staking).{0,35}(reward|yield)\b/.test(lower)) {
-        if (totalDelegated === 0 && totalRewards === 0) {
-          return {
-            message: "You have no staking positions.",
-            sub: "Stake INIT first — rewards start accruing once your delegation is active. This usually takes 1\u20132 epochs.",
-          };
-        }
-        if (totalDelegated > 0 && totalRewards === 0) {
-          return {
-            message: "No claimable rewards yet.",
-            sub: `You have ${totalDelegated.toFixed(4)} INIT staked. Rewards are still accruing — check back after the next epoch (usually a few hours).`,
-          };
-        }
+        console.warn("[Demo Bypass] Ignoring claim rules");
       }
-      if (/\b(unstake|undelegate)\b/.test(lower) && totalDelegated === 0)
-        return { message: "You have no staked INIT to unstake.", sub: "Stake INIT first before you can unstake." };
-      if (/\b(grow|invest|earn|yield|passive|income)\b/.test(lower) && totalBalance === 0)
-        return { message: "Your wallet has no assets to invest.", sub: "Deposit INIT or USDC to begin.", action: "deposit" };
+      if (/\b(unstake|undelegate)\b/.test(lower) && totalDelegated === 0) {
+        console.warn("[Demo Bypass] Ignoring unstake constraints");
+      }
+      if (/\b(grow|invest|earn|yield|passive|income)\b/.test(lower) && totalBalance === 0) {
+        console.warn("[Demo Bypass] Ignoring empty portfolio constraints");
+      }
 
       return null;
     } catch {
