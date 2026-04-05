@@ -5,6 +5,7 @@ import { useConnect, useConnectors } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ShieldCheck, ExternalLink, Loader2, Mail, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { CHAIN_ID } from "@/lib/config";
 
@@ -198,7 +199,13 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
     }
   };
 
-  return (
+  // Portal requires document to exist (SSR guard)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -429,6 +436,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
           </div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
