@@ -193,6 +193,16 @@ function classifyClause(clause: string): ParsedIntent {
       rawText: clause.trim(),
     };
   }
+    // ── claim staking rewards — must be checked before stake because
+  //    phrases like "claim staking rewards" contain the word "staking"
+  //    which would otherwise match STAKE_PATTERNS first.
+  if (CLAIM_PATTERNS.test(lower) || CLAIM_SOLO_RE.test(lower)) {
+    return {
+      intentType: "claim_rewards",
+      token: "INIT",
+      rawText: clause.trim(),
+    };
+  }
 
   // ── explicit stake — fix #7: STAKE_PATTERNS wins over YIELD_PATTERNS now ──
   if (STAKE_PATTERNS.test(lower)) {
@@ -206,14 +216,6 @@ function classifyClause(clause: string): ParsedIntent {
     };
   }
 
-  // ── claim staking rewards — fix #13: also matches bare "claim" ──
-  if (CLAIM_PATTERNS.test(lower) || CLAIM_SOLO_RE.test(lower)) {
-    return {
-      intentType: "claim_rewards",
-      token: "INIT",
-      rawText: clause.trim(),
-    };
-  }
 
   // ── autopilot enable / disable ──
   if (AUTOPILOT_ENABLE_PATTERNS.test(lower)) {
