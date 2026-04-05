@@ -44,7 +44,7 @@ export const explorerAddressUrl = (address: string) =>
 
 /** Testnet INIT faucet — users claim free tokens here */
 export const FAUCET_URL =
-  process.env.NEXT_PUBLIC_FAUCET_URL ?? "https://faucet.testnet.initia.xyz";
+  process.env.NEXT_PUBLIC_FAUCET_URL ?? "https://app.testnet.initia.xyz/faucet";
 
 /**
  * Token image registry base URL.
