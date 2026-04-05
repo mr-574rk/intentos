@@ -185,8 +185,9 @@ const STRATEGY_TEMPLATES: Record<GoalType, Record<RiskTolerance, StrategyTemplat
 function buildSwapSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
   const from = intent.tokenIn ?? "INIT";
   const to = intent.tokenOut ?? "USDC";
+  const amount = requirePositiveAmount(intent.amount, `swap from ${from}`);
   return [
-    { action: "swap", from, to, description: `Swap ${from} → ${to}`, protocol: "Initia DEX" },
+    { action: "swap", from, to, amount, description: `Swap ${amount} ${from} → ${to}`, protocol: "Initia DEX" },
   ];
 }
 

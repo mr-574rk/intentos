@@ -147,10 +147,12 @@ function classifyClause(clause: string): ParsedIntent {
   if (SWAP_PATTERNS.test(lower)) {
     const { tokenIn, tokenOut } = extractTokenPair(clause);
     const tokens = extractTokens(clause);
+    const amount = extractAmount(clause);
     return {
       intentType: "swap",
       tokenIn: tokenIn ?? tokens[0],
       tokenOut: tokenOut ?? tokens[1],
+      amount,
       rawText: clause.trim(),
     };
   }
