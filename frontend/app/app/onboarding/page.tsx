@@ -9,7 +9,7 @@ import CustomWalletModal from "@/components/CustomWalletModal";
 import { CheckCircle2, Copy, ExternalLink, RefreshCw, Loader2, Droplets } from "lucide-react";
 import { API_URL, API_HEADERS, FAUCET_URL } from "@/lib/config";
 
-const BALANCE_POLL_INTERVAL_MS = 5_000;
+const BALANCE_POLL_INTERVAL_MS = 3_000;
 
 type OnboardingState = "connect" | "checking" | "faucet" | "ready" | "redirecting";
 
@@ -19,14 +19,15 @@ export default function OnboardingPage() {
   const [mounted, setMounted] = useState(false);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [state, setState] = useState<OnboardingState>("connect");
+  const [resolvedAddress, setResolvedAddress] = useState<string>("");
   const [initBalance, setInitBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   const fetchBalance = useCallback(async (addr: string): Promise<number> => {
     try {
@@ -48,7 +49,7 @@ export default function OnboardingPage() {
   }, []);
 
   const startPolling = useCallback((addr: string) => {
-    if (pollRef.current) return; // already polling
+    if (pollRef.current) return;
     setPolling(true);
     pollRef.current = setInterval(async () => {
       const balance = await fetchBalance(addr);
@@ -64,38 +65,55 @@ export default function OnboardingPage() {
     }, BALANCE_POLL_INTERVAL_MS);
   }, [fetchBalance, stopPolling, router]);
 
-  // When wallet connects, check balance immediately
+  // ── Core: react to address from InterwovenKit ───────────────────────────
+  // This useEffect fires when the address changes — which happens after the
+  // user connects via CustomWalletModal (wagmi connect → kit updates address).
+  // This is the ONLY trigger for the balance check flow.
+
   useEffect(() => {
+    if (!mounted) return;
+
     if (!address) {
-      setState("connect");
-      stopPolling();
-      setInitBalance(null);
+      // Disconnected or not yet connected — reset to connect state
+      if (state !== "connect") {
+        setState("connect");
+        stopPolling();
+        setInitBalance(null);
+        setResolvedAddress("");
+      }
       return;
     }
 
-    setState("checking");
-    fetchBalance(address).then((balance) => {
-      setInitBalance(balance);
-      if (balance > 0) {
-        setState("ready");
-        setTimeout(() => {
-          setState("redirecting");
-          router.replace("/app/intent");
-        }, 1200);
-      } else {
-        setState("faucet");
-        startPolling(address);
-      }
-    });
+    // Address appeared — run balance check (guard: only from "connect" state)
+    if (state === "connect") {
+      setResolvedAddress(address);
+      setState("checking");
+      fetchBalance(address).then((balance) => {
+        setInitBalance(balance);
+        if (balance > 0) {
+          setState("ready");
+          setTimeout(() => {
+            setState("redirecting");
+            router.replace("/app/intent");
+          }, 1200);
+        } else {
+          setState("faucet");
+          startPolling(address);
+        }
+      });
+    }
 
     return () => stopPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [address]);
+  }, [mounted, address]);
+
+  // ── Manual actions ──────────────────────────────────────────────────────
 
   const handleManualRefresh = async () => {
-    if (!address) return;
+    const addr = resolvedAddress || address;
+    if (!addr) return;
     setPolling(true);
-    const balance = await fetchBalance(address);
+    const balance = await fetchBalance(addr);
     setInitBalance(balance);
     setPolling(false);
     if (balance > 0) {
@@ -109,11 +127,14 @@ export default function OnboardingPage() {
   };
 
   const handleCopy = () => {
-    if (!address) return;
-    navigator.clipboard.writeText(address).catch(() => undefined);
+    const addr = resolvedAddress || address;
+    if (!addr) return;
+    navigator.clipboard.writeText(addr).catch(() => undefined);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // ── Render ──────────────────────────────────────────────────────────────
 
   if (!mounted) {
     return (
@@ -127,7 +148,10 @@ export default function OnboardingPage() {
     <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center px-4 relative overflow-hidden">
 
       {/* Custom Wallet Gateway Modal */}
-      <CustomWalletModal isOpen={walletModalOpen} onClose={() => setWalletModalOpen(false)} />
+      <CustomWalletModal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+      />
 
       {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -188,13 +212,13 @@ export default function OnboardingPage() {
                 className="w-full flex flex-col items-center mt-8 gap-4"
               >
                 <Loader2 className="w-10 h-10 text-[#00F5D4] animate-spin" />
-                <p className="text-sm font-semibold text-white">Checking wallet balance…</p>
-                <p className="text-xs text-gray-500 text-center">DEMO: Verifying INIT balance before proceeding.</p>
+                <p className="text-sm font-semibold text-white">Verifying wallet balance…</p>
+                <p className="text-xs text-gray-500 text-center">This only takes a moment.</p>
               </motion.div>
             )}
 
             {/* ── State: faucet — zero balance ─────────────────── */}
-            {state === "faucet" && address && (
+            {state === "faucet" && (
               <motion.div
                 key="faucet"
                 initial={{ opacity: 0, y: 10 }}
@@ -220,10 +244,13 @@ export default function OnboardingPage() {
                   className="w-full rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-3"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
-                  <p className="text-xs font-mono text-[#00F5D4] truncate flex-1">{address}</p>
+                  <p className="text-xs font-mono text-[#00F5D4] truncate flex-1">
+                    {resolvedAddress || address || "Connecting…"}
+                  </p>
                   <button
                     onClick={handleCopy}
-                    className="flex-shrink-0 text-gray-500 hover:text-[#00F5D4] transition-colors"
+                    disabled={!resolvedAddress && !address}
+                    className="flex-shrink-0 text-gray-500 hover:text-[#00F5D4] transition-colors disabled:opacity-30"
                     title="Copy address"
                   >
                     {copied ? (
@@ -250,20 +277,31 @@ export default function OnboardingPage() {
                   {polling ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-[#00F5D4]/60" />
-                      <span>Checking balance every {BALANCE_POLL_INTERVAL_MS / 1000}s…</span>
+                      <span>Auto-detecting balance every {BALANCE_POLL_INTERVAL_MS / 1000}s…</span>
                     </>
                   ) : (
-                    <span>Balance: {initBalance !== null ? `${initBalance.toFixed(4)} INIT` : "—"}</span>
+                    <span>Balance: {initBalance !== null ? `${initBalance.toFixed(4)} INIT` : "Not yet checked"}</span>
                   )}
                   <button
                     onClick={handleManualRefresh}
                     disabled={polling}
                     className="ml-1 text-[#00F5D4]/60 hover:text-[#00F5D4] disabled:opacity-40 transition-colors"
-                    title="Refresh balance"
+                    title="Check now"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
                 </div>
+
+                {/* Escape hatch */}
+                <button
+                  onClick={() => {
+                    setState("redirecting");
+                    router.replace("/app/intent");
+                  }}
+                  className="mt-3 text-xs text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2"
+                >
+                  I already have funds — skip faucet
+                </button>
               </motion.div>
             )}
 

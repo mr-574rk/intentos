@@ -85,7 +85,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
   const { openConnect } = useInterwovenKit();
   const connectors = useConnectors();
   const { connect, isPending, variables } = useConnect({
-    mutation: { onSuccess: () => onClose() }
+    mutation: { onSuccess: () => onClose() },
   });
 
   // Read wagmi's own recentConnectorId — exactly what the kit uses
@@ -128,8 +128,8 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
   // "More Wallets" = connectors NOT already shown in primary list by ID or name keywords
   const moreWallets = connectors.filter(c => {
     const nameLower = c.name.toLowerCase();
-    const isPrimary = PRIMARY_IDS.includes(c.id) || 
-                     primaryKeywords.some(kw => nameLower.includes(kw));
+    const isPrimary = PRIMARY_IDS.includes(c.id) ||
+      primaryKeywords.some(kw => nameLower.includes(kw));
     return !isPrimary && c.id !== PRIVY_ID;
   });
 
@@ -165,6 +165,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
           const freshConnectors = connectors;
           const matched = freshConnectors.find(c => c.id === id);
           if (matched) {
+            // wagmi onSuccess will fire onConnected
             connect({ connector: matched });
           } else {
             // Provider enabled — kit will pick up the new account on next render

@@ -44,7 +44,7 @@ export default function Providers({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiConfig}>
-        <InterwovenKitProvider 
+        <InterwovenKitProvider
           {...TESTNET}
           defaultChainId={CHAIN_ID}
         >
