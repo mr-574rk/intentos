@@ -742,7 +742,7 @@ export default function IntentPage() {
       return;
     }
     setShowPlanCard(true);
-    setTimeout(() => router.push("/app/strategy"), 9000);
+    setTimeout(() => router.push("/app/strategy"), 2000);
   };
 
   // ── Reasoning Engine Flow ────────────────────────────────────────────────────
