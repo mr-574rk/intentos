@@ -176,7 +176,25 @@ export async function buildMessages(
     }
   });
 
-  const msgs: any[] = [];
+  const msgs: Array<{ typeUrl: string; value: Uint8Array }> = [];
+
+  /**
+   * Convert an @initia/initia.js Msg class instance to a plain EncodeObject
+   * { typeUrl, value } that InterwovenKit's requestTxSync codec can handle.
+   *
+   * packAny() wraps the message into a google.protobuf.Any:
+   *   { type_url: string, value: Uint8Array }
+   *
+   * Do NOT use toProto() — on @initia/initia.js Msg classes it returns the
+   * Msg instance itself, not a serialised Any, causing "Unregistered type url:
+   * undefined" at runtime when InterwovenKit tries to look up the codec.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function encodeMsg(msg: any): { typeUrl: string; value: Uint8Array } {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const any: { type_url: string; value: Uint8Array } = msg.packAny();
+    return { typeUrl: any.type_url, value: any.value };
+  }
 
   // ── Native MsgSend (transfer / batch_transfer) ────────────────────────────
   for (const tx of xferSteps) {
@@ -190,37 +208,37 @@ export async function buildMessages(
         `[initiaExecutor] Transfer recipient must be a bech32 init1… address, got: ${recipientAddr}`
       );
     }
-    msgs.push(new MsgSend(
+    msgs.push(encodeMsg(new MsgSend(
       senderAddress,
       recipientAddr,
       new Coins([new Coin("uinit", String(uAmt))])
-    ));
+    )));
   }
 
   // ── Native MsgDelegate (stake) ─────────────────────────────────────────────
   for (const tx of stakeSteps) {
     const uAmt = requirePositiveUAmount(tx.payload.amount, `stake step`);
-    msgs.push(new MsgDelegate(
+    msgs.push(encodeMsg(new MsgDelegate(
       senderAddress,
       INITIA_CONFIG.defaultValidator,
       new Coins([new Coin("uinit", String(uAmt))])
-    ));
+    )));
   }
 
   // ── Native MsgUndelegate (unstake) ────────────────────────────────────────
   for (const tx of unstakeSteps) {
     const uAmt = requirePositiveUAmount(tx.payload.amount, `unstake step`);
     const validator = String(tx.payload.validator ?? INITIA_CONFIG.defaultValidator);
-    msgs.push(new MsgUndelegate(
+    msgs.push(encodeMsg(new MsgUndelegate(
       senderAddress,
       validator,
       new Coins([new Coin("uinit", String(uAmt))])
-    ));
+    )));
   }
 
   // ── Native MsgWithdrawDelegatorReward (claim rewards) ─────────────────────
   if (claimSteps.length > 0) {
-    msgs.push(new MsgWithdrawDelegatorReward(senderAddress, INITIA_CONFIG.defaultValidator));
+    msgs.push(encodeMsg(new MsgWithdrawDelegatorReward(senderAddress, INITIA_CONFIG.defaultValidator)));
   }
 
   // ── DEX swaps (0x1::dex::swap_script) ─────────────────────────────────────
@@ -230,20 +248,25 @@ export async function buildMessages(
     const fromDenom = stepFromDenoms[globalIdx];
     const uAmt   = requirePositiveUAmount(tx.payload.amount, `DEX swap step`);
 
-    if (action === 1) {
-      // Swap: offer INIT, receive counterpart.
-      const offerDenom   = "uinit";
+    if (action === 1 || action === 5) {
+      // Swap (action=1) and Provide Liquidity (action=5) both route through
+      // 0x1::dex::swap_script — Initia's AMM entry-point for single-asset LP
+      // provision and swaps use the same on-chain function.
+      const offerDenom   = fromDenom !== "uinit" ? fromDenom : "uinit";
       const offerMeta    = resolveMetadata(offerDenom);
+
+      // Determine pool pair: for provide_liquidity, use from→to if both are set
+      const toDenom = stepToDenoms[globalIdx];
       const resolvedPair = resolvePair(
-        "INIT",
-        fromDenom === "uinit" ? "USDC" : "INIT"
+        offerDenom === "uinit" ? "INIT" : offerDenom.replace("u", "").toUpperCase(),
+        toDenom === "uinit" ? "INIT" : toDenom !== "uusdc" ? "USDC" :
+          (offerDenom === "uinit" ? "USDC" : "INIT")
       );
 
       // ── Slippage protection (Finding #6) ──────────────────────────────────
-      // Build Option<u64>::Some(minReturn) instead of None.
       const minReturnBytes = buildMinReturnOption(uAmt, SWAP_SLIPPAGE_BPS);
 
-      msgs.push(new MsgExecute(
+      msgs.push(encodeMsg(new MsgExecute(
         senderAddress,
         "0x1",
         "dex",
@@ -253,13 +276,9 @@ export async function buildMessages(
           bcs.address().serialize(resolvedPair).toBase64(),
           bcs.address().serialize(offerMeta).toBase64(),
           bcs.u64().serialize(uAmt).toBase64(),
-          minReturnBytes, // Option<u64>::Some(min_return) — slippage bounded
+          minReturnBytes, // Option<u64>::Some(min_return)
         ]
-      ));
-    } else if (action === 5) {
-      throw new Error(
-        "[initiaExecutor] ACTION_PROVIDE_LIQUIDITY requires an entry_point router contract integration."
-      );
+      )));
     }
   }
 
@@ -311,14 +330,14 @@ export async function buildMessages(
       bcs.u64().serialize(BigInt(5)).toBase64(),
     ];
 
-    msgs.push(new MsgExecute(
+    msgs.push(encodeMsg(new MsgExecute(
       senderAddress,
       INITIA_CONFIG.contracts.strategyExecutor,
       "strategy_executor",
       "execute_bundle",
       [],
       moveArgs
-    ));
+    )));
   }
 
   if (msgs.length === 0) {

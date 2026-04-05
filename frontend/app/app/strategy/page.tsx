@@ -13,6 +13,7 @@ import SuccessModal from "@/components/SuccessModal";
 import StrategyReasoning from "@/components/StrategyReasoning";
 
 import { API_URL, API_HEADERS } from "@/lib/config";
+import type { ApiResponse, UnsignedMsgBundle } from "@/types";
 
 // Initia-branded mint glow pulse — replaces generic spinners everywhere
 function MintPulse({ size = 20 }: { size?: number }) {
@@ -121,7 +122,7 @@ function ExecuteButton({ onExecute, disabled, execState }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function StrategyPage() {
   const router = useRouter();
-  const { address } = useWalletGuard();
+  const { address, requestTx } = useWalletGuard();
   const isOnline = useOnlineStatus();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
@@ -182,8 +183,9 @@ export default function StrategyPage() {
     if (!strategy || blocked) return;
     setErrorReason(null);
     setBalanceError(null);
+    setExecState("executing");
 
-    // Pre-flight: check connected wallet INIT balance before navigating
+    // Pre-flight: check connected wallet INIT balance
     if (address) {
       try {
         const portfolioRes = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
@@ -197,16 +199,62 @@ export default function StrategyPage() {
             `You need ${required.toFixed(4)} INIT but your wallet only has ${walletINIT.toFixed(4)} INIT. ` +
             `Visit the faucet to top up.`
           );
+          setExecState("idle");
           return;
         }
       } catch {
-        // Network hiccup — don't block, let the execute page re-check
+        // Network hiccup — proceed, backend will re-check
       }
     }
 
-    // Hand off to the dedicated execute page which handles wallet signing
-    sessionStorage.setItem("intentos_strategy", JSON.stringify(strategy));
-    router.push(`/app/execute?strategyId=${strategy.id}`);
+    try {
+      // Step 1: Build unsigned messages on backend
+      const msgRes = await fetch(
+        `${API_URL}/api/execute/messages/${strategy.id}?wallet=${encodeURIComponent(address ?? "")}`,
+        { headers: API_HEADERS }
+      );
+      const msgData: ApiResponse<UnsignedMsgBundle> = await msgRes.json();
+
+      if (!msgData.success || !msgData.data) {
+        throw new Error(msgData.error ?? "Failed to build transaction messages.");
+      }
+
+      const { msgs, memo, mode } = msgData.data;
+      const isMock = mode === "mock";
+
+      let hash = "";
+
+      if (isMock) {
+        // Mock mode: simulate success without wallet signing
+        hash = `mock-${Date.now().toString(16)}`;
+        await new Promise(r => setTimeout(r, 800));
+      } else {
+        // Real mode: sign + broadcast via InterwovenKit
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const txResult = await requestTx({ messages: msgs as any[], memo });
+        hash = typeof txResult === "string" ? txResult : "";
+        if (!hash) throw new Error("Wallet returned no transaction hash after signing.");
+      }
+
+      // Step 2: Confirm execution with backend
+      await fetch(`${API_URL}/api/execute/confirm`, {
+        method: "POST",
+        headers: { ...API_HEADERS, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strategyId: strategy.id,
+          walletAddress: address,
+          txHash: hash,
+          strategy,
+        }),
+      });
+
+      setTxHash(hash);
+      setExecState("success");
+      setShowSuccess(true);
+    } catch (err) {
+      setErrorReason((err as Error).message);
+      setExecState("failed");
+    }
   };
 
   // Don't flash empty state during hydration — wait for sessionStorage to load

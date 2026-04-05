@@ -120,7 +120,7 @@ export default function NetworkGuardProvider({
 
   const fetchBalance = useCallback(async (addr: string): Promise<number> => {
     try {
-      const res = await fetch(`${API_URL}/api/portfolio/${addr}`, { headers: API_HEADERS });
+      const res = await fetch(`${API_URL}/api/portfolio/${addr}?t=${Date.now()}`, { headers: API_HEADERS, cache: 'no-store' });
       const json = await res.json();
       const initAsset = json.wallet?.find((a: { symbol: string }) => a.symbol === "INIT");
       return initAsset?.balance ?? 0;
