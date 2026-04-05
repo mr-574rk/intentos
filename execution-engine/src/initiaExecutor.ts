@@ -176,7 +176,7 @@ export async function buildMessages(
     }
   });
 
-  const msgs: Array<{ typeUrl: string; value: Uint8Array }> = [];
+  const msgs: Array<{ typeUrl: string; value: string }> = [];
 
   /**
    * Convert an @initia/initia.js Msg class instance to a plain EncodeObject
@@ -190,10 +190,10 @@ export async function buildMessages(
    * undefined" at runtime when InterwovenKit tries to look up the codec.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function encodeMsg(msg: any): { typeUrl: string; value: Uint8Array } {
+  function encodeMsg(msg: any): { typeUrl: string; value: string } {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const any: any = msg.packAny();
-    return { typeUrl: any.typeUrl || any.type_url, value: any.value };
+    return { typeUrl: any.typeUrl || any.type_url, value: Buffer.from(any.value).toString("base64") };
   }
 
   // ── Native MsgSend (transfer / batch_transfer) ────────────────────────────
