@@ -14,7 +14,7 @@
  *                          from SWAP_MIN_RETURN_BPS (default 100 = 1% max slippage).
  */
 
-import { MsgExecute, MsgDelegate, MsgUndelegate, MsgWithdrawDelegatorReward, MsgSend, Coins, Coin, bcs } from "@initia/initia.js";
+import { bcs } from "@initia/initia.js";
 import type { TransactionObject } from "../../types";
 import { INITIA_CONFIG } from "../../config/initiaConfig";
 
@@ -176,25 +176,7 @@ export async function buildMessages(
     }
   });
 
-  const msgs: Array<{ typeUrl: string; value: string }> = [];
-
-  /**
-   * Convert an @initia/initia.js Msg class instance to a plain EncodeObject
-   * { typeUrl, value } that InterwovenKit's requestTxSync codec can handle.
-   *
-   * packAny() wraps the message into a google.protobuf.Any:
-   *   { type_url: string, value: Uint8Array }
-   *
-   * Do NOT use toProto() — on @initia/initia.js Msg classes it returns the
-   * Msg instance itself, not a serialised Any, causing "Unregistered type url:
-   * undefined" at runtime when InterwovenKit tries to look up the codec.
-   */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function encodeMsg(msg: any): { typeUrl: string; value: string } {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const any: any = msg.packAny();
-    return { typeUrl: any.typeUrl || any.type_url, value: Buffer.from(any.value).toString("base64") };
-  }
+  const msgs: Array<{ typeUrl: string; value: any }> = [];
 
   // ── Native MsgSend (transfer / batch_transfer) ────────────────────────────
   for (const tx of xferSteps) {
@@ -208,37 +190,52 @@ export async function buildMessages(
         `[initiaExecutor] Transfer recipient must be a bech32 init1… address, got: ${recipientAddr}`
       );
     }
-    msgs.push(encodeMsg(new MsgSend(
-      senderAddress,
-      recipientAddr,
-      new Coins([new Coin("uinit", String(uAmt))])
-    )));
+    msgs.push({
+      typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+      value: {
+        fromAddress: senderAddress,
+        toAddress: recipientAddr,
+        amount: [{ denom: "uinit", amount: String(uAmt) }]
+      }
+    });
   }
 
   // ── Native MsgDelegate (stake) ─────────────────────────────────────────────
   for (const tx of stakeSteps) {
     const uAmt = requirePositiveUAmount(tx.payload.amount, `stake step`);
-    msgs.push(encodeMsg(new MsgDelegate(
-      senderAddress,
-      INITIA_CONFIG.defaultValidator,
-      new Coin("uinit", String(uAmt)) as any
-    )));
+    msgs.push({
+      typeUrl: "/initia.mstaking.v1.MsgDelegate",
+      value: {
+        delegatorAddress: senderAddress,
+        validatorAddress: INITIA_CONFIG.defaultValidator,
+        amount: { denom: "uinit", amount: String(uAmt) }
+      }
+    });
   }
 
   // ── Native MsgUndelegate (unstake) ────────────────────────────────────────
   for (const tx of unstakeSteps) {
     const uAmt = requirePositiveUAmount(tx.payload.amount, `unstake step`);
     const validator = String(tx.payload.validator ?? INITIA_CONFIG.defaultValidator);
-    msgs.push(encodeMsg(new MsgUndelegate(
-      senderAddress,
-      validator,
-      new Coin("uinit", String(uAmt)) as any
-    )));
+    msgs.push({
+      typeUrl: "/initia.mstaking.v1.MsgUndelegate",
+      value: {
+        delegatorAddress: senderAddress,
+        validatorAddress: validator,
+        amount: { denom: "uinit", amount: String(uAmt) }
+      }
+    });
   }
 
   // ── Native MsgWithdrawDelegatorReward (claim rewards) ─────────────────────
   if (claimSteps.length > 0) {
-    msgs.push(encodeMsg(new MsgWithdrawDelegatorReward(senderAddress, INITIA_CONFIG.defaultValidator)));
+    msgs.push({
+      typeUrl: "/initia.distribution.v1beta1.MsgWithdrawDelegatorReward",
+      value: {
+        delegatorAddress: senderAddress,
+        validatorAddress: INITIA_CONFIG.defaultValidator
+      }
+    });
   }
 
   // ── DEX swaps (0x1::dex::swap_script) ─────────────────────────────────────
@@ -266,19 +263,22 @@ export async function buildMessages(
       // ── Slippage protection (Finding #6) ──────────────────────────────────
       const minReturnBytes = buildMinReturnOption(uAmt, SWAP_SLIPPAGE_BPS);
 
-      msgs.push(encodeMsg(new MsgExecute(
-        senderAddress,
-        "0x1",
-        "dex",
-        "swap_script",
-        [],
-        [
-          bcs.address().serialize(resolvedPair).toBase64(),
-          bcs.address().serialize(offerMeta).toBase64(),
-          bcs.u64().serialize(uAmt).toBase64(),
-          minReturnBytes, // Option<u64>::Some(min_return)
-        ]
-      )));
+      msgs.push({
+        typeUrl: "/initia.move.v1.MsgExecute",
+        value: {
+          sender: senderAddress,
+          moduleAddress: "0x1",
+          moduleName: "dex",
+          functionName: "swap_script",
+          typeArgs: [],
+          args: [
+            bcs.address().serialize(resolvedPair).toBase64(),
+            bcs.address().serialize(offerMeta).toBase64(),
+            bcs.u64().serialize(uAmt).toBase64(),
+            minReturnBytes, // Option<u64>::Some(min_return)
+          ]
+        }
+      });
     }
   }
 
@@ -330,14 +330,17 @@ export async function buildMessages(
       bcs.u64().serialize(BigInt(5)).toBase64(),
     ];
 
-    msgs.push(encodeMsg(new MsgExecute(
-      senderAddress,
-      INITIA_CONFIG.contracts.strategyExecutor,
-      "strategy_executor",
-      "execute_bundle",
-      [],
-      moveArgs
-    )));
+    msgs.push({
+      typeUrl: "/initia.move.v1.MsgExecute",
+      value: {
+        sender: senderAddress,
+        moduleAddress: INITIA_CONFIG.contracts.strategyExecutor,
+        moduleName: "strategy_executor",
+        functionName: "execute_bundle",
+        typeArgs: [],
+        args: moveArgs
+      }
+    });
   }
 
   if (msgs.length === 0) {

@@ -231,14 +231,7 @@ export default function StrategyPage() {
       } else {
         // Real mode: sign + broadcast via InterwovenKit
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const decodedMsgs = msgs.map((m: any) => ({
-          typeUrl: m.typeUrl,
-          value: typeof m.value === "string" 
-            ? Uint8Array.from(atob(m.value), c => c.charCodeAt(0)) 
-            : m.value,
-        }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const txResult = await requestTx({ messages: decodedMsgs as any[], memo });
+        const txResult = await requestTx({ messages: msgs as any[], memo });
         hash = typeof txResult === "string" ? txResult : "";
         if (!hash) throw new Error("Wallet returned no transaction hash after signing.");
       }
