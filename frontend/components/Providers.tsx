@@ -44,12 +44,11 @@ export default function Providers({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiConfig}>
-        <InterwovenKitProvider
-          {...TESTNET}
-          defaultChainId={CHAIN_ID}
-        >
-          {children}
-        </InterwovenKitProvider>
+    <InterwovenKitProvider
+  {...TESTNET}
+  defaultChainId={CHAIN_ID}
+  enableAutoSign={true}
+>
       </WagmiProvider>
     </QueryClientProvider>
   );
