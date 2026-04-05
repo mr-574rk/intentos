@@ -212,7 +212,7 @@ export default function OnboardingPage() {
                 <h2 className="text-xl font-black text-white text-center mb-1">Claim Testnet INIT</h2>
                 <p className="text-xs text-gray-400 text-center mb-6 leading-relaxed px-2">
                   Your wallet has no INIT balance. You need testnet INIT to pay for gas and execute strategies.
-                  Visit the faucet, paste your address, then return here — we'll detect your balance automatically.
+                  Visit the faucet, paste your address, then return here — we&apos;ll detect your balance automatically.
                 </p>
 
                 {/* Wallet address display */}

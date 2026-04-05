@@ -7,6 +7,7 @@ import GlobalAutopilotToggle from "@/components/GlobalAutopilotToggle";
 import OfflineToast from "@/components/OfflineToast";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
+import NetworkGuardProvider from "@/components/NetworkGuardProvider";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -64,9 +65,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1 h-[100dvh] flex flex-col pt-16 md:pt-0 w-full relative">
         {/* Desktop Autopilot — only shown when wallet connected */}
         {isConnected && <GlobalAutopilotToggle />}
-        <div className="flex-1 h-full w-full mx-auto md:p-8 p-4 overflow-y-auto pb-10">
-          {children}
-        </div>
+        <NetworkGuardProvider>
+          <div className="flex-1 h-full w-full mx-auto md:p-8 p-4 overflow-y-auto pb-10">
+            {children}
+          </div>
+        </NetworkGuardProvider>
         
         {/* Global offline detector */}
         <OfflineToast />
