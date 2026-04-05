@@ -230,6 +230,7 @@ export default function StrategyPage() {
         await new Promise(r => setTimeout(r, 800));
       } else {
         // Real mode: sign + broadcast via InterwovenKit
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const decodedMsgs = msgs.map((m: any) => ({
           typeUrl: m.typeUrl,
           value: typeof m.value === "string" 
