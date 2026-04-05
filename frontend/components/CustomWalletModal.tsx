@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShieldCheck, ExternalLink, Loader2, Mail, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { CHAIN_ID } from "@/lib/config";
 
 // ── Wallet static metadata ────────────────────────────────────────────────────
 // Connector IDs match wagmi connector IDs registered by InterwovenKit
@@ -158,7 +159,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
         // Directly enable the Cosmos provider — this triggers the wallet's own approval popup.
         const provider = item.meta.cosmosProvider();
         if (provider) {
-          await provider.enable("initiation-2");
+          await provider.enable(CHAIN_ID);
           // After enabling, re-check if a connector appeared and connect via wagmi
           const freshConnectors = connectors;
           const matched = freshConnectors.find(c => c.id === id);

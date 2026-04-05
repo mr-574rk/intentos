@@ -6,8 +6,10 @@ import { truncate } from "@initia/utils";
 import clsx from "clsx";
 import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
+import CustomWalletModal from "@/components/CustomWalletModal";
 import { Copy, ExternalLink, LogOut, Check, MoreVertical } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { explorerAddressUrl } from "@/lib/config";
 
 export default function WalletConnect({
   compact = false,
@@ -16,14 +18,14 @@ export default function WalletConnect({
   compact?: boolean;
   navMode?: boolean;
 }) {
-  const { address, username, openConnect, openWallet, disconnect } = useInterwovenKit();
+  const { address, username, openWallet, disconnect } = useInterwovenKit();
 
   const isConnected = !!address;
   const displayName = username ?? (address ? truncate(address) : "Not connected");
 
-  // State for the popover menu
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [isMenuOpen,   setIsMenuOpen]   = useState(false);
+  const [copied,       setCopied]       = useState(false);
+  const [modalOpen,    setModalOpen]    = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -55,7 +57,7 @@ export default function WalletConnect({
         <span>Copy Address</span>
       </button>
       <a
-        href={`https://scan.testnet.initia.xyz/address/${address}`}
+        href={explorerAddressUrl(address ?? "")}
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
@@ -119,19 +121,22 @@ export default function WalletConnect({
     );
   }
 
-  // ── Dashboard / sidebar wallet pill (unchanged) ────────────────────────────
+  // ── Dashboard / sidebar wallet pill ───────────────────────────────────────
   if (!isConnected) {
     return (
-      <button
-        id="wallet-connect-btn"
-        onClick={openConnect}
-        className={clsx(
-          "bg-[#00F5D4] text-gray-900 font-bold transition-all hover:scale-[1.02] hover:bg-[#00E5C4] hover:shadow-[0_0_15px_rgba(0,245,212,0.4)]",
-          compact ? "text-xs px-4 py-2 w-full rounded-xl" : "text-sm px-6 py-2.5 rounded-full"
-        )}
-      >
-        CONNECT WALLET
-      </button>
+      <>
+        <CustomWalletModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+        <button
+          id="wallet-connect-btn"
+          onClick={() => setModalOpen(true)}
+          className={clsx(
+            "bg-[#00F5D4] text-gray-900 font-bold transition-all hover:scale-[1.02] hover:bg-[#00E5C4] hover:shadow-[0_0_15px_rgba(0,245,212,0.4)]",
+            compact ? "text-xs px-4 py-2 w-full rounded-xl" : "text-sm px-6 py-2.5 rounded-full"
+          )}
+        >
+          CONNECT WALLET
+        </button>
+      </>
     );
   }
 

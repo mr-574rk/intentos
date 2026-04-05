@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, ExternalLink, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Strategy } from "@/types";
+import { explorerTxUrl, EXPLORER_BASE } from "@/lib/config";
 
 interface SuccessModalProps {
   open: boolean;
@@ -46,9 +47,7 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
     router.push("/app/portfolio");
   };
 
-  const explorerUrl = txHash
-    ? `https://scan.testnet.initia.xyz/initiation-2/txs/${txHash}`
-    : "https://scan.testnet.initia.xyz/initiation-2";
+  const explorerUrl = txHash ? explorerTxUrl(txHash) : EXPLORER_BASE;
 
   return (
     <AnimatePresence>

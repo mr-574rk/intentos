@@ -5,7 +5,7 @@ import type { Strategy, StrategyState, AgentTimeline, TimelineStep } from "../..
 const strategyStore = new Map<string, Strategy>();
 const timelineStore = new Map<string, AgentTimeline>();
 
-// ── Timeline Factory ─────────────────────────────────────────
+// ── Timeline Factory ──────────────────────────────────────────
 
 const TIMELINE_STEPS = [
   { id: "intent_parsed",       label: "Intent Parsed",       description: "Financial goal interpreted by AI" },
@@ -73,11 +73,26 @@ export function failTimeline(strategyId: string): void {
 
 // ── Strategy CRUD ─────────────────────────────────────────────
 
-export function createStrategy(partial: Omit<Strategy, "id" | "createdAt" | "updatedAt" | "state">): Strategy {
+/**
+ * Create a new strategy bound to an owner wallet address.
+ * The ownerAddress is stored and must be verified on every subsequent read/execute.
+ */
+export function createStrategy(
+  partial: Omit<Strategy, "id" | "createdAt" | "updatedAt" | "state" | "ownerAddress">,
+  ownerAddress: string
+): Strategy {
+  if (!ownerAddress || !ownerAddress.startsWith("init1")) {
+    throw new Error(
+      `[strategyLifecycle] ownerAddress must be a valid bech32 init1… address, got "${ownerAddress}". ` +
+      `Strategies cannot be created without a verified wallet owner.`
+    );
+  }
+
   const now = new Date().toISOString();
   const strategy: Strategy = {
     ...partial,
     id: uuidv4(),
+    ownerAddress,
     state: "PENDING",
     createdAt: now,
     updatedAt: now,
@@ -95,14 +110,63 @@ export function updateState(id: string, state: StrategyState): Strategy | null {
   return strategy;
 }
 
+/**
+ * Internal-only getter — returns the strategy regardless of owner.
+ * Do NOT expose this via HTTP routes.
+ */
 export function getStrategy(id: string): Strategy | undefined {
   return strategyStore.get(id);
+}
+
+/**
+ * Owner-scoped strategy getter (Finding #3 remediation).
+ * Returns undefined if:
+ *  - The strategy does not exist.
+ *  - The supplied ownerAddress does not exactly match the stored owner.
+ *
+ * Routes should use this function, never getStrategy(), for user-facing endpoints.
+ */
+export function getStrategyForOwner(
+  id: string,
+  ownerAddress: string
+): Strategy | undefined {
+  const strategy = strategyStore.get(id);
+  if (!strategy) return undefined;
+  if (strategy.ownerAddress !== ownerAddress) return undefined;
+  return strategy;
+}
+
+/**
+ * Owner-scoped timeline getter (Finding #3 remediation).
+ * Returns undefined if the strategy exists but owner does not match.
+ */
+export function getTimelineForOwner(
+  strategyId: string,
+  ownerAddress: string
+): AgentTimeline | undefined {
+  const strategy = strategyStore.get(strategyId);
+  if (!strategy || strategy.ownerAddress !== ownerAddress) return undefined;
+  return timelineStore.get(strategyId);
 }
 
 export function getTimeline(strategyId: string): AgentTimeline | undefined {
   return timelineStore.get(strategyId);
 }
 
+/**
+ * Returns all strategies for a specific owner.
+ * Never returns strategies for other wallet addresses.
+ */
+export function getStrategiesForOwner(ownerAddress: string): Strategy[] {
+  return Array.from(strategyStore.values()).filter(
+    s => s.ownerAddress === ownerAddress
+  );
+}
+
+/**
+ * @internal NOT for use in HTTP routes — no ownership filtering.
+ * Retained for internal timeline aggregation only.
+ */
 export function getAllStrategies(): Strategy[] {
   return Array.from(strategyStore.values());
 }

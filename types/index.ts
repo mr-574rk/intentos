@@ -32,6 +32,27 @@ export type IntentType =
   | "autopilot_disable"
   | "portfolio_allocation";
 
+/** Actions that are executable as on-chain transactions. */
+export const EXECUTABLE_ACTIONS = new Set([
+  "swap", "swap_all", "dca_buy", "leverage_long", "split_allocation",
+  "transfer", "batch_transfer",
+  "stake", "stake_lp", "leverage_stake", "compound",
+  "provide_liquidity", "single_asset_provide_liquidity",
+  "lend", "leverage_lend", "yield_farm",
+  "unstake", "undelegate", "unbond",
+  "claim_rewards", "claim", "withdraw_rewards",
+]);
+
+/** Actions that require an explicit positive amount (non-zero). */
+export const AMOUNT_REQUIRED_ACTIONS = new Set([
+  "swap", "swap_all", "dca_buy", "leverage_long",
+  "transfer", "batch_transfer",
+  "stake", "stake_lp", "leverage_stake",
+  "provide_liquidity", "single_asset_provide_liquidity",
+  "lend", "leverage_lend",
+  "unstake", "undelegate", "unbond",
+]);
+
 export interface ParsedIntent {
   intentType: IntentType;
   // goal-based fields (yield / portfolio_allocation)
@@ -70,6 +91,8 @@ export interface StrategyStep {
   protocol?: string;
   amount?: number;
   recipient?: string;
+  /** Slippage tolerance for swap steps in basis points (e.g. 100 = 1%). */
+  slippageBps?: number;
 }
 
 export interface StrategyBundle {
@@ -114,6 +137,18 @@ export interface TransactionObject {
   estimatedGas?: number;
 }
 
+/**
+ * An unsigned message bundle returned to the frontend for wallet signing.
+ * The frontend passes `msgs` directly to `requestTxSync`.
+ */
+export interface UnsignedMsgBundle {
+  strategyId: string;
+  senderAddress: string;
+  msgs: Record<string, unknown>[];
+  memo: string;
+  mode: ExecutionMode;
+}
+
 export interface ExecutionResult {
   strategyId: string;
   status: "success" | "failed";
@@ -137,6 +172,8 @@ export type StrategyState =
 
 export interface Strategy {
   id: string;
+  /** Wallet address that created this strategy — used for ownership authorization. */
+  ownerAddress: string;
   intent: StructuredIntent;
   bundle: StrategyBundle;
   simulation?: SimulationResult;
@@ -160,7 +197,7 @@ export interface TimelineStep {
 
 export interface AgentTimeline {
   strategyId: string;
-  steps: TimelineStep[];
+  steps: TimelineStep[]
   currentStepIndex: number;
   overall: "running" | "complete" | "failed";
   startedAt: string;

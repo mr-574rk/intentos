@@ -16,7 +16,7 @@ import type {
   ExecutionResult,
 } from "@/types";
 import { QRCodeSVG } from "qrcode.react";
-import { API_URL, API_HEADERS } from "@/lib/config";
+import { API_URL, API_HEADERS, explorerTxUrl, EXPLORER_BASE } from "@/lib/config";
 import {
   enableAutopilot,
   disableAutopilot,
@@ -83,7 +83,7 @@ async function resolveRecipient(raw: string, apiUrl: string): Promise<RecipientR
   if (cleaned.toLowerCase().endsWith(".init")) {
     try {
       const res = await fetch(`${apiUrl}/api/nameservice/resolve/${encodeURIComponent(cleaned)}`, {
-        headers: { "ngrok-skip-browser-warning": "69420" },
+        headers: API_HEADERS,
       });
       const json = await res.json();
 
@@ -137,7 +137,11 @@ async function saveRecentRecipient(
   try {
     await fetch(`${apiUrl}/api/recipients`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        // X-Wallet-Owner header required by the recipients auth gate (Finding #4)
+        "X-Wallet-Owner": walletOwner,
+      },
       body: JSON.stringify({ walletOwner, name, address }),
     });
   } catch {
@@ -487,8 +491,8 @@ function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () 
   // Correct Initia testnet explorer — tx detail page
   const hasTxHash = txHash && txHash !== "confirmed" && txHash.length > 10;
   const explorerUrl = hasTxHash
-    ? `https://scan.testnet.initia.xyz/initiation-2/txs/${txHash}`
-    : `https://scan.testnet.initia.xyz/initiation-2/txs`;
+    ? explorerTxUrl(txHash)
+    : EXPLORER_BASE;
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -694,7 +698,8 @@ export default function IntentPage() {
       const res = await fetch(`${API_URL}/api/execute/intent`, {
         method: "POST",
         headers: API_HEADERS,
-        body: JSON.stringify({ text }),
+        // walletAddress is required by the backend to bind strategy ownership (Finding #3)
+        body: JSON.stringify({ text, walletAddress: address }),
       });
 
       // Rate limit

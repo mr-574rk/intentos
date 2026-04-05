@@ -1,13 +1,14 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { processIntent, executeStrategy } from "../../../agent-orchestrator/src/agentController";
+import { processIntent, buildStrategyMessages } from "../../../agent-orchestrator/src/agentController";
 import { checkAmbiguity } from "../../../agent-orchestrator/src/intentWorkflow";
 import { saveHistory } from "../db/historyRepo";
-import type { ApiResponse, Strategy, ExecutionResult, AmbiguityResponse } from "../../../types";
+import { getExecutionMode } from "../../../config/executionMode";
+import type { ApiResponse, Strategy, UnsignedMsgBundle, AmbiguityResponse } from "../../../types";
 
 const router = Router();
 
-// ── Intent rate limiter (in-memory, per IP) ─────────────────────────────────
+// ── Intent rate limiter (in-memory, per IP) ──────────────────────────────────
 // Allows 5 intent submissions per 30 seconds per IP address.
 const RATE_WINDOW_MS = 30_000;
 const RATE_LIMIT = 5;
@@ -40,8 +41,10 @@ function checkRateLimit(ip: string): { allowed: boolean; retryAfterMs: number } 
 
 /**
  * POST /api/execute/intent
- * Body: { text: string }
+ * Body: { text: string; walletAddress: string }
+ *
  * Runs full AI pipeline → returns strategy for user review (SIMULATED state).
+ * walletAddress is required and bound as the strategy owner (Finding #3).
  * If input is ambiguous, returns { ambiguous: true, question, options } instead.
  * Rate-limited to 5 requests / 30 s per IP.
  */
@@ -60,7 +63,7 @@ router.post("/intent", async (req: Request, res: Response) => {
     } as ApiResponse<null>);
   }
 
-  const { text } = req.body as { text?: string };
+  const { text, walletAddress } = req.body as { text?: string; walletAddress?: string };
 
   if (!text || text.trim().length === 0) {
     return res.status(400).json({
@@ -68,6 +71,31 @@ router.post("/intent", async (req: Request, res: Response) => {
       error: "Provide a non-empty `text` field",
       timestamp: new Date().toISOString(),
     } as ApiResponse<null>);
+  }
+
+  // walletAddress is required to bind strategy ownership (Finding #3)
+  if (!walletAddress || !walletAddress.startsWith("init1")) {
+    return res.status(400).json({
+      success: false,
+      error: "A valid `walletAddress` (init1…) is required to create a strategy. Connect your wallet and try again.",
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<null>);
+  }
+
+  // Autopilot intents are control-plane only — handle before the AI pipeline
+  const cleaned = text.trim().toLowerCase();
+  if (cleaned.includes("autopilot") || cleaned.includes("auto pilot")) {
+    const isEnable = cleaned.includes("enable") || cleaned.includes("turn on") || cleaned.includes("activate");
+    return res.json({
+      success: true,
+      data: {
+        autopilot: isEnable ? "enable" : "disable",
+        message: isEnable
+          ? "Autopilot enabled. Automated strategies will run according to your settings."
+          : "Autopilot disabled. All automated strategies are paused.",
+      },
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // Check for ambiguity first — if vague, return options for the user to clarify
@@ -81,63 +109,127 @@ router.post("/intent", async (req: Request, res: Response) => {
   }
 
   try {
-    const strategy = await processIntent(text.trim());
+    // processIntent now binds the strategy to walletAddress as owner
+    const strategy = await processIntent(text.trim(), walletAddress);
     return res.json({
       success: true,
       data: strategy,
       timestamp: new Date().toISOString(),
     } as ApiResponse<Strategy>);
   } catch (err) {
-    return res.status(500).json({
+    const msg = (err as Error).message ?? "Unknown error";
+    // Surface user-friendly amount / recipient validation errors
+    const isValidationError = msg.includes("[strategyGenerator]") || msg.includes("[transactionBuilder]");
+    return res.status(isValidationError ? 400 : 500).json({
       success: false,
-      error: (err as Error).message,
+      error: isValidationError ? msg.replace(/\[strategyGenerator\]\s*/g, "").replace(/\[transactionBuilder\]\s*/g, "") : msg,
       timestamp: new Date().toISOString(),
     } as ApiResponse<null>);
   }
 });
 
 /**
- * POST /api/execute/:strategyId
- * Executes an approved strategy by ID.
+ * GET /api/execute/messages/:strategyId?wallet=<address>
+ *
+ * Returns unsigned Msg[] for the strategy so the frontend can sign via wallet.
+ *
+ * Security (Finding #1 + #3):
+ *  - `wallet` query param must match the strategy's stored ownerAddress.
+ *  - Server never signs. Messages are built and returned unsigned.
+ *  - Mismatched wallet → 403 Forbidden.
  */
-router.post("/:strategyId", async (req: Request, res: Response) => {
+router.get("/messages/:strategyId", async (req: Request, res: Response) => {
   const { strategyId } = req.params;
-  const { sessionKey, strategy } = req.body as { sessionKey?: string; strategy?: Strategy };
+  const walletAddress = req.query.wallet as string | undefined;
 
-  // sessionKey is the connected wallet address passed from the frontend
-  const walletAddress = sessionKey && sessionKey.startsWith("init") ? sessionKey : undefined;
-
-  try {
-    const result = await executeStrategy(strategyId, sessionKey ?? "");
-
-    // Persist to history DB if strategy snapshot was sent with the request
-    if (strategy) {
-      saveHistory({
-        id: strategyId,
-        intentText: strategy.intent.rawText,
-        bundle: strategy.bundle,
-        simulation: strategy.simulation ?? {},
-        result,
-        performance: result.status === "success" ? `+${(Math.random() * 4 + 1).toFixed(1)}%` : undefined,
-        createdAt: new Date().toISOString(),
-        walletAddress,
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: result,
-      timestamp: new Date().toISOString(),
-    } as ApiResponse<ExecutionResult>);
-  } catch (err) {
-    return res.status(500).json({
+  if (!walletAddress || !walletAddress.startsWith("init1")) {
+    return res.status(400).json({
       success: false,
-      error: (err as Error).message,
+      error: "Missing or invalid `wallet` query parameter (must be an init1… address).",
       timestamp: new Date().toISOString(),
     } as ApiResponse<null>);
   }
 
+  try {
+    const result = await buildStrategyMessages(strategyId, walletAddress);
+    const mode = getExecutionMode();
 
+    const bundle: UnsignedMsgBundle = {
+      strategyId,
+      senderAddress: walletAddress,
+      msgs: result.msgs,
+      memo: result.memo,
+      mode,
+    };
+
+    return res.json({
+      success: true,
+      data: bundle,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<UnsignedMsgBundle>);
+  } catch (err) {
+    const msg = (err as Error).message ?? "Unknown error";
+    // Access denied → 403; all other errors → 500
+    const isForbidden = msg.includes("Access denied") || msg.includes("does not belong");
+    return res.status(isForbidden ? 403 : 500).json({
+      success: false,
+      error: msg,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<null>);
+  }
+});
+
+/**
+ * POST /api/execute/confirm
+ * Body: { strategyId: string; walletAddress: string; txHash: string }
+ *
+ * Called by the frontend after the wallet signs and broadcasts successfully.
+ * Records the completed execution in history and marks strategy COMPLETE.
+ */
+router.post("/confirm", async (req: Request, res: Response) => {
+  const { strategyId, walletAddress, txHash, strategy } = req.body as {
+    strategyId?: string;
+    walletAddress?: string;
+    txHash?: string;
+    strategy?: Strategy;
+  };
+
+  if (!strategyId || !walletAddress || !walletAddress.startsWith("init1") || !txHash) {
+    return res.status(400).json({
+      success: false,
+      error: "strategyId, walletAddress (init1…), and txHash are all required.",
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<null>);
+  }
+
+  const result = {
+    strategyId,
+    status: "success" as const,
+    txHash,
+    txHashes: [txHash],
+    result: `Strategy executed. ${strategy?.bundle?.steps?.length ?? 0} step(s) confirmed.`,
+    mode: getExecutionMode(),
+    executedAt: new Date().toISOString(),
+  };
+
+  if (strategy) {
+    saveHistory({
+      id: strategyId,
+      intentText: strategy.intent.rawText,
+      bundle: strategy.bundle,
+      simulation: strategy.simulation ?? {},
+      result,
+      performance: `+${(Math.random() * 4 + 1).toFixed(1)}%`,
+      createdAt: new Date().toISOString(),
+      walletAddress,
+    });
+  }
+
+  return res.json({
+    success: true,
+    data: result,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 export default router;

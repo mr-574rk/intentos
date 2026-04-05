@@ -8,6 +8,29 @@ import type {
   ParsedIntent,
 } from "../../types";
 
+/**
+ * Validate that an amount field is a positive finite number.
+ * Throws a descriptive error for zero, missing, NaN, negative, or Infinity values.
+ * @param amount  - the candidate amount (may be undefined/null/NaN)
+ * @param context - human-readable label used in the error message
+ */
+function requirePositiveAmount(amount: number | undefined | null, context: string): number {
+  if (amount === undefined || amount === null) {
+    throw new Error(
+      `[strategyGenerator] ${context}: amount is required but was not provided. ` +
+      `Please specify an explicit positive amount (e.g. "stake 5 INIT").`
+    );
+  }
+  const n = typeof amount === "number" ? amount : parseFloat(String(amount));
+  if (!isFinite(n) || n <= 0) {
+    throw new Error(
+      `[strategyGenerator] ${context}: amount must be a positive finite number, got "${amount}". ` +
+      `Zero, negative, and non-numeric amounts are not allowed for financial actions.`
+    );
+  }
+  return n;
+}
+
 // ── Existing Goal-based Templates ────────────────────────────
 
 type StrategyTemplate = {
@@ -169,13 +192,18 @@ function buildSwapSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
 
 function buildTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
   const token = intent.token ?? "USDC";
-  const amount = intent.amount ?? 0;
-  const recipient = intent.recipient ?? "recipient";
+  const amount = requirePositiveAmount(intent.amount, `transfer of ${token}`);
+  const recipient = intent.recipient ?? "";
+  if (!recipient || !recipient.startsWith("init1")) {
+    throw new Error(
+      `[strategyGenerator] transfer: a valid Initia recipient address (init1…) is required, got "${recipient}".`
+    );
+  }
   return [
     {
       action: "transfer",
       from: token,
-      description: `Transfer ${amount > 0 ? amount + " " : ""}${token} to ${recipient.slice(0, 10)}…`,
+      description: `Transfer ${amount} ${token} to ${recipient.slice(0, 10)}…`,
       protocol: "Initia Bank",
       amount,
       recipient,
@@ -185,11 +213,15 @@ function buildTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[]
 
 function buildBatchTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
   const token = intent.token ?? "USDC";
-  const amount = intent.amount ?? 0;
-  return (intent.recipients ?? []).map(r => ({
+  const amount = requirePositiveAmount(intent.amount, `batch transfer of ${token}`);
+  const recipients = intent.recipients ?? [];
+  if (recipients.length === 0) {
+    throw new Error(`[strategyGenerator] batch_transfer: at least one recipient address is required.`);
+  }
+  return recipients.map(r => ({
     action: "transfer",
     from: token,
-    description: `Transfer ${amount > 0 ? amount + " " : ""}${token} to ${r.slice(0, 10)}…`,
+    description: `Transfer ${amount} ${token} to ${r.slice(0, 10)}…`,
     protocol: "Initia Bank",
     amount,
     recipient: r,
@@ -198,14 +230,14 @@ function buildBatchTransferSteps(intent: ParsedIntent): Omit<StrategyStep, "inde
 
 function buildStakeSteps(intent: ParsedIntent): Omit<StrategyStep, "index">[] {
   const token = intent.token ?? "INIT";
-  const amount = intent.amount;
+  const amount = requirePositiveAmount(intent.amount, `stake of ${token}`);
   return [
-    { 
-      action: "stake", 
-      from: token, 
-      description: `Stake ${amount ? amount + " " : ""}${token} for protocol rewards`, 
+    {
+      action: "stake",
+      from: token,
+      description: `Stake ${amount} ${token} for protocol rewards`,
       protocol: "Initia Staking",
-      amount
+      amount,
     },
   ];
 }
@@ -243,11 +275,11 @@ export function generateFromIntents(intents: ParsedIntent[]): StrategyBundle {
 
       case "unstake": {
         const uToken = intent.token ?? "INIT";
-        const uAmount = intent.amount;
+        const uAmount = requirePositiveAmount(intent.amount, `unstake of ${uToken}`);
         allSteps.push({
           action: "unstake",
           from: uToken,
-          description: `Unstake ${uAmount ? uAmount + " " : ""}${uToken} from validator (21-day unbonding)`,
+          description: `Unstake ${uAmount} ${uToken} from validator (21-day unbonding)`,
           protocol: "Initia Staking",
           amount: uAmount,
         });
@@ -268,26 +300,16 @@ export function generateFromIntents(intents: ParsedIntent[]): StrategyBundle {
         break;
       }
 
-      case "autopilot_enable": {
-        allSteps.push({
-          action: "autopilot_enable",
-          description: "Enable Autopilot — automated DeFi strategies will run according to your settings",
-          protocol: "IntentOS Autopilot",
-        });
-        totalRisk += 0; totalYield += 0;
-        explanationParts.push("Autopilot enabled");
-        break;
-      }
-
+      case "autopilot_enable":
       case "autopilot_disable": {
-        allSteps.push({
-          action: "autopilot_disable",
-          description: "Disable Autopilot — all automated strategies paused",
-          protocol: "IntentOS Autopilot",
-        });
-        totalRisk += 0; totalYield += 0;
-        explanationParts.push("Autopilot disabled");
-        break;
+        // Autopilot commands are control-plane actions — they MUST NOT produce
+        // executable transaction steps. Throw here so the caller can handle
+        // them as UI state changes (not on-chain transactions).
+        throw new Error(
+          `[strategyGenerator] "${intent.intentType}" is a control-plane action and cannot ` +
+          `be included in an executable transaction bundle. Handle autopilot ` +
+          `enable/disable in the frontend UI state layer instead.`
+        );
       }
       case "yield":
       case "portfolio_allocation":

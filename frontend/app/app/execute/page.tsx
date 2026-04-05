@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import AgentTimeline from "@/components/AgentTimeline_Deprecated";
 import ExecuteButton from "@/components/ExecuteButton";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
-import { XCircle, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
-import type { Strategy, ApiResponse, ExecutionResult, AgentTimeline as TimelineType, StrategyStep } from "@/types";
-import { API_URL, API_HEADERS } from "@/lib/config";
+import { XCircle, Zap, AlertTriangle, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import type { Strategy, ApiResponse, UnsignedMsgBundle, AgentTimeline as TimelineType, StrategyStep } from "@/types";
+import { API_URL, API_HEADERS, FAUCET_URL, explorerTxUrl } from "@/lib/config";
 
 /** Sum how much INIT this strategy needs before it can run. */
 function calcRequiredINIT(steps: StrategyStep[]): number {
@@ -33,70 +33,120 @@ function calcRequiredINIT(steps: StrategyStep[]): number {
 
 export default function ExecutePage() {
   const router = useRouter();
-  const { address } = useWalletGuard();
+  const { address, requestTx } = useWalletGuard();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [timeline, setTimeline] = useState<TimelineType | null>(null);
-  const [result, setResult] = useState<ExecutionResult | null>(null);
+  const [result, setResult] = useState<{ txHash: string; mode: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [signing, setSigning] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("intentos_strategy");
     if (stored) {
       const s = JSON.parse(stored) as Strategy;
       setStrategy(s);
-      fetch(`${API_URL}/api/agent/timeline/${s.id}`, { headers: API_HEADERS })
-        .then((r) => r.json())
-        .then((d: ApiResponse<TimelineType>) => { if (d.data) setTimeline(d.data); })
-        .catch(() => undefined);
+      if (address && s.id) {
+        fetch(
+          `${API_URL}/api/agent/timeline/${s.id}?wallet=${encodeURIComponent(address)}`,
+          { headers: API_HEADERS }
+        )
+          .then((r) => r.json())
+          .then((d: ApiResponse<TimelineType>) => { if (d.data) setTimeline(d.data); })
+          .catch(() => undefined);
+      }
     }
     setLoaded(true);
-  }, []);
+  }, [address]);
 
   const handleExecute = async () => {
-    if (!strategy) return;
+    if (!strategy || !address) return;
     setError(null);
     setBalanceError(null);
 
-    // ── Pre-flight: check connected wallet INIT balance ──────────────────────
-    if (address) {
-      try {
-        const portfolioRes = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
-        const portfolioJson = await portfolioRes.json();
-        const walletINIT: number =
-          portfolioJson.wallet?.find((a: { symbol: string }) => a.symbol === "INIT")?.balance ?? 0;
-        const required = calcRequiredINIT(strategy.bundle.steps);
+    // ── Pre-flight: enforce wallet INIT balance check ───────────────────────
+    try {
+      const portfolioRes = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
+      const portfolioJson = await portfolioRes.json();
+      const walletINIT: number =
+        portfolioJson.wallet?.find((a: { symbol: string }) => a.symbol === "INIT")?.balance ?? 0;
+      const required = calcRequiredINIT(strategy.bundle.steps);
 
-        if (walletINIT < required) {
-          console.warn(`[BalanceCheck] Bypassed: Wallet has ${walletINIT.toFixed(4)} but needs ${required.toFixed(4)}.`);
-          // Bypass balance check for demo — backend relayer covers gas + amounts
-          // setBalanceError(...);
-          // return; // ← hard stop bypassed
-        }
-      } catch {
-        // Don't block on a network hiccup — let execution attempt proceed
-        console.warn("[BalanceCheck] Portfolio fetch failed — proceeding anyway.");
+      if (walletINIT < required) {
+        setBalanceError(
+          `Insufficient INIT balance. You have ${walletINIT.toFixed(4)} INIT but this strategy needs at least ${required.toFixed(4)} INIT. ` +
+          `Claim testnet INIT from the faucet to continue.`
+        );
+        return; // Hard stop — do not proceed to signing
       }
+    } catch {
+      // Only block if we got a definitive 0 balance response; let network failures through
+      console.warn("[BalanceCheck] Portfolio fetch failed — proceeding.");
     }
 
+    setSigning(true);
     try {
-      const res = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
-        method: "POST",
-        headers: API_HEADERS,
-        // Pass the connected wallet address as sessionKey (fixes empty-string bug)
-        body: JSON.stringify({ sessionKey: address ?? "", strategy }),
-      });
-      const data: ApiResponse<ExecutionResult> = await res.json();
-      if (!data.success || !data.data) throw new Error(data.error ?? "Execution failed");
-      setResult(data.data);
+      // ── Step 1: Fetch unsigned messages from backend ──────────────────────
+      const msgRes = await fetch(
+        `${API_URL}/api/execute/messages/${strategy.id}?wallet=${encodeURIComponent(address)}`,
+        { headers: API_HEADERS }
+      );
+      const msgData: ApiResponse<UnsignedMsgBundle> = await msgRes.json();
 
-      // Refresh timeline
-      const tlRes = await fetch(`${API_URL}/api/agent/timeline/${strategy.id}`, { headers: API_HEADERS });
+      if (!msgData.success || !msgData.data) {
+        throw new Error(msgData.error ?? "Failed to build transaction messages.");
+      }
+
+      const { msgs, memo, mode } = msgData.data;
+      const isMock = mode === "mock";
+
+      let txHash = "";
+
+      if (isMock) {
+        // Mock mode: simulate success without wallet signing
+        txHash = `mock-${Date.now().toString(16)}`;
+        await new Promise(r => setTimeout(r, 800)); // brief UX delay
+      } else {
+        // ── Step 2: Sign + broadcast via user's wallet (InterwovenKit) ───────
+        // requestTx is InterwovenKit's requestTxSync — returns the tx hash string
+        // directly after the user signs and the tx is broadcast. The server's
+        // private key is never involved.
+        // Cast msgs: backend returns @initia/initia.js Msg objects which satisfy
+        // EncodeObject (typeUrl + value), but are typed as Record<string,unknown>[]
+        // in shared types. The cast is safe — InterwovenKit's codec handles them.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const txResult = await requestTx({ messages: msgs as any[], memo });
+        // requestTxSync returns a string (tx hash), not an object
+        txHash = typeof txResult === "string" ? txResult : "";
+        if (!txHash) throw new Error("Wallet returned no transaction hash after signing.");
+      }
+
+      // ── Step 3: Confirm execution with backend (record history) ──────────
+      await fetch(`${API_URL}/api/execute/confirm`, {
+        method: "POST",
+        headers: { ...API_HEADERS, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          strategyId: strategy.id,
+          walletAddress: address,
+          txHash,
+          strategy,
+        }),
+      });
+
+      setResult({ txHash, mode: isMock ? "mock" : "testnet" });
+
+      // Refresh timeline (now wallet-scoped)
+      const tlRes = await fetch(
+        `${API_URL}/api/agent/timeline/${strategy.id}?wallet=${encodeURIComponent(address)}`,
+        { headers: API_HEADERS }
+      );
       const tlData: ApiResponse<TimelineType> = await tlRes.json();
       if (tlData.data) setTimeline(tlData.data);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setSigning(false);
     }
   };
 
@@ -139,7 +189,7 @@ export default function ExecutePage() {
       <div>
         <h1 className="text-2xl font-black text-text-primary mb-1">Execute Strategy</h1>
         <p className="text-text-secondary text-sm">
-          Review the agent pipeline and approve execution.
+          Review the agent pipeline, then sign with your wallet to execute on-chain.
         </p>
       </div>
 
@@ -159,7 +209,7 @@ export default function ExecutePage() {
 
         <AgentTimeline timeline={timeline} />
 
-        {/* ── Insufficient balance error ─────────────────────────── */}
+        {/* ── Insufficient balance error ──────────────────────────────────── */}
         <AnimatePresence>
           {balanceError && (
             <motion.div
@@ -167,7 +217,7 @@ export default function ExecutePage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.97 }}
               transition={{ type: "spring", stiffness: 340, damping: 26 }}
-              className="rounded-2xl border px-5 py-4 space-y-2"
+              className="rounded-2xl border px-5 py-4 space-y-3"
               style={{
                 background: "rgba(239,68,68,0.06)",
                 borderColor: "rgba(239,68,68,0.25)",
@@ -183,12 +233,47 @@ export default function ExecutePage() {
                 <p className="text-sm font-bold text-red-400">Insufficient INIT Balance</p>
               </div>
               <p className="text-xs text-red-400/70 leading-relaxed pl-8">{balanceError}</p>
-              <button
-                onClick={() => setBalanceError(null)}
-                className="pl-8 text-xs text-red-400/50 hover:text-red-400 transition-colors underline"
-              >
-                Dismiss
-              </button>
+              <div className="pl-8 flex gap-3 items-center">
+                <a
+                  href={FAUCET_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-[#00F5D4] hover:text-[#00F5D4]/80 flex items-center gap-1 transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Claim testnet INIT
+                </a>
+                <button
+                  onClick={() => setBalanceError(null)}
+                  className="text-xs text-red-400/50 hover:text-red-400 transition-colors underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Signing indicator ────────────────────────────────────────────── */}
+        <AnimatePresence>
+          {signing && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              className="rounded-2xl border px-5 py-4 flex items-center gap-3"
+              style={{
+                background: "rgba(0,245,212,0.04)",
+                borderColor: "rgba(0,245,212,0.2)",
+              }}
+            >
+              <Loader2 className="w-4 h-4 text-[#00F5D4] animate-spin flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-[#00F5D4]">Waiting for wallet signature…</p>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Your wallet will prompt you to review and sign the transaction bundle.
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -196,7 +281,7 @@ export default function ExecutePage() {
         {!result && (
           <ExecuteButton
             onExecute={handleExecute}
-            disabled={strategy.simulation ? !strategy.simulation.passed : false}
+            disabled={signing || (strategy.simulation ? !strategy.simulation.passed : false)}
           />
         )}
 
@@ -207,17 +292,40 @@ export default function ExecutePage() {
         )}
 
         {result && (
-          <div className="glass-card p-5 space-y-3">
-            <p className="text-sm font-semibold text-status-success items-center inline-flex gap-1.5"><CheckCircle2 className="w-4 h-4" /> Execution complete</p>
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 24 }}
+            className="glass-card p-5 space-y-3"
+          >
+            <p className="text-sm font-semibold text-status-success items-center inline-flex gap-1.5">
+              <CheckCircle2 className="w-4 h-4" />
+              {result.mode === "mock" ? "Strategy simulated successfully" : "Transaction signed & broadcast"}
+            </p>
             <div className="text-xs text-text-muted space-y-1 font-mono">
               <p>Mode: <span className="text-text-primary">{result.mode}</span></p>
-              <p>Tx Hash: <span className="text-accent-cyan">{result.txHash}</span></p>
-              <p>Status: <span className="text-status-success">{result.status}</span></p>
+              <p>
+                Tx Hash:{" "}
+                {result.mode === "mock" ? (
+                  <span className="text-accent-cyan">{result.txHash}</span>
+                ) : (
+                  <a
+                    href={explorerTxUrl(result.txHash)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent-cyan hover:underline inline-flex items-center gap-1"
+                  >
+                    {result.txHash.slice(0, 16)}…{result.txHash.slice(-8)}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </p>
+              <p>Status: <span className="text-status-success">success</span></p>
             </div>
             <button onClick={() => router.push("/app/portfolio")} className="btn-primary w-full mt-2">
               View Portfolio →
             </button>
-          </div>
+          </motion.div>
         )}
       </>
     </div>

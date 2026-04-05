@@ -9,7 +9,7 @@ import {
   CircleDollarSign, Gift, ChevronRight, X, BarChart3, Clock
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { API_URL, API_HEADERS } from "@/lib/config";
+import { API_URL, API_HEADERS, TOKEN_IMAGES } from "@/lib/config";
 import UnstakeModal from "./UnstakeModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -23,10 +23,7 @@ interface PortfolioData {
   totalValueUSD: number;
 }
 
-const ASSET_ICONS: Record<string, string> = {
-  INIT: "https://registry.testnet.initia.xyz/images/INIT.png",
-  USDC: "https://registry.testnet.initia.xyz/images/USDC.png",
-};
+const ASSET_ICONS: Record<string, string> = TOKEN_IMAGES;
 const ASSET_COLORS: Record<string, string> = {
   INIT: "#00F5D4",
   USDC: "#7C3AED",
@@ -377,8 +374,9 @@ export default function PortfolioDashboard() {
   const load = async () => {
     if (!address) { setLoading(false); return; }
     
-    // DEMO: Use relayer address for the hackathon demo since all executions use the backend relayer
-    const targetAddress = process.env.NEXT_PUBLIC_RELAYER_ADDRESS || address;
+    // Always use the connected wallet's own address — never a backend/relayer address.
+    // Portfolio balances must reflect what the user actually holds, not a service account.
+    const targetAddress = address;
     
     setError(null);
     const cacheKey = `intentos_portfolio_cache_${targetAddress}`;

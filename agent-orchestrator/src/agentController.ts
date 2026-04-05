@@ -1,26 +1,39 @@
-import type { Strategy, ExecutionResult } from "../../types";
+import type { Strategy } from "../../types";
+import type { UnsignedMessages } from "../../execution-engine/src/initiaExecutor";
 import {
   createStrategy,
   createTimeline,
   updateState,
-  getStrategy,
+  getStrategyForOwner,
   getTimeline,
 } from "./strategyLifecycle";
 import { runIntentWorkflow } from "./intentWorkflow";
 import { guardExecution } from "./executionGuard";
-import { executeBundle } from "../../execution-engine/src/bundleExecutor";
-// ── Agent Controller ─────────────────────────────────────────
+import { buildBundle } from "../../execution-engine/src/bundleExecutor";
+
+// ── Agent Controller ──────────────────────────────────────────
 
 /**
  * Phase 1: Process a user intent.
  * Runs the full AI pipeline → returns strategy + simulation for user review.
+ *
+ * @param rawText       - the natural-language intent string
+ * @param ownerAddress  - the verified wallet address submitting the intent
+ *                        (must be a valid init1… bech32 address)
  */
-export async function processIntent(rawText: string): Promise<Strategy> {
+export async function processIntent(rawText: string, ownerAddress: string): Promise<Strategy> {
+  if (!ownerAddress || !ownerAddress.startsWith("init1")) {
+    throw new Error(
+      `[agentController] processIntent requires a valid wallet address (init1…). ` +
+      `Got: "${ownerAddress}". Strategies cannot be created without an owner.`
+    );
+  }
+
   // Step 1: Run AI pipeline (interpret → generate → simulate)
   const { intent, bundle, simulation } = await runIntentWorkflow(rawText, "");
 
-  // Step 2: Persist strategy with SIMULATED state
-  const strategy = createStrategy({ intent, bundle, simulation });
+  // Step 2: Persist strategy with ownerAddress and SIMULATED state (Finding #3)
+  const strategy = createStrategy({ intent, bundle, simulation }, ownerAddress);
   updateState(strategy.id, "SIMULATED");
 
   // Step 3: Build completed timeline for the frontend to animate
@@ -42,13 +55,41 @@ export async function processIntent(rawText: string): Promise<Strategy> {
 }
 
 /**
- * Phase 2: Execute an approved strategy.
- * Called after the user clicks "Execute Strategy".
+ * Phase 2: Build unsigned messages for an approved strategy.
+ *
+ * Replaces the old executeStrategy() which signed and broadcast via a server relayer.
+ * The returned messages are passed to the frontend for wallet signing via InterwovenKit.
+ *
+ * Security invariants:
+ *  - ownerAddress must exactly match the strategy's stored ownerAddress (Finding #3)
+ *  - No server-side signing occurs here (Finding #1)
+ *
+ * @param strategyId    - strategy to build messages for
+ * @param ownerAddress  - caller's wallet address; must match strategy owner
  */
-export async function executeStrategy(strategyId: string, sessionKey = ""): Promise<ExecutionResult> {
-  const strategy = getStrategy(strategyId);
-  if (!strategy) throw new Error(`Strategy ${strategyId} not found`);
-  if (!strategy.simulation) throw new Error("Strategy has not been simulated");
+export async function buildStrategyMessages(
+  strategyId: string,
+  ownerAddress: string
+): Promise<UnsignedMessages> {
+  if (!ownerAddress || !ownerAddress.startsWith("init1")) {
+    throw new Error(
+      `[agentController] buildStrategyMessages requires a valid wallet address (init1…), ` +
+      `got "${ownerAddress}".`
+    );
+  }
+
+  // Owner-scoped lookup — returns undefined if strategy not found OR wrong owner
+  const strategy = getStrategyForOwner(strategyId, ownerAddress);
+  if (!strategy) {
+    throw new Error(
+      `[agentController] Strategy "${strategyId}" not found or does not belong to wallet "${ownerAddress}". ` +
+      `Access denied.`
+    );
+  }
+
+  if (!strategy.simulation) {
+    throw new Error(`[agentController] Strategy has not been simulated.`);
+  }
 
   // Safety gate — must pass before any on-chain action
   const guard = guardExecution(strategy.bundle, strategy.simulation);
@@ -60,20 +101,21 @@ export async function executeStrategy(strategyId: string, sessionKey = ""): Prom
       if (current) current.status = "failed";
       timeline.overall = "failed";
     }
-    throw new Error(`Execution blocked: ${guard.reason}`);
+    throw new Error(`[agentController] Execution blocked: ${guard.reason}`);
   }
 
   updateState(strategyId, "EXECUTING");
 
   try {
-    const result = await executeBundle(strategy.bundle, strategyId, sessionKey);
-    strategy.executionResult = result;
-    updateState(strategyId, "COMPLETE");
+    // Build unsigned messages — senderAddress is the user's wallet, not a server key
+    const result = await buildBundle(strategy.bundle, strategyId, ownerAddress);
 
-    // Finalize timeline
+    // Mark strategy as ready for broadcast (wallet signing happens client-side)
+    updateState(strategyId, "APPROVED");
+
     const timeline = getTimeline(strategyId);
     if (timeline) {
-      timeline.steps.forEach((s) => { s.status = "complete"; });
+      timeline.steps.forEach(s => { s.status = "complete"; });
       timeline.overall = "complete";
       timeline.completedAt = new Date().toISOString();
     }

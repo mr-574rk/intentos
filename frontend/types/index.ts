@@ -70,6 +70,8 @@ export interface StrategyStep {
   protocol?: string;
   amount?: number;
   recipient?: string;
+  /** Slippage tolerance for swap steps in basis points (e.g. 100 = 1%). */
+  slippageBps?: number;
 }
 
 export interface StrategyBundle {
@@ -125,6 +127,19 @@ export interface ExecutionResult {
   error?: string;
 }
 
+/**
+ * Unsigned message bundle returned by the backend.
+ * The frontend passes `msgs` to InterwovenKit requestTxSync for wallet signing.
+ * The server never signs — this is the wallet-custody execution model.
+ */
+export interface UnsignedMsgBundle {
+  strategyId: string;
+  senderAddress: string;
+  msgs: Record<string, unknown>[];
+  memo: string;
+  mode: ExecutionMode;
+}
+
 // ── Strategy Lifecycle ───────────────────────────────────────
 
 export type StrategyState =
@@ -137,6 +152,8 @@ export type StrategyState =
 
 export interface Strategy {
   id: string;
+  /** Wallet address that owns this strategy — set at creation, used for authorization. */
+  ownerAddress: string;
   intent: StructuredIntent;
   bundle: StrategyBundle;
   simulation?: SimulationResult;

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Copy } from "lucide-react";
 import { Pagination } from "./Pagination";
 import type { ActivityEntry } from "../types";
-import { API_URL, EXPLORER } from "@/lib/config";
+import { API_URL, explorerTxUrl } from "@/lib/config";
 
 
 
@@ -18,8 +18,13 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
 
   useEffect(() => {
     if (entries) return; // caller provided data — skip fetch
+    // address is required by the backend (Finding #4 fix: no unauthenticated all-history dump)
+    if (!address) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
-    const cacheKey = `intentos_activity_cache_${address || "all"}`;
+    const cacheKey = `intentos_activity_cache_${address}`;
     const cached = localStorage.getItem(cacheKey);
     if (cached && list.length === 0) {
       try {
@@ -29,8 +34,8 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
     } else if (list.length === 0) {
       setLoading(true);
     }
-    
-    fetch(`${API_URL}/api/history${address ? `?address=${address}` : ""}`)
+
+    fetch(`${API_URL}/api/history?address=${encodeURIComponent(address)}`)
       .then((r) => r.json())
       .then((json) => {
         if (!cancelled) {
@@ -81,7 +86,7 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
         const success = entry.result.status === "success";
         const txHash = entry.result.txHash;
         const isReal = txHash && txHash !== "n/a" && !txHash.startsWith("tx_cached") && !txHash.startsWith("mock");
-        const explorerUrl = isReal ? `${EXPLORER}/${txHash}` : null;
+        const explorerUrl = isReal ? explorerTxUrl(txHash) : null;
         const date = new Date(entry.createdAt).toLocaleDateString("en-US", {
           month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
         });

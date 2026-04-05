@@ -1,28 +1,41 @@
-import type { StrategyBundle, ExecutionResult } from "../../types";
+import type { StrategyBundle } from "../../types";
 import { getExecutionMode } from "../../config/executionMode";
 import { buildTransactions } from "./transactionBuilder";
-import { mockExecute } from "./mockExecutor";
-import { initiaExecute } from "./initiaExecutor";
+import { buildMessages, type UnsignedMessages } from "./initiaExecutor";
 
 /**
- * Bundle executor — routes to mock or testnet based on EXECUTION_MODE.
- * Called by the agent orchestrator after guard approval.
+ * Bundle message builder — builds unsigned Msg[] for wallet signing.
+ *
+ * Security: the server never signs or broadcasts transactions.
+ * The returned messages are forwarded to the frontend for signing via InterwovenKit.
+ *
+ * @param bundle        - validated strategy bundle
+ * @param strategyId    - strategy identifier (used in memo)
+ * @param senderAddress - the verified wallet address of the owning user (never a relayer)
  */
-export async function executeBundle(
+export async function buildBundle(
   bundle: StrategyBundle,
   strategyId: string,
-  sessionKey = ""
-): Promise<ExecutionResult> {
+  senderAddress: string
+): Promise<UnsignedMessages> {
   const mode = getExecutionMode();
   const transactions = buildTransactions(bundle);
 
   if (mode === "mock") {
-    return mockExecute(bundle.id, transactions.length);
+    // Return mock messages for demo / dry-run — no wallet signing triggered
+    return {
+      msgs: transactions.map(tx => ({
+        _mock: true,
+        type: tx.type,
+        action: tx.payload.action,
+        amount: tx.payload.amount,
+        from: tx.payload.from,
+        to: tx.payload.to,
+      })),
+      memo: `IntentOS Strategy: ${strategyId} [mock]`,
+    };
   }
 
-  if (!sessionKey) {
-    throw new Error("Session key required for testnet execution");
-  }
-
-  return initiaExecute(transactions, strategyId, sessionKey);
+  // Testnet mode: build real unsigned messages using the user's wallet address
+  return buildMessages(transactions, strategyId, senderAddress);
 }

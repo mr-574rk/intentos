@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usernameAvatarUrl } from "@/lib/config";
 
 interface UserAvatarProps {
   username?: string | null;
@@ -24,9 +25,7 @@ export default function UserAvatar({ username, address, size = 40 }: UserAvatarP
 
   // Build image URL from username (strip ".init" suffix)
   const strippedUsername = username?.replace(/\.init$/, "");
-  const imageUrl = strippedUsername
-    ? `https://usernames-api.testnet.initia.xyz/image/${strippedUsername}`
-    : null;
+  const imageUrl = strippedUsername ? usernameAvatarUrl(strippedUsername) : null;
 
   const showImage = !!imageUrl && !imageFailed;
   const fallback  = addressHash(address ?? "");
