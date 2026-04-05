@@ -221,7 +221,7 @@ export async function buildMessages(
     msgs.push(encodeMsg(new MsgDelegate(
       senderAddress,
       INITIA_CONFIG.defaultValidator,
-      new Coins([new Coin("uinit", String(uAmt))])
+      new Coin("uinit", String(uAmt)) as any
     )));
   }
 
@@ -232,7 +232,7 @@ export async function buildMessages(
     msgs.push(encodeMsg(new MsgUndelegate(
       senderAddress,
       validator,
-      new Coins([new Coin("uinit", String(uAmt))])
+      new Coin("uinit", String(uAmt)) as any
     )));
   }
 

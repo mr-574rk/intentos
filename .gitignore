@@ -83,3 +83,4 @@ frontend/public/og-image.png
 hackathon_summary.txt
 frontend/patch_fetch.js
 backend/out.json
+backend/check_types.ts
