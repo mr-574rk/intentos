@@ -208,7 +208,7 @@ export async function buildMessages(
       value: {
         delegatorAddress: senderAddress,
         validatorAddress: INITIA_CONFIG.defaultValidator,
-        amount: { denom: "uinit", amount: String(uAmt) }
+        amount: [{ denom: "uinit", amount: String(uAmt) }]
       }
     });
   }
@@ -222,7 +222,7 @@ export async function buildMessages(
       value: {
         delegatorAddress: senderAddress,
         validatorAddress: validator,
-        amount: { denom: "uinit", amount: String(uAmt) }
+        amount: [{ denom: "uinit", amount: String(uAmt) }]
       }
     });
   }
