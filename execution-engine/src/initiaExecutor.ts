@@ -106,17 +106,11 @@ function requirePositiveUAmount(raw: unknown, context: string): bigint {
  * Format: [1, <u64-little-endian-8-bytes>]
  * BCS Option::Some(v) = 0x01 followed by the BCS encoding of v.
  */
-function buildMinReturnOption(offerUAmt: bigint, slippageBps: number): string {
-  // minReturn = offerAmount * (10000 - slippageBps) / 10000
-  const minReturn = (offerUAmt * BigInt(10000 - slippageBps)) / BigInt(10000);
-  // BCS Option::Some(u64) = [0x01] ++ bcs.u64() serialized bytes
-  // SerializedBcs from @initia/initia.js exposes .toBase64() / .toHex() only —
-  // decode via Buffer to obtain the raw byte array for prefix construction.
-  const valueBytes = Buffer.from(bcs.u64().serialize(minReturn).toBase64(), "base64");
-  const optionBytes = Buffer.allocUnsafe(1 + valueBytes.length);
-  optionBytes[0] = 1; // Option::Some tag
-  valueBytes.copy(optionBytes, 1);
-  return optionBytes.toString("base64");
+function buildNoneOption(): string {
+  // BCS Option::None = single byte 0x00
+  // The previous Some(fraction of offer) was broken for cross-asset swaps
+  // (INIT→USDC) where offer and return use different token units.
+  return Buffer.from([0x00]).toString("base64");
 }
 
 /**
@@ -141,8 +135,7 @@ export async function buildMessages(
     );
   }
 
-  // Slippage tolerance in basis points (default 1% = 100 BPS, configurable via env)
-  const SWAP_SLIPPAGE_BPS = parseInt(process.env.SWAP_MIN_RETURN_BPS ?? "100", 10);
+ 
 
   const stepActions    = transactions.map(tx => ACTION_ENUM[String(tx.payload.action ?? "")] ?? -1);
   const stepFromDenoms = transactions.map(tx => resolveDenom(tx.payload.from as string | undefined));
@@ -261,8 +254,7 @@ export async function buildMessages(
       );
 
       // ── Slippage protection (Finding #6) ──────────────────────────────────
-      const minReturnBytes = buildMinReturnOption(uAmt, SWAP_SLIPPAGE_BPS);
-
+      const minReturnBytes = buildNoneOption();
       msgs.push({
         typeUrl: "/initia.move.v1.MsgExecute",
         value: {
@@ -275,7 +267,7 @@ export async function buildMessages(
             bcs.address().serialize(resolvedPair).toBase64(),
             bcs.address().serialize(offerMeta).toBase64(),
             bcs.u64().serialize(uAmt).toBase64(),
-            minReturnBytes, // Option<u64>::Some(min_return)
+            minReturnBytes, // Option<u64>::None — no min_return constraint
           ]
         }
       });
