@@ -82,3 +82,4 @@ frontend/public/export-tools.html
 frontend/public/og-image.png
 hackathon_summary.txt
 frontend/patch_fetch.js
+backend/out.json

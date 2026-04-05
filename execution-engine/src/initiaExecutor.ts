@@ -192,8 +192,8 @@ export async function buildMessages(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function encodeMsg(msg: any): { typeUrl: string; value: Uint8Array } {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const any: { type_url: string; value: Uint8Array } = msg.packAny();
-    return { typeUrl: any.type_url, value: any.value };
+    const any: any = msg.packAny();
+    return { typeUrl: any.typeUrl || any.type_url, value: any.value };
   }
 
   // ── Native MsgSend (transfer / batch_transfer) ────────────────────────────
