@@ -223,12 +223,12 @@ export async function buildMessages(
   // ── Native MsgWithdrawDelegatorReward (claim rewards) ─────────────────────
   if (claimSteps.length > 0) {
     msgs.push({
-      typeUrl: "/initia.distribution.v1beta1.MsgWithdrawDelegatorReward",
-      value: {
-        delegatorAddress: senderAddress,
-        validatorAddress: INITIA_CONFIG.defaultValidator
-      }
-    });
+  typeUrl: "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward",
+  value: {
+    delegatorAddress: senderAddress,
+    validatorAddress: INITIA_CONFIG.defaultValidator
+  }
+});
   }
 
   // ── DEX swaps (0x1::dex::swap_script) ─────────────────────────────────────
