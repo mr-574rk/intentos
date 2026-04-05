@@ -108,15 +108,16 @@ export default function ExecutePage() {
         txHash = `mock-${Date.now().toString(16)}`;
         await new Promise(r => setTimeout(r, 800)); // brief UX delay
       } else {
-        // ── Step 2: Sign + broadcast via user's wallet (InterwovenKit) ───────
-        // requestTx is InterwovenKit's requestTxSync — returns the tx hash string
-        // directly after the user signs and the tx is broadcast. The server's
-        // private key is never involved.
-        // Cast msgs: backend returns @initia/initia.js Msg objects which satisfy
-        // EncodeObject (typeUrl + value), but are typed as Record<string,unknown>[]
-        // in shared types. The cast is safe — InterwovenKit's codec handles them.
+        // Real mode: sign + broadcast via InterwovenKit
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const txResult = await requestTx({ messages: msgs as any[], memo });
+        const decodedMsgs = msgs.map((m: any) => ({
+          typeUrl: m.typeUrl,
+          value: typeof m.value === "string" 
+            ? Uint8Array.from(atob(m.value), c => c.charCodeAt(0)) 
+            : m.value,
+        }));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const txResult = await requestTx({ messages: decodedMsgs as any[], memo });
         // requestTxSync returns a string (tx hash), not an object
         txHash = typeof txResult === "string" ? txResult : "";
         if (!txHash) throw new Error("Wallet returned no transaction hash after signing.");
