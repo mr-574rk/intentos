@@ -85,7 +85,15 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
   const { openConnect } = useInterwovenKit();
   const connectors = useConnectors();
   const { connect, isPending, variables } = useConnect({
-    mutation: { onSuccess: () => onClose() },
+    mutation: {
+      onSuccess: () => {
+        console.log("[CustomWalletModal] wagmi connect onSuccess");
+        onClose();
+      },
+      onError: (error) => {
+        console.error("[CustomWalletModal] wagmi connect onError:", error);
+      }
+    },
   });
 
   // Read wagmi's own recentConnectorId — exactly what the kit uses
@@ -134,12 +142,25 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
   });
 
   const handleConnect = async (id: string) => {
+    console.log("[CustomWalletModal] handleConnect called with id:", id);
     setConnectError(null);
     const item = walletItems.find(w => w.id === id);
-    if (!item) return;
+    if (!item) {
+      console.log("[CustomWalletModal] wallet item not found for id:", id);
+      return;
+    }
+
+    console.log(`[CustomWalletModal] found wallet item:`, {
+      id: item.id,
+      name: item.meta.name,
+      isInstalled: item.isInstalled,
+      hasConnector: !!item.connector,
+      hasCosmosProvider: !!item.meta.cosmosProvider
+    });
 
     // Not installed → open install page, don't attempt connect
     if (!item.isInstalled) {
+      console.log("[CustomWalletModal] wallet not installed, opening installUrl:", item.meta.installUrl);
       window.open(item.meta.installUrl, "_blank", "noopener noreferrer");
       return;
     }
@@ -149,51 +170,94 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
       const jsonId = JSON.stringify(id);
       localStorage.setItem(WAGMI_RECENT_KEY, jsonId);
       setRecentId(id);
+      console.log("[CustomWalletModal] set recentId in localStorage:", id);
 
       if (item.connector) {
+        console.log("[CustomWalletModal] calling connect() via wagmi connector:", item.connector.id);
         // Primary path: call wagmi connect directly with the detected connector.
         // This triggers the wallet extension's OWN popup (Keplr, MetaMask, etc.)
         // without opening the InterwovenKit drawer at all.
         connect({ connector: item.connector });
       } else if (item.meta.cosmosProvider) {
-        // Cosmos extension is on window but wagmi hasn't surfaced an EIP-6963 connector for it.
-        // Directly enable the Cosmos provider — this triggers the wallet's own approval popup.
-        const provider = item.meta.cosmosProvider();
-        if (provider) {
-          await provider.enable(CHAIN_ID);
-          // After enabling, re-check if a connector appeared and connect via wagmi
-          const freshConnectors = connectors;
-          const matched = freshConnectors.find(c => c.id === id);
-          if (matched) {
-            // wagmi onSuccess will fire onConnected
-            connect({ connector: matched });
-          } else {
-            // Provider enabled — kit will pick up the new account on next render
-            onClose();
+        console.log("[CustomWalletModal] no connector, utilizing native InterwovenKit modal bypass hack for Cosmos provider.");
+        // We open the native InterwovenKit connection drawer
+        openConnect();
+
+        // Start polling for the generated InterwovenKit modal wallet button to simulate a click
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          if (attempts > 50) {
+            clearInterval(interval);
+            
+            // Debug finding failure
+            const allVisibleText = Array.from(document.querySelectorAll('body *'))
+              .filter(el => el.textContent && el.textContent.toLowerCase().includes(item.meta.name.toLowerCase()))
+              .map(el => `<${el.tagName.toLowerCase()} class="${el.className}">: ${el.textContent?.trim().substring(0, 30)}`);
+              
+            console.error("[CustomWalletModal] Could not find native InterwovenKit button for", item.meta.name);
+            console.error("[CustomWalletModal] Elements containing name:", allVisibleText);
+            
+            onClose(); // Fallback close
+            return;
           }
-        }
+
+          // Search all elements NOT inside our CustomWalletModal
+          const elements = Array.from(document.querySelectorAll('button, [role="button"], li, div')).filter(btn => {
+            const isOurs = btn.closest('#cwm-card') !== null || btn.id.includes('wallet-connect');
+            return !isOurs;
+          });
+
+          // Find the one representing this wallet (e.g., 'Leap' or 'Keplr')
+          const targetBtn = elements.find(b => {
+             const text = b.textContent?.trim().toLowerCase() || '';
+             const matchesName = text.includes(item.meta.name.toLowerCase());
+             const isReasonableSize = text.length > 0 && text.length < 50; // Ignore large wrapper divs
+             const hasClickableIndicators = b.tagName === 'BUTTON' || 
+                                            b.getAttribute('role') === 'button' || 
+                                            b.tagName === 'LI' ||
+                                            b.className.includes('item') ||
+                                            b.className.includes('trigger') ||
+                                            b.className.includes('button');
+             return matchesName && isReasonableSize && hasClickableIndicators;
+          }) as HTMLElement | undefined;
+
+          if (targetBtn) {
+            console.log("[CustomWalletModal] Found native InterwovenKit button! Simulating click...", targetBtn);
+            targetBtn.click();
+            clearInterval(interval);
+            onClose(); // Close our custom modal so only the native flow remains
+          }
+        }, 100);
       } else {
+        console.log("[CustomWalletModal] neither connector nor cosmosProvider available");
         setConnectError(`${item.meta.name} not detected. Try refreshing.`);
       }
     } catch (err: unknown) {
+      console.error("[CustomWalletModal] error during handleConnect:", err);
       const message = err instanceof Error ? err.message : "Connection failed.";
       setConnectError(message);
     }
   };
 
   const handleMoreWalletConnect = (connector: ReturnType<typeof useConnectors>[number]) => {
+    console.log("[CustomWalletModal] handleMoreWalletConnect called with connector:", connector.id, connector.name);
     const jsonId = JSON.stringify(connector.id);
     localStorage.setItem(WAGMI_RECENT_KEY, jsonId);
     setRecentId(connector.id);
+    console.log("[CustomWalletModal] calling connect() via wagmi string connector for more wallets:", connector.id);
     connect({ connector });
   };
 
   const handleSocial = () => {
+    console.log("[CustomWalletModal] handleSocial called");
     const privyConnector = connectors.find(c => c.id === PRIVY_ID || c.name.toLowerCase().includes("privy"));
     if (privyConnector) {
+      console.log("[CustomWalletModal] found privy connector, connecting with", privyConnector.id);
       localStorage.setItem(WAGMI_RECENT_KEY, JSON.stringify(privyConnector.id));
       connect({ connector: privyConnector });
     } else {
+      console.log("[CustomWalletModal] no privy connector found, falling back to openConnect()");
       // Absolute fallback if connector is missing from wagmi
       openConnect();
       onClose();
@@ -225,6 +289,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 pointer-events-none">
             <motion.div
               key="cwm-card"
+              id="cwm-card"
               className="w-full sm:max-w-md bg-[#0D0F14] border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl rounded-b-none sm:rounded-b-3xl shadow-[0_-10px_40px_rgba(0,245,212,0.05)] sm:shadow-[0_0_60px_rgba(0,245,212,0.07),0_32px_64px_rgba(0,0,0,0.7)] flex flex-col relative pointer-events-auto max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
               initial={{ opacity: 0, y: "100%" }}
               animate={{ opacity: 1, y: 0 }}

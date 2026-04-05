@@ -1,11 +1,11 @@
 "use client";
 
 import { useInterwovenKit } from "@initia/interwovenkit-react";
+import { useAccount } from "wagmi";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
-import CustomWalletModal from "@/components/CustomWalletModal";
 import { CheckCircle2, Copy, ExternalLink, RefreshCw, Loader2, Droplets } from "lucide-react";
 import { API_URL, API_HEADERS, FAUCET_URL } from "@/lib/config";
 
@@ -14,10 +14,13 @@ const BALANCE_POLL_INTERVAL_MS = 3_000;
 type OnboardingState = "connect" | "checking" | "faucet" | "ready" | "redirecting";
 
 export default function OnboardingPage() {
-  const { address } = useInterwovenKit();
+  const { address: kitAddress, openConnect } = useInterwovenKit();
+  const { address: wagmiAddress } = useAccount();
+
+  // Combine addresses from both sources
+  const address = kitAddress || wagmiAddress;
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [state, setState] = useState<OnboardingState>("connect");
   const [resolvedAddress, setResolvedAddress] = useState<string>("");
   const [initBalance, setInitBalance] = useState<number | null>(null);
@@ -84,10 +87,12 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Address appeared — run balance check (guard: only from "connect" state)
-    if (state === "connect") {
+    // Address appeared or changed — run balance check
+    if (address !== resolvedAddress) {
       setResolvedAddress(address);
       setState("checking");
+      stopPolling();
+      
       fetchBalance(address).then((balance) => {
         setInitBalance(balance);
         if (balance > 0) {
@@ -105,7 +110,7 @@ export default function OnboardingPage() {
 
     return () => stopPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, address]);
+  }, [mounted, address, resolvedAddress]);
 
   // ── Manual actions ──────────────────────────────────────────────────────
 
@@ -147,12 +152,6 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-[100dvh] bg-[#0D0F14] flex flex-col items-center justify-center px-4 relative overflow-hidden">
 
-      {/* Custom Wallet Gateway Modal */}
-      <CustomWalletModal
-        isOpen={walletModalOpen}
-        onClose={() => setWalletModalOpen(false)}
-      />
-
       {/* Ambient glow */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
         <div className="w-[600px] h-[600px] bg-[#00F5D4] rounded-full blur-[140px] opacity-[0.06]" />
@@ -189,7 +188,7 @@ export default function OnboardingPage() {
                 </p>
                 <motion.button
                   id="onboarding-connect-btn"
-                  onClick={() => setWalletModalOpen(true)}
+                  onClick={openConnect}
                   className="w-full bg-[#00F5D4] text-gray-900 font-bold text-[15px] tracking-wider rounded-full py-4 transition-all hover:bg-[#00E5C4] hover:shadow-[0_0_24px_rgba(0,245,212,0.4)]"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
