@@ -12,7 +12,7 @@ import type { Strategy } from "@/types";
 import SuccessModal from "@/components/SuccessModal";
 import StrategyReasoning from "@/components/StrategyReasoning";
 
-import { API_URL, API_HEADERS } from "@/lib/config";
+import { API_URL,CHAIN_ID, API_HEADERS } from "@/lib/config";
 import type { ApiResponse, UnsignedMsgBundle } from "@/types";
 
 // Initia-branded mint glow pulse — replaces generic spinners everywhere
@@ -122,7 +122,7 @@ function ExecuteButton({ onExecute, disabled, execState }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function StrategyPage() {
   const router = useRouter();
-  const { address, requestTx } = useWalletGuard();
+  const { address, requestTx,autoSign } = useWalletGuard();
   const isOnline = useOnlineStatus();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
@@ -229,6 +229,12 @@ export default function StrategyPage() {
         hash = `mock-${Date.now().toString(16)}`;
         await new Promise(r => setTimeout(r, 800));
            } else {
+
+        // Activate session key if not already granted — wallet prompts once,
+        // then all subsequent transactions in this session auto-sign.
+        if (!autoSign.isEnabledByChain[CHAIN_ID]) {
+          await autoSign.enable(CHAIN_ID);
+        }
         // Real mode: sign + broadcast via InterwovenKit.
         // MsgExecute args arrive from the backend as base64 strings (JSON-safe).
         // InterwovenKit's BinaryWriter.bytes() expects Uint8Array (needs .byteLength),
