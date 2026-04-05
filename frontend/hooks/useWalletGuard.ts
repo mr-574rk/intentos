@@ -19,5 +19,5 @@ export function useWalletGuard() {
     }
   }, [address, router]);
 
-  return { address, isConnected: !!address, requestTx: kit.requestTxSync, username: return { address, isConnected: !!address, requestTx: kit.requestTxSync, username: kit.username, autoSign: kit.autoSign };
+    return { address, isConnected: !!address, requestTx: kit.requestTxSync, username: kit.username, autoSign: kit.autoSign };
 }
