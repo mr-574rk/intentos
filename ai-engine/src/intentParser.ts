@@ -10,7 +10,7 @@ const STAKE_PATTERNS      = /\b(stake|staking|lock)\b/i;
 const PORTFOLIO_PATTERNS  = /\b(allocate|diversify|split|portfolio|balance between|spread)\b/i;
 const UNSTAKE_PATTERNS    = /\b(unstake|undelegate|unbond|withdraw.{0,10}stake|take out.{0,15}staked)\b/i;
 // Fix #13: also matches bare "claim" alone
-const CLAIM_PATTERNS      = /\b(claim|collect|harvest|withdraw).{0,20}(reward|staking reward|earning|yield)\b/i;
+const CLAIM_PATTERNS      = /\b(claim|collect|harvest|withdraw).{0,20}(rewards?|staking rewards?|earnings?|yield)\b/i;
 const CLAIM_SOLO_RE       = /^\s*claim\s*$/i;
 const AUTOPILOT_ENABLE_PATTERNS  = /\b(enable|turn on|activate|start).{0,20}(autopilot|auto.?compound|automation|auto)\b/i;
 const AUTOPILOT_DISABLE_PATTERNS = /\b(disable|turn off|deactivate|stop).{0,20}(autopilot|auto.?compound|automation|auto)\b/i;
