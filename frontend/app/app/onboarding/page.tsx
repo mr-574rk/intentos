@@ -189,7 +189,7 @@ export default function OnboardingPage() {
               >
                 <Loader2 className="w-10 h-10 text-[#00F5D4] animate-spin" />
                 <p className="text-sm font-semibold text-white">Checking wallet balance…</p>
-                <p className="text-xs text-gray-500 text-center">Verifying INIT balance before proceeding.</p>
+                <p className="text-xs text-gray-500 text-center">DEMO: Verifying INIT balance before proceeding.</p>
               </motion.div>
             )}
 

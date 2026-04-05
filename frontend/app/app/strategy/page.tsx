@@ -8,7 +8,7 @@ import clsx from "clsx";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain, AlertTriangle } from "lucide-react";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import type { Strategy, ApiResponse, ExecutionResult } from "@/types";
+import type { Strategy } from "@/types";
 import SuccessModal from "@/components/SuccessModal";
 import StrategyReasoning from "@/components/StrategyReasoning";
 
@@ -121,7 +121,7 @@ function ExecuteButton({ onExecute, disabled, execState }: {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function StrategyPage() {
   const router = useRouter();
-  const { address, requestTx } = useWalletGuard();
+  const { address } = useWalletGuard();
   const isOnline = useOnlineStatus();
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
@@ -183,7 +183,7 @@ export default function StrategyPage() {
     setErrorReason(null);
     setBalanceError(null);
 
-    // ── Pre-flight: check connected wallet INIT balance ──────────────────────
+    // Pre-flight: check connected wallet INIT balance before navigating
     if (address) {
       try {
         const portfolioRes = await fetch(`${API_URL}/api/portfolio/${address}`, { headers: API_HEADERS });
@@ -193,34 +193,20 @@ export default function StrategyPage() {
         const required = calcRequiredINIT(strategy);
 
         if (walletINIT < required) {
-          console.warn(`[BalanceCheck] Bypassed: Wallet has ${walletINIT.toFixed(4)} but needs ${required.toFixed(4)}.`);
-          // Bypass balance check for demo — backend relayer covers gas + amounts
-          // setBalanceError(...);
-          // return; // ← hard stop bypassed
+          setBalanceError(
+            `You need ${required.toFixed(4)} INIT but your wallet only has ${walletINIT.toFixed(4)} INIT. ` +
+            `Visit the faucet to top up.`
+          );
+          return;
         }
       } catch {
-        // If portfolio check fails don't block — network hiccup shouldn't stop execution
-        console.warn("[BalanceCheck] Portfolio fetch failed — proceeding anyway.");
+        // Network hiccup — don't block, let the execute page re-check
       }
     }
 
-    setExecState("executing");
-    try {
-      console.log("[DEBUG] Dispatching strategy to backend relayer...");
-      const res = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
-        method: "POST",
-        headers: API_HEADERS,
-        body: JSON.stringify({ sessionKey: address ?? "", strategy }),
-      });
-      const data: ApiResponse<ExecutionResult> = await res.json();
-      if (!data.success) throw new Error(data.error ?? "Execution failed");
-      setTxHash((data.data as ExecutionResult & { txHash?: string })?.txHash);
-      setExecState("success");
-      setTimeout(() => setShowSuccess(true), 400);
-    } catch (err) {
-      setExecState("failed");
-      setErrorReason((err as Error).message);
-    }
+    // Hand off to the dedicated execute page which handles wallet signing
+    sessionStorage.setItem("intentos_strategy", JSON.stringify(strategy));
+    router.push(`/app/execute?strategyId=${strategy.id}`);
   };
 
   // Don't flash empty state during hydration — wait for sessionStorage to load
