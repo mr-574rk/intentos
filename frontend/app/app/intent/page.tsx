@@ -14,6 +14,7 @@ import type {
   AgentTimeline as TimelineType,
   AmbiguityResponse,
   ExecutionResult,
+  UnsignedMsgBundle,
 } from "@/types";
 import { QRCodeSVG } from "qrcode.react";
 import { API_URL, API_HEADERS, explorerTxUrl, EXPLORER_BASE } from "@/lib/config";
@@ -599,7 +600,7 @@ function detectIntent(input: string) {
 export default function IntentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isConnected, address, username } = useWalletGuard();
+  const { isConnected, address, username, requestTx } = useWalletGuard();
   const isOnline = useOnlineStatus();
 
   const [loading, setLoading] = useState(false);
@@ -803,38 +804,74 @@ export default function IntentPage() {
     setIntentType("send");
     setTransferResult(null);
     setRecipientError(null);
-    try {
+        try {
       // Use the resolved address for execution, not the raw input
       const recipientAddr = transferConfirm.resolvedAddress ?? transferConfirm.recipient;
       const intentText = `send ${transferConfirm.amount} ${transferConfirm.token} to ${recipientAddr}`;
+
+      // Step 1: Parse intent → build strategy (walletAddress is required by the backend)
       const intentRes = await fetch(`${API_URL}/api/execute/intent`, {
         method: "POST",
         headers: API_HEADERS,
-        body: JSON.stringify({ text: intentText }),
+        body: JSON.stringify({ text: intentText, walletAddress: address }),
       });
       const intentData: ApiResponse<Strategy> = await intentRes.json();
       if (!intentData.success || !intentData.data) {
         throw new Error(intentData.error ?? "Failed to parse transfer intent");
       }
-
       const strategy = intentData.data as Strategy;
 
-      const execRes = await fetch(`${API_URL}/api/execute/${strategy.id}`, {
-        method: "POST",
-        headers: API_HEADERS,
-        body: JSON.stringify({ sessionKey: address ?? "", strategy }),
-      });
-      const execData: ApiResponse<ExecutionResult> = await execRes.json();
-      if (!execData.success) {
-        // Surface rate-limit error
-        if (execData.error?.includes("Too many") || execData.error?.includes("wait")) {
-          throw new Error("429:" + execData.error);
-        }
-        throw new Error(execData.error ?? "Execution failed");
+      // Step 2: Fetch unsigned messages from backend
+      const msgRes = await fetch(
+        `${API_URL}/api/execute/messages/${strategy.id}?wallet=${encodeURIComponent(address ?? "")}`,
+        { headers: API_HEADERS }
+      );
+      const msgData: ApiResponse<UnsignedMsgBundle> = await msgRes.json();
+      if (!msgData.success || !msgData.data) {
+        throw new Error(msgData.error ?? "Failed to build transaction messages");
+      }
+      const { msgs, memo, mode } = msgData.data;
+
+      let txHash = "";
+      if (mode === "mock") {
+        txHash = `mock-${Date.now().toString(16)}`;
+        await new Promise(r => setTimeout(r, 800));
+      } else {
+        // Decode base64 args → Uint8Array for any MsgExecute messages
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const processedMsgs = (msgs as any[]).map(msg => {
+          if (msg.value?.args && Array.isArray(msg.value.args)) {
+            return {
+              ...msg,
+              value: {
+                ...msg.value,
+                args: msg.value.args.map((arg: unknown) =>
+                  typeof arg === "string"
+                    ? Uint8Array.from(atob(arg), c => c.charCodeAt(0))
+                    : arg
+                ),
+              },
+            };
+          }
+          return msg;
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const txResult = await requestTx({ messages: processedMsgs as any, memo });
+        txHash = typeof txResult === "string" ? txResult : "";
+        if (!txHash) throw new Error("Wallet returned no transaction hash.");
       }
 
-      const txHash =
-        (execData.data as ExecutionResult & { txHash?: string })?.txHash ?? "";
+      // Step 3: Confirm execution on the backend
+      await fetch(`${API_URL}/api/execute/confirm`, {
+        method: "POST",
+        headers: API_HEADERS,
+        body: JSON.stringify({
+          strategyId: strategy.id,
+          walletAddress: address,
+          txHash,
+          strategy,
+        }),
+      });
 
       // Save to backend DB — async, non-blocking
       if (transferConfirm.resolvedAddress && address) {
