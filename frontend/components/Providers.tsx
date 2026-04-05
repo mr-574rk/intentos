@@ -41,14 +41,16 @@ export default function Providers({ children }: PropsWithChildren) {
     injectStyles(InterwovenKitStyles);
   }, []);
 
-  return (
+    return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiConfig}>
-    <InterwovenKitProvider
-  {...TESTNET}
-  defaultChainId={CHAIN_ID}
-  enableAutoSign={true}
->
+        <InterwovenKitProvider
+          {...TESTNET}
+          defaultChainId={CHAIN_ID}
+          enableAutoSign={true}
+        >
+          {children}
+        </InterwovenKitProvider>
       </WagmiProvider>
     </QueryClientProvider>
   );
