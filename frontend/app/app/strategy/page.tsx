@@ -228,10 +228,29 @@ export default function StrategyPage() {
         // Mock mode: simulate success without wallet signing
         hash = `mock-${Date.now().toString(16)}`;
         await new Promise(r => setTimeout(r, 800));
-      } else {
-        // Real mode: sign + broadcast via InterwovenKit
+           } else {
+        // Real mode: sign + broadcast via InterwovenKit.
+        // MsgExecute args arrive from the backend as base64 strings (JSON-safe).
+        // InterwovenKit's BinaryWriter.bytes() expects Uint8Array (needs .byteLength),
+        // so we must decode them before handing off to the wallet.
+        const processedMsgs = (msgs as any[]).map(msg => {
+          if (msg.value?.args && Array.isArray(msg.value.args)) {
+            return {
+              ...msg,
+              value: {
+                ...msg.value,
+                args: msg.value.args.map((arg: unknown) =>
+                  typeof arg === "string"
+                    ? Uint8Array.from(atob(arg), c => c.charCodeAt(0))
+                    : arg
+                ),
+              },
+            };
+          }
+          return msg;
+        });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const txResult = await requestTx({ messages: msgs as any[], memo });
+        const txResult = await requestTx({ messages: processedMsgs, memo });
         hash = typeof txResult === "string" ? txResult : "";
         if (!hash) throw new Error("Wallet returned no transaction hash after signing.");
       }
