@@ -97,5 +97,36 @@ export const zh = {
   // Validation
   err_no_init: "您的 INIT 余额不足。需要：",
   err_no_usdc: "您的 USDC 余额不足。需要：",
-  tx_sent: "交易已发送"
+  tx_sent: "交易已发送",
+
+  // 探索 / 排行榜 / 推荐 / 分享
+  explore: "探索",
+  leaderboard: "排行榜",
+  top_performers: "顶级表现者",
+  this_week: "本周",
+  rank: "排名",
+  performer: "用户",
+  goal: "目标",
+  return_pct: "收益",
+  risk: "风险",
+  no_leaderboard: "暂无结果。执行您的第一个策略即可出现在此！",
+  share_result: "分享结果",
+  copy_card: "复制文本",
+  share_on_x: "发布到 X",
+  share_system: "通过系统分享…",
+  referrals: "推荐",
+  your_referral_link: "您的推荐链接",
+  copy_referral: "复制链接",
+  copied_link: "已复制！",
+  invite_desc: "当朋友点击您的链接并执行第一个策略时，双方都会受益。",
+  your_tier: "您的等级",
+  invite_count: "已邀请好友",
+  tier_perks: "您的权益",
+  tier_none_label: "无等级",
+  tier_starter_label: "初级",
+  tier_pro_label: "专业",
+  tier_elite_label: "精英",
+  next_tier_at: "邀请数量达到下一等级",
+  loading: "加载中…",
+  explore_desc: "与顶级表现者竞争，分享您的结果，共同成长。"
 };

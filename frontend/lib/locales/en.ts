@@ -98,5 +98,36 @@ export const en = {
   // Validation
   err_no_init: "You don't have enough INIT. Required: ",
   err_no_usdc: "You don't have enough USDC. Required: ",
-  tx_sent: "Transaction Sent"
+  tx_sent: "Transaction Sent",
+
+  // Explore / Leaderboard / Referrals / Share
+  explore: "Explore",
+  leaderboard: "Leaderboard",
+  top_performers: "Top Performers",
+  this_week: "This Week",
+  rank: "Rank",
+  performer: "Performer",
+  goal: "Goal",
+  return_pct: "Return",
+  risk: "Risk",
+  no_leaderboard: "No results yet. Execute your first strategy to appear here!",
+  share_result: "Share Result",
+  copy_card: "Copy Text",
+  share_on_x: "Post on X",
+  share_system: "Share via system…",
+  referrals: "Referrals",
+  your_referral_link: "Your Referral Link",
+  copy_referral: "Copy Link",
+  copied_link: "Copied!",
+  invite_desc: "When a friend clicks your link and executes their first strategy, you both benefit.",
+  your_tier: "Your Tier",
+  invite_count: "Friends Invited",
+  tier_perks: "Your Perks",
+  tier_none_label: "No Tier Yet",
+  tier_starter_label: "Starter",
+  tier_pro_label: "Pro",
+  tier_elite_label: "Elite",
+  next_tier_at: "invites to next tier",
+  loading: "Loading…",
+  explore_desc: "Compete with top performers, share your results, and grow together."
 };

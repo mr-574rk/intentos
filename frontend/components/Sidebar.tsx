@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import WalletConnect from "@/components/WalletConnect";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
-import { BrainCircuit, PieChart, History, X, BookOpen, ExternalLink } from "lucide-react";
+import { BrainCircuit, PieChart, History, X, BookOpen, ExternalLink, Compass } from "lucide-react";
 
 const TwitterIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}>
@@ -42,6 +42,7 @@ import { useLocale } from "@/components/LocaleProvider";
 // Consolidated nav — Strategy/Execute are steps in a flow, not top-level pages
 const NAV_ITEMS = [
   { href: "/app/intent",    icon: BrainCircuit, labelKey: "chat" },
+  { href: "/app/explore",   icon: Compass,      labelKey: "explore" },
   { href: "/app/portfolio", icon: PieChart,     labelKey: "portfolio" },
   { href: "/app/activity",  icon: History,      labelKey: "activity" },
 ];

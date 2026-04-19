@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain, AlertTriangle, Share2 } from "lucide-react";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Strategy } from "@/types";
@@ -14,6 +14,7 @@ import StrategyReasoning from "@/components/StrategyReasoning";
 import { useAccount } from "wagmi";
 import { useLocale } from "@/components/LocaleProvider";
 import CustomWalletModal from "@/components/CustomWalletModal";
+import IntentShareModal from "@/components/IntentShareModal";
 
 import { API_URL,CHAIN_ID, API_HEADERS } from "@/lib/config";
 import type { ApiResponse, UnsignedMsgBundle } from "@/types";
@@ -139,6 +140,7 @@ export default function StrategyPage() {
   const [loaded, setLoaded] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Consider it a social login if it's the Privy connector
   const isSocialLogin = connector?.id === "cmbq1ozyc006al70lx4uciz0q" || connector?.name.toLowerCase().includes("privy");
@@ -288,6 +290,21 @@ export default function StrategyPage() {
       setTxHash(hash);
       setExecState("success");
       setShowSuccess(true);
+
+      // Record referral if one exists
+      try {
+        const referrer = localStorage.getItem("intentos_referrer");
+        if (referrer) {
+          await fetch(`${API_URL}/api/referrals/record`, {
+            method: "POST",
+            headers: API_HEADERS,
+            body: JSON.stringify({ referrerAddress: referrer, refereeAddress: address })
+          });
+          localStorage.removeItem("intentos_referrer");
+        }
+      } catch (e) {
+        // Silently ignore referral tracking errors
+      }
     } catch (err) {
       setErrorReason((err as Error).message);
       setExecState("failed");
@@ -537,6 +554,25 @@ export default function StrategyPage() {
               disabled={!!blocked || isSocialLogin || execState === "success" || !isOnline}
               execState={execState}
             />
+
+            <AnimatePresence>
+              {execState === "success" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                >
+                  <button
+                    onClick={() => setShowShareModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold bg-[#00F5D4]/10 hover:bg-[#00F5D4]/20 border border-[#00F5D4]/30 text-[#00F5D4] transition-all"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    {t("share_result")}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <AnimatePresence>
               {errorReason && execState === "failed" && (
                 <motion.p
@@ -553,6 +589,19 @@ export default function StrategyPage() {
         </div>
       </div>
       <CustomWalletModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />
+      {strategy && (
+        <IntentShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          result={{
+            intentText: strategy.intent.rawText,
+            returnPct: (strategy.simulation as any)?.projectedAPY ?? undefined,
+            riskLevel: (strategy.simulation as any)?.riskLabel ?? "Medium",
+            executedAt: new Date().toISOString(),
+            txHash,
+          }}
+        />
+      )}
     </>
   );
 }

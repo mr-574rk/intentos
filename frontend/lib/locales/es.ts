@@ -97,5 +97,36 @@ export const es = {
   // Validation
   err_no_init: "No tienes suficiente INIT. Requerido: ",
   err_no_usdc: "No tienes suficiente USDC. Requerido: ",
-  tx_sent: "Transacción Enviada"
+  tx_sent: "Transacción Enviada",
+
+  // Explorar / Clasificación / Referencias / Compartir
+  explore: "Explorar",
+  leaderboard: "Clasificación",
+  top_performers: "Mejores Resultados",
+  this_week: "Esta Semana",
+  rank: "Rango",
+  performer: "Usuario",
+  goal: "Meta",
+  return_pct: "Retorno",
+  risk: "Riesgo",
+  no_leaderboard: "¡Sin resultados aún. ¡Ejecuta tu primera estrategia para aparecer aquí!",
+  share_result: "Compartir Resultado",
+  copy_card: "Copiar Texto",
+  share_on_x: "Publicar en X",
+  share_system: "Compartir vía sistema…",
+  referrals: "Referencias",
+  your_referral_link: "Tu Enlace de Referencia",
+  copy_referral: "Copiar Enlace",
+  copied_link: "¡Copiado!",
+  invite_desc: "Cuando un amigo hace clic en tu enlace y ejecuta su primera estrategia, ambos se benefician.",
+  your_tier: "Tu Nivel",
+  invite_count: "Amigos Invitados",
+  tier_perks: "Tus Beneficios",
+  tier_none_label: "Sin Nivel",
+  tier_starter_label: "Inicial",
+  tier_pro_label: "Pro",
+  tier_elite_label: "Élite",
+  next_tier_at: "invitaciones para el siguiente nivel",
+  loading: "Cargando…",
+  explore_desc: "Compite con los mejores, comparte tus resultados y crece juntos."
 };

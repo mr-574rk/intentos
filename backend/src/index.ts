@@ -12,6 +12,8 @@ import lcdRouter from "./routes/lcd";
 import portfolioRouter from "./routes/portfolio";
 import recipientsRouter from "./routes/recipients";
 import nameserviceRouter from "./routes/nameservice";
+import referralsRouter from "./routes/referrals";
+import leaderboardRouter from "./routes/leaderboard";
 
 const app = express();
 const PORT = process.env.PORT ?? 4000;
@@ -41,6 +43,8 @@ app.use("/api/lcd", lcdRouter);
 app.use("/api/portfolio", portfolioRouter);
 app.use("/api/recipients", recipientsRouter);
 app.use("/api/nameservice", nameserviceRouter);
+app.use("/api/referrals", referralsRouter);
+app.use("/api/leaderboard", leaderboardRouter);
 
 console.log(`   Network: ${process.env.INITIA_NETWORK ?? "testnet"} (LCD: ${process.env.INITIA_REST ?? "https://lcd.testnet.initia.xyz"})\n`);
 

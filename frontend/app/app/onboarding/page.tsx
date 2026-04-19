@@ -3,7 +3,7 @@
 import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { useAccount } from "wagmi";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { CheckCircle2, Copy, ExternalLink, RefreshCw, Loader2, Droplets } from "lucide-react";
@@ -23,6 +23,15 @@ export default function OnboardingPage() {
   // Combine addresses from both sources
   const address = kitAddress || wagmiAddress;
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Capture referral
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref && typeof window !== "undefined") {
+      localStorage.setItem("intentos_referrer", ref);
+    }
+  }, [searchParams]);
   const [mounted, setMounted] = useState(false);
   const [state, setState] = useState<OnboardingState>("language");
   const [resolvedAddress, setResolvedAddress] = useState<string>("");

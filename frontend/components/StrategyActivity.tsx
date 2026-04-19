@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Copy } from "lucide-react";
+import { Copy, Share2 } from "lucide-react";
 import { Pagination } from "./Pagination";
+import IntentShareModal from "./IntentShareModal";
+import { useLocale } from "@/components/LocaleProvider";
 import type { ActivityEntry } from "../types";
 import { API_URL, explorerTxUrl } from "@/lib/config";
 
@@ -14,6 +16,8 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
   const [loading, setLoading] = useState(!entries);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedShare, setSelectedShare] = useState<any>(null);
+  const { t } = useLocale();
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -163,6 +167,14 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
                     View on Explorer
                  </a>
                )}
+               {success && (
+                 <button
+                   onClick={() => setSelectedShare(entry)}
+                   className="rounded-full text-xs font-bold bg-[#00F5D4]/10 border border-[#00F5D4]/30 text-[#00F5D4] hover:bg-[#00F5D4]/20 px-4 py-1.5 transition-colors whitespace-nowrap text-center flex items-center justify-center gap-1.5"
+                 >
+                   <Share2 className="w-3 h-3" /> {t("share_result")}
+                 </button>
+               )}
             </div>
           </motion.div>
         );
@@ -173,6 +185,20 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
         totalPages={totalPages}
         onPageChange={setCurrentPage}
       />
+
+      {selectedShare && (
+        <IntentShareModal
+          isOpen={!!selectedShare}
+          onClose={() => setSelectedShare(null)}
+          result={{
+            intentText: selectedShare.intentText,
+            returnPct: (selectedShare.simulation as any)?.projectedAPY ?? undefined,
+            riskLevel: (selectedShare.simulation as any)?.riskLabel ?? "Medium",
+            executedAt: selectedShare.createdAt,
+            txHash: selectedShare.result?.txHash,
+          }}
+        />
+      )}
     </div>
   );
 }
