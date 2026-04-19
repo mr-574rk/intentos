@@ -7,19 +7,19 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useLocale } from "@/components/LocaleProvider";
 
 // Suggestions when wallet has funds — action-oriented
-const SUGGESTIONS_FUNDED = [
-  { text: "stake 1 init", icon: Lock },
-  { text: "swap 0.5 init to usdc", icon: ArrowRightLeft },
-  { text: "grow my portfolio", icon: TrendingUp },
-  { text: "claim staking rewards", icon: Gift },
-  { text: "unstake half my init", icon: Unlock },
+const SUGGESTIONS_FUNDED_KEYS = [
+  { key: "sug_stake", icon: Lock },
+  { key: "sug_swap", icon: ArrowRightLeft },
+  { key: "sug_grow", icon: TrendingUp },
+  { key: "sug_claim", icon: Gift },
+  { key: "sug_unstake", icon: Unlock },
 ];
 
 // Suggestions when wallet is empty — guide user to receive funds first
-const SUGGESTIONS_EMPTY = [
-  { text: "receive init", icon: Download },
-  { text: "receive usdc", icon: Download },
-  { text: "how do I get started?", icon: HelpCircle },
+const SUGGESTIONS_EMPTY_KEYS = [
+  { key: "sug_recv_init", icon: Download },
+  { key: "sug_recv_usdc", icon: Download },
+  { key: "sug_help", icon: HelpCircle },
 ];
 
 interface IntentInputProps {
@@ -49,7 +49,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
   }, []);
   
   // Suppress suggestions until balance check completes (walletEmpty !== null)
-  const suggestions = walletEmpty === null ? [] : (walletEmpty ? SUGGESTIONS_EMPTY : SUGGESTIONS_FUNDED);
+  const suggestions = walletEmpty === null ? [] : (walletEmpty ? SUGGESTIONS_EMPTY_KEYS : SUGGESTIONS_FUNDED_KEYS);
   
   const isOnline = useOnlineStatus();
 
@@ -149,9 +149,9 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
           {/* Bottom Left: Cmd to send helper */}
           <span className="absolute bottom-4 left-5 text-xs text-text-muted hidden md:block pointer-events-none">
             {!isOnline ? (
-              <span className="text-red-400/70">Offline — reconnect to send</span>
+              <span className="text-red-400/70">{t("offline_reconnect")}</span>
             ) : (
-              "⌘↵ to send"
+              t("cmd_send")
             )}
           </span>
 
@@ -198,11 +198,11 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
           >
             {suggestions.map((s, i) => (
               <motion.button
-                key={s.text}
+                key={s.key}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
-                onClick={() => selectSuggestion(s.text)}
+                onClick={() => selectSuggestion(t(s.key))}
                 disabled={!isOnline}
                 className="flex items-center gap-1.5 text-xs px-4 py-2 rounded-full border border-white/10
                            text-text-secondary bg-white/5
@@ -211,7 +211,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
                            transition-all duration-150"
               >
                 <s.icon className="w-3.5 h-3.5 opacity-70" />
-                {s.text}
+                {t(s.key)}
               </motion.button>
             ))}
           </motion.div>

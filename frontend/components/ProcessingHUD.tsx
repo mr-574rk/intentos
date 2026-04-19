@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 export interface ReasoningStep {
@@ -25,8 +26,8 @@ const STEP_DELAY_MS = 800; // Time spent on 'action' before discovery
 const DISCOVERY_DELAY_MS = 600; // Time to pause on 'discovery' before moving to next step
 const FINAL_PAUSE_MS = 400; // Time before firing onComplete at the end
 
-// ── Component ──────────────────────────────────────────────────────────────────
 export default function ProcessingHUD({ apiPending, steps, onComplete }: ProcessingHUDProps) {
+  const { t } = useLocale();
   const [stepIndex, setStepIndex] = useState(0);
   const [isShowingDiscovery, setIsShowingDiscovery] = useState(false);
   const [readyToComplete, setReadyToComplete] = useState(false);
@@ -127,7 +128,7 @@ export default function ProcessingHUD({ apiPending, steps, onComplete }: Process
                 className="absolute inset-0 flex items-center gap-2"
               >
                 <span className="text-sm font-medium tracking-wide whitespace-nowrap overflow-hidden text-ellipsis text-white">
-                  {currentStep?.action ?? "Processing..."}
+                  {currentStep?.action ?? t("processing")}
                 </span>
               </motion.div>
             ) : (

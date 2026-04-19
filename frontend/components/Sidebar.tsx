@@ -125,7 +125,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
           
           {/* Custom Tooltip */}
           <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 rounded-lg bg-[#13161D]/90 backdrop-blur-md border border-white/10 text-[10px] font-bold text-[#00F5D4] uppercase tracking-widest whitespace-nowrap opacity-0 group-hover/tooltip:opacity-100 pointer-events-none transition-all duration-200 shadow-2xl z-50 translate-x-[-8px] group-hover/tooltip:translate-x-0">
-            Developer Documentation
+            {t("dev_docs")}
           </div>
         </div>
       </nav>

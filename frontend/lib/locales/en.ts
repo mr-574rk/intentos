@@ -53,5 +53,50 @@ export const en = {
   what_is_your_goal: "What is your financial goal?",
   type_intent_placeholder: "e.g., Stake 50 INIT and swap 100 USDC to ETH",
   generating_strategy: "Generating strategy…",
-  generate_strategy: "Generate Strategy"
+  generate_strategy: "Generate Strategy",
+  
+  // HUD Timeline & Actions
+  sug_stake: "stake 1 init",
+  sug_swap: "swap 0.5 init to usdc",
+  sug_grow: "grow my portfolio",
+  sug_claim: "claim staking rewards",
+  sug_unstake: "unstake half my init",
+  sug_recv_init: "receive init",
+  sug_recv_usdc: "receive usdc",
+  sug_help: "how do I get started?",
+  offline_reconnect: "Offline — reconnect to send",
+  cmd_send: "⌘↵ to send",
+  hud_interpreting: "Interpreting intent...",
+  hud_discovery_text: "Intent captured",
+  hud_analyzing: "Analyzing protocol paths...",
+  hud_discovery_paths: "Initia testnet checked",
+  hud_simulating: "Simulating outcomes...",
+  hud_discovery_sim: "Risk/yield verified",
+  hud_building: "Building strategy...",
+  hud_discovery_build: "Ready",
+  processing: "Processing...",
+  dev_docs: "Developer Documentation",
+
+  // Live HUD
+  hud_action_stake: "Understanding staking request...",
+  hud_check_balance: "Checking wallet balance...",
+  hud_discovery_bal: "INIT available",
+  hud_select_val: "Selecting validator...",
+  hud_discovery_val: "Validator: Initia Labs",
+  hud_prep_stake: "Preparing delegation transaction...",
+  hud_action_swap: "Understanding swap request...",
+  hud_route: "Finding best swap route...",
+  hud_discovery_route: "Route: INIT → USDC",
+  hud_est_risk: "Estimating risk and potential return...",
+  hud_prep_swap: "Preparing swap transaction...",
+  hud_action_send: "Understanding transfer request...",
+  hud_resolve_id: "Resolving recipient identity...",
+  hud_discovery_id: "Address verified",
+  hud_prep_send: "Preparing transfer transaction...",
+  hud_action_gen: "Interpreting intent...",
+  
+  // Validation
+  err_no_init: "You don't have enough INIT. Required: ",
+  err_no_usdc: "You don't have enough USDC. Required: ",
+  tx_sent: "Transaction Sent"
 };

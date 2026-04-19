@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { readAutopilotState, writeAutopilotState } from "@/lib/autopilotState";
 import { Bot } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
 
 export default function GlobalAutopilotToggle({ inline = false }: { inline?: boolean }) {
   const router = useRouter();
   const [enabled, setEnabled] = useState(false);
+  const { t } = useLocale();
 
   useEffect(() => {
     const checkState = () => {
@@ -45,7 +47,7 @@ export default function GlobalAutopilotToggle({ inline = false }: { inline?: boo
       <div className="flex items-center gap-1.5">
         <Bot className="w-4 h-4" style={{ color: inline ? "#9CA3AF" : (enabled ? "#00F5D4" : "#828A9E") }} />
         <span className={inline ? "hidden sm:inline-block text-xs text-gray-400" : "hidden sm:inline-block text-xs font-medium"} style={!inline ? { color: enabled ? "#00F5D4" : "#828A9E" } : undefined}>
-          Autopilot
+          {t("autopilot")}
         </span>
       </div>
 

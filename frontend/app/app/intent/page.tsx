@@ -490,6 +490,7 @@ function ConfirmTransactionCard({
 
 // ── Transaction Result Card ────────────────────────────────────────────────────
 function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () => void }) {
+  const { t } = useLocale();
   // Correct Initia testnet explorer — tx detail page
   const hasTxHash = txHash && txHash !== "confirmed" && txHash.length > 10;
   const explorerUrl = hasTxHash
@@ -510,7 +511,7 @@ function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () 
           style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.2)" }}>
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
         </span>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">Transaction Sent</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-400">{t("tx_sent")}</p>
       </div>
 
       <div className="px-5 py-5 space-y-4">
@@ -556,6 +557,7 @@ function TransactionResultCard({ txHash, onDone }: { txHash: string; onDone: () 
 
 // ── Toast notification ─────────────────────────────────────────────────────────
 function TxSentToast({ visible }: { visible: boolean }) {
+  const { t } = useLocale();
   return (
     <AnimatePresence>
       {visible && (
@@ -576,7 +578,7 @@ function TxSentToast({ visible }: { visible: boolean }) {
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </span>
           <div>
-            <p className="text-sm font-bold text-emerald-300">Transaction Sent!</p>
+            <p className="text-sm font-bold text-emerald-300">{t("tx_sent")}!</p>
             <p className="text-xs" style={{ color: "rgba(110,231,183,0.6)" }}>Broadcasting to Initia network…</p>
           </div>
         </motion.div>
@@ -760,41 +762,41 @@ export default function IntentPage() {
     switch (intentType) {
       case "stake":
         return [
-          { action: "Understanding staking request..." },
-          { action: "Checking wallet balance...", discovery: `${walletInitBalance.toFixed(2)} INIT available` },
-          { action: "Selecting validator...", discovery: "Validator: Initia Labs" },
-          { action: "Preparing delegation transaction..." },
+          { action: t("hud_action_stake") || "Understanding staking request..." },
+          { action: t("hud_check_balance") || "Checking wallet balance...", discovery: `${walletInitBalance.toFixed(2)} ${t("hud_discovery_bal") || "INIT available"}` },
+          { action: t("hud_select_val") || "Selecting validator...", discovery: t("hud_discovery_val") || "Validator: Initia Labs" },
+          { action: t("hud_prep_stake") || "Preparing delegation transaction..." },
         ];
       case "swap":
         return [
-          { action: "Understanding swap request..." },
-          { action: "Checking balances...", discovery: `${walletInitBalance.toFixed(2)} INIT available` },
-          { action: "Finding best swap route...", discovery: "Route: INIT → USDC" },
-          { action: "Estimating risk and potential return..." },
-          { action: "Preparing swap transaction..." },
+          { action: t("hud_action_swap") || "Understanding swap request..." },
+          { action: t("hud_check_balance") || "Checking balances...", discovery: `${walletInitBalance.toFixed(2)} ${t("hud_discovery_bal") || "INIT available"}` },
+          { action: t("hud_route") || "Finding best swap route...", discovery: t("hud_discovery_route") || "Route: INIT → USDC" },
+          { action: t("hud_est_risk") || "Estimating risk and potential return..." },
+          { action: t("hud_prep_swap") || "Preparing swap transaction..." },
         ];
       case "send": // Note: typically sends are handled before this, but if it reaches here:
         return [
-          { action: "Understanding transfer request..." },
-          { action: "Resolving recipient identity...", discovery: "Address verified" },
-          { action: "Checking wallet balance...", discovery: `${walletInitBalance.toFixed(2)} INIT available` },
-          { action: "Preparing transfer transaction..." },
+          { action: t("hud_action_send") || "Understanding transfer request..." },
+          { action: t("hud_resolve_id") || "Resolving recipient identity...", discovery: t("hud_discovery_id") || "Address verified" },
+          { action: t("hud_check_balance") || "Checking wallet balance...", discovery: `${walletInitBalance.toFixed(2)} ${t("hud_discovery_bal") || "INIT available"}` },
+          { action: t("hud_prep_send") || "Preparing transfer transaction..." },
         ];
       case "grow":
         return [
-          { action: "Understanding financial goal..." },
-          { action: "Analyzing current portfolio..." },
-          { action: "Evaluating yield opportunities..." },
-          { action: "Building strategy plan..." },
-          { action: "Simulating possible outcomes..." },
+          { action: t("hud_action_gen") || "Understanding financial goal..." },
+          { action: t("hud_analyzing_paths") || "Analyzing current portfolio..." },
+          { action: t("hud_est_risk") || "Evaluating yield opportunities..." },
+          { action: t("hud_build_strat") || "Building strategy plan..." },
+          { action: t("hud_sim_outcomes") || "Simulating possible outcomes..." },
         ];
       default:
         return [
-          { action: "Parsing natural language intent..." },
-          { action: "Verifying wallet balances..." },
-          { action: "Generating DeFi strategy..." },
-          { action: "Estimating risk and potential return..." },
-          { action: "Finalizing strategy parameters..." },
+          { action: t("hud_action_gen") || "Parsing natural language intent..." },
+          { action: t("hud_check_balance") || "Verifying wallet balances..." },
+          { action: t("generating_strategy") || "Generating DeFi strategy..." },
+          { action: t("hud_est_risk") || "Estimating risk and potential return..." },
+          { action: t("hud_build_strat") || "Finalizing strategy parameters..." },
         ];
     }
   };
@@ -1364,7 +1366,7 @@ export default function IntentPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  <span>Resolving recipient address…</span>
+                  <span>{t("hud_resolve_id")}</span>
                 </motion.div>
               )}
 
@@ -1411,7 +1413,7 @@ export default function IntentPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                  Checking wallet balance…
+                  {t("hud_check_balance")}
                 </motion.div>
               )}
             </AnimatePresence>
