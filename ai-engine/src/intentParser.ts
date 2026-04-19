@@ -277,6 +277,12 @@ function classifyClause(clause: string): ParsedIntent {
 // ── Multi-Intent Parser (main export) ────────────────────────
 
 /**
+ * Matches prohibitive prefixes that negate the intent of any action.
+ * Must be tested against the trimmed, lowercased full text.
+ */
+const NEGATION_RE = /^\s*(do\s+not|don'?t|never|please\s+do\s+not|please\s+don'?t|stop|cease|refrain\s+from)\b/i;
+
+/**
  * Parse a raw user sentence into one or more `ParsedIntent` objects.
  * Supports multi-intent sentences joined by "and / then / after that".
  *
@@ -288,6 +294,16 @@ function classifyClause(clause: string): ParsedIntent {
  *   → [{ intentType: "yield", ambiguous: true }]
  */
 export function parseIntent(rawText: string): ParsedIntent[] {
+  // Guard: reject negated instructions before any classification runs.
+  // Executing "do not send" or "never stake" as real transactions is dangerous.
+  if (NEGATION_RE.test(rawText.trim())) {
+    throw new Error(
+      "[strategyGenerator] Your instruction contains prohibitive language (\"do not\", \"don't\", \"never\", etc.). " +
+      "Negated actions cannot be converted into executable strategies. " +
+      "Please rephrase using a positive instruction (e.g. \"stake 5 INIT\")."
+    );
+  }
+
   // Fix #5/#14: MULTI_SPLIT_RE is non-global — no lastIndex pollution
   const clauses = rawText.split(MULTI_SPLIT_RE).filter(c => c.trim().length > 2);
 

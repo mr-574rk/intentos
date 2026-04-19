@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Lock, ArrowRightLeft, TrendingUp, Gift, Unlock, Download, HelpCircle, X } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useLocale } from "@/components/LocaleProvider";
 
 // Suggestions when wallet has funds — action-oriented
 const SUGGESTIONS_FUNDED = [
@@ -38,6 +39,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
   const [focused, setFocused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { t } = useLocale();
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -137,7 +139,7 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
               }}
-              placeholder={placeholderOverride || (isMobile ? "e.g. stake 0.5 INIT..." : "e.g. stake 0.5 INIT · swap USDC to INIT · grow my portfolio safely · enable autopilot")}
+              placeholder={placeholderOverride || t("type_intent_placeholder")}
               disabled={loading || disabled || !isOnline}
               className={`w-full bg-transparent pl-5 pt-4 pb-12 pr-[100px] md:pr-[120px] text-base text-text-primary
                          placeholder:text-text-muted resize-none focus:outline-none focus:ring-0 focus:border-transparent border-none align-top leading-relaxed
@@ -174,10 +176,10 @@ export default function IntentInput({ onSubmit, loading, disabled, defaultValue,
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Running…
+                {t("generating_strategy")}
               </>
             ) : (
-              <>Run <Sparkles className="w-4 h-4" /></>
+              <>{t("generate_strategy")} <Sparkles className="w-4 h-4" /></>
             )}
           </motion.button>
           </div>

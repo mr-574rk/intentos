@@ -11,6 +11,9 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Strategy } from "@/types";
 import SuccessModal from "@/components/SuccessModal";
 import StrategyReasoning from "@/components/StrategyReasoning";
+import { useAccount } from "wagmi";
+import { useLocale } from "@/components/LocaleProvider";
+import CustomWalletModal from "@/components/CustomWalletModal";
 
 import { API_URL,CHAIN_ID, API_HEADERS } from "@/lib/config";
 import type { ApiResponse, UnsignedMsgBundle } from "@/types";
@@ -93,6 +96,7 @@ type ExecState = "idle" | "executing" | "success" | "failed";
 function ExecuteButton({ onExecute, disabled, execState }: {
   onExecute: () => void; disabled: boolean; execState: ExecState;
 }) {
+  const { t } = useLocale();
   return (
     <motion.button
       onClick={execState !== "executing" ? onExecute : undefined}
@@ -109,12 +113,12 @@ function ExecuteButton({ onExecute, disabled, execState }: {
       {execState === "executing" && (
         <span className="flex items-center justify-center gap-3">
           <MintPulse size={14} />
-          Executing on Initia…
+          {t("executing")}
         </span>
       )}
-      {execState === "idle" && <span className="flex items-center justify-center gap-2">Execute On-Chain <ArrowRight className="w-4 h-4" /></span>}
-      {execState === "success" && <span className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> Strategy Executed</span>}
-      {execState === "failed" && <span className="flex items-center justify-center gap-2"><XCircle className="w-4 h-4" /> Execution Failed — Retry</span>}
+      {execState === "idle" && <span className="flex items-center justify-center gap-2">{t("execute_button")} <ArrowRight className="w-4 h-4" /></span>}
+      {execState === "success" && <span className="flex items-center justify-center gap-2"><CheckCircle2 className="w-4 h-4" /> {t("strategy_executed")}</span>}
+      {execState === "failed" && <span className="flex items-center justify-center gap-2"><XCircle className="w-4 h-4" /> {t("execution_failed")}</span>}
     </motion.button>
   );
 }
@@ -124,6 +128,9 @@ export default function StrategyPage() {
   const router = useRouter();
   const { address, requestTx,autoSign } = useWalletGuard();
   const isOnline = useOnlineStatus();
+  const { connector } = useAccount();
+  const { t, locale } = useLocale();
+
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
   const [errorReason, setErrorReason] = useState<string | null>(null);
@@ -131,6 +138,10 @@ export default function StrategyPage() {
   const [txHash, setTxHash] = useState<string | undefined>();
   const [loaded, setLoaded] = useState(false);
   const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  // Consider it a social login if it's the Privy connector
+  const isSocialLogin = connector?.id === "cmbq1ozyc006al70lx4uciz0q" || connector?.name.toLowerCase().includes("privy");
 
   useEffect(() => {
     const stored = sessionStorage.getItem("intentos_strategy");
@@ -180,7 +191,7 @@ export default function StrategyPage() {
   }
 
   const handleExecute = async () => {
-    if (!strategy || blocked) return;
+    if (!strategy || blocked || isSocialLogin) return;
     setErrorReason(null);
     setBalanceError(null);
     setExecState("executing");
@@ -303,16 +314,15 @@ export default function StrategyPage() {
         >
           <Brain className="w-8 h-8" style={{ color: "#00F5D4" }} />
         </div>
-        <h2 className="text-xl font-black text-text-primary mb-2">No strategy generated yet</h2>
+        <h2 className="text-xl font-black text-text-primary mb-2">{t("no_strategy")}</h2>
         <p className="text-sm text-text-muted max-w-sm mb-6 leading-relaxed">
-          IntentOS builds strategies from your financial goals.<br />
-          Start by creating an intent and the strategy will appear here.
+          {t("start_intent")}
         </p>
         <button
           onClick={() => router.push("/app/intent")}
           className="btn-primary flex items-center gap-2 px-6 py-3"
         >
-          <ArrowLeft className="w-4 h-4" /> Create Intent
+          <ArrowLeft className="w-4 h-4" /> {t("create_intent")}
         </button>
       </div>
     );
@@ -331,8 +341,8 @@ export default function StrategyPage() {
         {/* Header */}
         <div className="flex items-center justify-between pt-2 pb-4">
           <div>
-            <h1 className="text-2xl font-black text-text-primary tracking-tight">AI Strategy Plan</h1>
-            <p className="text-sm text-text-muted mt-0.5">IntentOS analyzed your request and generated a strategy below.</p>
+            <h1 className="text-2xl font-black text-text-primary tracking-tight">{t("strategy_plan")}</h1>
+            <p className="text-sm text-text-muted mt-0.5">{t("strategy_desc")}</p>
           </div>
           {/* Pill-shaped "New Intent" back button */}
           <button
@@ -341,7 +351,7 @@ export default function StrategyPage() {
                        bg-white/5 hover:bg-white/10 text-text-secondary hover:text-text-primary
                        transition-all duration-200"
           >
-            <ArrowLeft className="w-3 h-3" /> New Intent
+            <ArrowLeft className="w-3 h-3" /> {t("new_intent")}
           </button>
         </div>
 
@@ -355,7 +365,7 @@ export default function StrategyPage() {
             animate={{ opacity: 1, x: 0 }}
           >
             <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
-              Execution Plan · {strategy.bundle.steps.length} {strategy.bundle.steps.length === 1 ? 'step' : 'steps'}
+              {t("execution_plan")} · {strategy.bundle.steps.length} {strategy.bundle.steps.length === 1 ? t("step") : t("steps")}
             </p>
             {strategy.bundle.steps.map((step, i) => (
               <motion.div
@@ -448,7 +458,7 @@ export default function StrategyPage() {
               className="rounded-2xl border border-amber-500/25 bg-amber-500/8 px-5 py-4 space-y-1"
             >
               <p className="text-sm font-semibold text-amber-400 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4" /> Strategy execution blocked
+                <AlertTriangle className="w-4 h-4" /> {t("strategy_blocked")}
               </p>
               <p className="text-xs text-amber-400/75">
                 {sim?.warnings?.[0] ??
@@ -462,6 +472,33 @@ export default function StrategyPage() {
         <div className="fixed md:static bottom-0 left-0 right-0 z-40 md:z-auto p-4 md:p-0 md:mt-4"
           style={{ background: "linear-gradient(to top, #000 60%, transparent)" }}>
           <div className="max-w-2xl mx-auto space-y-2">
+
+            {/* ── Social Login Error Banner ───────────────────────── */}
+            <AnimatePresence>
+              {isSocialLogin && !blocked && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  className="rounded-2xl border px-5 py-4 space-y-3 mb-1 bg-[#13161D]/90 backdrop-blur-xl border-white/10"
+                >
+                  <p className="text-sm font-semibold text-white flex items-center gap-2">
+                    ⚡ {t("email_needs_wallet")}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-text-muted">
+                      {t("email_needs_wallet_desc")}
+                    </p>
+                    <button
+                      onClick={() => setShowWalletModal(true)}
+                      className="text-xs font-bold text-[#00F5D4] hover:text-[#00F5D4]/80 transition-colors bg-[#00F5D4]/10 hover:bg-[#00F5D4]/20 px-3 py-1.5 rounded-full"
+                    >
+                      {t("connect_wallet_arrow")}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* ── Insufficient balance error ───────────────────────── */}
             <AnimatePresence>
@@ -482,14 +519,14 @@ export default function StrategyPage() {
                       style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.2)" }}>
                       <XCircle className="w-3.5 h-3.5 text-red-400" />
                     </span>
-                    <p className="text-sm font-bold text-red-400">Insufficient INIT Balance</p>
+                    <p className="text-sm font-bold text-red-400">{t("insufficient_balance")}</p>
                   </div>
                   <p className="text-xs text-red-400/70 leading-relaxed pl-8">{balanceError}</p>
                   <button
                     onClick={() => setBalanceError(null)}
                     className="pl-8 text-xs text-red-400/50 hover:text-red-400 transition-colors underline"
                   >
-                    Dismiss
+                    {t("dismiss")}
                   </button>
                 </motion.div>
               )}
@@ -497,7 +534,7 @@ export default function StrategyPage() {
 
             <ExecuteButton
               onExecute={handleExecute}
-              disabled={!!blocked || execState === "success" || !isOnline}
+              disabled={!!blocked || isSocialLogin || execState === "success" || !isOnline}
               execState={execState}
             />
             <AnimatePresence>
@@ -515,6 +552,7 @@ export default function StrategyPage() {
           </div>
         </div>
       </div>
+      <CustomWalletModal isOpen={showWalletModal} onClose={() => setShowWalletModal(false)} />
     </>
   );
 }

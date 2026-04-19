@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { wakeBackend } from "@/utils/wakeBackend";
 import Sidebar from "@/components/Sidebar";
-import GlobalAutopilotToggle from "@/components/GlobalAutopilotToggle";
+import LanguagePill from "@/components/LanguagePill";
 import OfflineToast from "@/components/OfflineToast";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { useInterwovenKit } from "@initia/interwovenkit-react";
@@ -29,9 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Right-side actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {isConnected && (
-            <GlobalAutopilotToggle inline />
-          )}
+          <LanguagePill inline />
           <button
             id="mobile-menu-btn"
             className="p-2 rounded-lg bg-transparent hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
@@ -63,8 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content Area */}
       <main className="flex-1 h-[100dvh] flex flex-col pt-16 md:pt-0 w-full relative">
-        {/* Desktop Autopilot — only shown when wallet connected */}
-        {isConnected && <GlobalAutopilotToggle />}
+        <LanguagePill />
         <NetworkGuardProvider>
           <div className="flex-1 h-full w-full mx-auto md:p-8 p-4 overflow-y-auto pb-10">
             {children}

@@ -8,20 +8,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
 import { CheckCircle2, Copy, ExternalLink, RefreshCw, Loader2, Droplets } from "lucide-react";
 import { API_URL, API_HEADERS, FAUCET_URL } from "@/lib/config";
+import { useLocale } from "@/components/LocaleProvider";
+import { LOCALES, Locale } from "@/lib/i18n";
 
 const BALANCE_POLL_INTERVAL_MS = 3_000;
 
-type OnboardingState = "connect" | "checking" | "faucet" | "ready" | "redirecting";
+type OnboardingState = "language" | "connect" | "checking" | "faucet" | "ready" | "redirecting";
 
 export default function OnboardingPage() {
   const { address: kitAddress, openConnect } = useInterwovenKit();
   const { address: wagmiAddress } = useAccount();
+  const { locale, setLocale, t } = useLocale();
 
   // Combine addresses from both sources
   const address = kitAddress || wagmiAddress;
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [state, setState] = useState<OnboardingState>("connect");
+  const [state, setState] = useState<OnboardingState>("language");
   const [resolvedAddress, setResolvedAddress] = useState<string>("");
   const [initBalance, setInitBalance] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
@@ -77,9 +80,9 @@ export default function OnboardingPage() {
     if (!mounted) return;
 
     if (!address) {
-      // Disconnected or not yet connected — reset to connect state
-      if (state !== "connect") {
-        setState("connect");
+      // Disconnected or not yet connected
+      if (state !== "connect" && state !== "language") {
+        setState("language");
         stopPolling();
         setInitBalance(null);
         setResolvedAddress("");
@@ -171,6 +174,38 @@ export default function OnboardingPage() {
 
           <AnimatePresence mode="wait">
 
+            {/* ── State: language ───────────────────────────────── */}
+            {state === "language" && (
+              <motion.div
+                key="language"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="w-full flex flex-col items-center"
+              >
+                <h1 className="text-[26px] font-black tracking-tight text-white text-center mt-5">
+                  {t("select_language")}
+                </h1>
+                <div className="w-full mt-8 mb-5 space-y-2">
+                  {LOCALES.map((l) => (
+                    <motion.button
+                      key={l.code}
+                      onClick={() => {
+                        setLocale(l.code as Locale);
+                        setState("connect");
+                      }}
+                      className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-[#00F5D4]/40 hover:bg-[#00F5D4]/5 transition-all outline-none focus:outline-none"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <span className="text-lg font-medium text-white">{l.label}</span>
+                      <span className="text-xl">{l.flag}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {/* ── State: connect ────────────────────────────────── */}
             {state === "connect" && (
               <motion.div
@@ -181,10 +216,10 @@ export default function OnboardingPage() {
                 className="w-full flex flex-col items-center"
               >
                 <h1 className="text-[26px] font-black tracking-tight text-white text-center mt-5">
-                  Initialize Workspace
+                  {t("initialize_workspace")}
                 </h1>
                 <p className="text-sm text-gray-400 text-center mt-3 mb-10 px-2 leading-relaxed">
-                  Securely connect your Initia wallet to deploy autonomous strategies.
+                  {t("initialize_desc")}
                 </p>
                 <motion.button
                   id="onboarding-connect-btn"
@@ -193,10 +228,10 @@ export default function OnboardingPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  CONNECT WALLET
+                  {t("connect_wallet")}
                 </motion.button>
                 <p className="text-xs text-gray-500 mt-6 text-center font-medium tracking-wide">
-                  Powered by Initia InterwovenKit
+                  {t("powered_by")}
                 </p>
               </motion.div>
             )}
@@ -211,8 +246,8 @@ export default function OnboardingPage() {
                 className="w-full flex flex-col items-center mt-8 gap-4"
               >
                 <Loader2 className="w-10 h-10 text-[#00F5D4] animate-spin" />
-                <p className="text-sm font-semibold text-white">Verifying wallet balance…</p>
-                <p className="text-xs text-gray-500 text-center">This only takes a moment.</p>
+                <p className="text-sm font-semibold text-white">{t("verifying_balance")}</p>
+                <p className="text-xs text-gray-500 text-center">{t("checking_moment")}</p>
               </motion.div>
             )}
 
@@ -232,10 +267,9 @@ export default function OnboardingPage() {
                   <Droplets className="w-7 h-7 text-[#00F5D4]" />
                 </div>
 
-                <h2 className="text-xl font-black text-white text-center mb-1">Claim Testnet INIT</h2>
+                <h2 className="text-xl font-black text-white text-center mb-1">{t("claim_init")}</h2>
                 <p className="text-xs text-gray-400 text-center mb-6 leading-relaxed px-2">
-                  Your wallet has no INIT balance. You need testnet INIT to pay for gas and execute strategies.
-                  Visit the faucet, paste your address, then return here — we&apos;ll detect your balance automatically.
+                  {t("claim_desc")}
                 </p>
 
                 {/* Wallet address display */}
@@ -268,7 +302,7 @@ export default function OnboardingPage() {
                   className="w-full bg-[#00F5D4] text-gray-900 font-bold text-[14px] tracking-wider rounded-full py-3.5 text-center hover:bg-[#00E5C4] hover:shadow-[0_0_24px_rgba(0,245,212,0.35)] transition-all flex items-center justify-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  Open Initia Faucet
+                  {t("open_faucet")}
                 </a>
 
                 {/* Polling indicator */}
@@ -299,7 +333,7 @@ export default function OnboardingPage() {
                   }}
                   className="mt-3 text-xs text-gray-600 hover:text-gray-400 transition-colors underline underline-offset-2"
                 >
-                  I already have funds — skip faucet
+                  {t("skip_faucet")}
                 </button>
               </motion.div>
             )}
@@ -323,10 +357,10 @@ export default function OnboardingPage() {
                   <CheckCircle2 className="w-7 h-7 text-[#00F5D4]" />
                 </motion.div>
                 <p className="text-lg font-black text-white">
-                  {initBalance !== null ? `${initBalance.toFixed(2)} INIT detected` : "Wallet funded!"}
+                  {initBalance !== null ? `${initBalance.toFixed(2)} INIT` : t("wallet_funded")}
                 </p>
                 <p className="text-xs text-gray-500 text-center animate-pulse">
-                  Entering your workspace…
+                  {t("entering_workspace")}
                 </p>
               </motion.div>
             )}

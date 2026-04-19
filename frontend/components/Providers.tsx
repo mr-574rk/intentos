@@ -12,6 +12,7 @@ import {
   TESTNET,
 } from "@initia/interwovenkit-react";
 import InterwovenKitStyles from "@initia/interwovenkit-react/styles.js";
+import { LocaleProvider } from "./LocaleProvider";
 
 // Polyfill React.useEffectEvent for @initia/interwovenkit-react
 // This experimental API exists in React 18 canary/experimental but may not be
@@ -44,13 +45,15 @@ export default function Providers({ children }: PropsWithChildren) {
     return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiConfig}>
-        <InterwovenKitProvider
-          {...TESTNET}
-          defaultChainId={CHAIN_ID}
-          enableAutoSign={true}
-        >
-          {children}
-        </InterwovenKitProvider>
+        <LocaleProvider>
+          <InterwovenKitProvider
+            {...TESTNET}
+            defaultChainId={CHAIN_ID}
+            enableAutoSign={true}
+          >
+            {children}
+          </InterwovenKitProvider>
+        </LocaleProvider>
       </WagmiProvider>
     </QueryClientProvider>
   );

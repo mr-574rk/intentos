@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale } from "@/components/LocaleProvider";
 import IntentInput from "@/components/IntentInput";
 import ProcessingHUD from "@/components/ProcessingHUD";
 import AmbiguityModal from "@/components/AmbiguityModal";
@@ -602,6 +603,7 @@ export default function IntentPage() {
   const searchParams = useSearchParams();
   const { isConnected, address, username, requestTx } = useWalletGuard();
   const isOnline = useOnlineStatus();
+  const { locale, t } = useLocale();
 
   const [loading, setLoading] = useState(false);
   const [hudVisible, setHudVisible] = useState(false);
@@ -698,8 +700,10 @@ export default function IntentPage() {
     try {
       const res = await fetch(`${API_URL}/api/execute/intent`, {
         method: "POST",
-        headers: API_HEADERS,
-        // walletAddress is required by the backend to bind strategy ownership (Finding #3)
+        headers: {
+          ...API_HEADERS,
+          "Accept-Language": locale,
+        },
         body: JSON.stringify({ text, walletAddress: address }),
       });
 
@@ -812,7 +816,10 @@ export default function IntentPage() {
       // Step 1: Parse intent → build strategy (walletAddress is required by the backend)
       const intentRes = await fetch(`${API_URL}/api/execute/intent`, {
         method: "POST",
-        headers: API_HEADERS,
+        headers: {
+          ...API_HEADERS,
+          "Accept-Language": locale,
+        },
         body: JSON.stringify({ text: intentText, walletAddress: address }),
       });
       const intentData: ApiResponse<Strategy> = await intentRes.json();
@@ -1082,7 +1089,7 @@ export default function IntentPage() {
                 </span>
               </h1>
               <p className="text-gray-400 text-sm max-w-sm leading-relaxed">
-                Type a goal in plain English — IntentOS validates, plans, and executes it for you.
+                {t("what_is_your_goal")}
               </p>
             </motion.div>
           )}

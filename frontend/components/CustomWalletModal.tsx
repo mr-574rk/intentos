@@ -4,6 +4,7 @@ import { useInterwovenKit } from "@initia/interwovenkit-react";
 import { useConnect, useConnectors } from "wagmi";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ShieldCheck, ExternalLink, Loader2, Mail, ChevronDown } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
@@ -82,6 +83,7 @@ interface CustomWalletModalProps {
 }
 
 export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModalProps) {
+  const { t } = useLocale();
   const { openConnect } = useInterwovenKit();
   const connectors = useConnectors();
   const { connect, isPending, variables } = useConnect({
@@ -307,7 +309,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
               {/* ── Fixed Header ── */}
               <div className="relative flex items-start justify-between px-6 pt-4 sm:pt-6 pb-3 bg-[#0D0F14] z-10">
                 <div>
-                  <h2 className="text-[18px] font-bold text-white tracking-tight mb-0.5">Connect to IntentOS</h2>
+                  <h2 className="text-[18px] font-bold text-white tracking-tight mb-0.5">{t("connect_to_intentos")}</h2>
                   <p className="text-[13px] text-gray-500">The AI Operating System for DeFi</p>
                 </div>
                 <button
@@ -326,37 +328,56 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
                   <div className="flex items-start gap-3 p-4 bg-gradient-to-r from-[#00F5D4]/10 to-transparent border border-[#00F5D4]/20 rounded-2xl">
                     <ShieldCheck className="w-4 h-4 text-[#00F5D4] drop-shadow-[0_0_8px_rgba(0,245,212,0.5)] flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-white">Security First</p>
+                      <p className="text-sm font-semibold text-white">{t("security_first")}</p>
                       <p className="text-xs text-gray-400 leading-relaxed mt-1">
-                        IntentOS never controls your funds. All strategies are executed through your wallet and confirmed on-chain.
+                        {t("security_desc")}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Email / Socials */}
-                <div className="px-4 mt-4">
+                {/* Email / Socials Promoted */}
+                <div className="px-4 mt-4 space-y-2">
                   <motion.button
-                    id="wallet-connect-social"
+                    id="wallet-connect-email"
                     onClick={handleSocial}
                     disabled={isPending}
-                    className="w-full flex items-center justify-between p-4 bg-white/[0.02] border border-white/10 rounded-2xl hover:bg-white/5 hover:border-white/20 transition-all duration-300 group disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-[#00F5D4]/10 to-[#00F5D4]/5 border border-[#00F5D4]/30 rounded-2xl hover:bg-[#00F5D4]/20 hover:border-[#00F5D4]/50 transition-all duration-300 group disabled:opacity-50"
                     whileHover={{ scale: 1.005 }}
                     whileTap={{ scale: 0.995 }}
                   >
-                    <span className="text-sm font-medium text-white">Email / Socials</span>
-                    <div className="flex items-center gap-3">
-                      <GoogleIcon />
-                      <Mail className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-                      <span className="text-gray-500 group-hover:text-gray-300 transition-colors"><XIcon /></span>
-                    </div>
+                    <Mail className="w-5 h-5 text-[#00F5D4]" />
+                    <span className="text-[15px] font-bold text-white">{t("sign_in_email")}</span>
                   </motion.button>
+                  <div className="flex gap-2">
+                    <motion.button
+                      id="wallet-connect-google"
+                      onClick={handleSocial}
+                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-white/[0.02] border border-white/10 rounded-xl hover:bg-white/5 hover:border-white/20 transition-all"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <GoogleIcon />
+                      <span className="text-sm font-medium text-white">Google</span>
+                    </motion.button>
+                    <motion.button
+                      id="wallet-connect-x"
+                      onClick={handleSocial}
+                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-white/[0.02] border border-white/10 rounded-xl hover:bg-white/5 hover:border-white/20 transition-all"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <XIcon />
+                      <span className="text-sm font-medium text-white">X / Twitter</span>
+                    </motion.button>
+                  </div>
                 </div>
+
 
                 {/* Divider */}
                 <div className="flex items-center gap-4 my-5 px-4">
                   <div className="h-px flex-1 bg-white/8" />
-                  <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Or Connect Wallet</span>
+                  <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">{t("or_connect_wallet")}</span>
                   <div className="h-px flex-1 bg-white/8" />
                 </div>
 
@@ -429,7 +450,7 @@ export default function CustomWalletModal({ isOpen, onClose }: CustomWalletModal
                       className="w-full py-2.5 text-sm text-gray-500 hover:text-white bg-transparent hover:bg-white/5 rounded-xl transition-colors flex items-center justify-center gap-2"
                     >
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showMore ? "rotate-180" : ""}`} />
-                      {showMore ? "Show fewer wallets" : `More wallets (${moreWallets.length})`}
+                      {showMore ? t("show_fewer_wallets") : `${t("more_wallets")} (${moreWallets.length})`}
                     </button>
 
                     <AnimatePresence>

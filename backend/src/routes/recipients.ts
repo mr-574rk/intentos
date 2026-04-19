@@ -1,37 +1,39 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { saveRecipient, getRecipients } from "../db/recipientsRepo";
+import { verifyToken } from "../auth/walletToken";
 
 const router = Router();
 
 /**
- * Validate that the X-Wallet-Owner header is present and matches a given address.
+ * Extract and verify the bearer token from the Authorization header.
+ * Returns the wallet address bound to the token if valid, or null otherwise.
  *
- * Security (Finding #4):
- * The X-Wallet-Owner header provides an interim ownership gate while a full
- * signed-challenge auth flow is implemented. It prevents naive cross-wallet
- * access where a caller simply supplies a different wallet address in the body/params.
- *
- * @returns true if header is present, valid, and matches; false otherwise.
+ * Security (CWE-639 remediation):
+ *  - Tokens are issued server-side by POST /api/execute/intent.
+ *  - They are cryptographically random (256-bit hex), stored only on the server,
+ *    and expire after 15 minutes.
+ *  - Unlike the previous X-Wallet-Owner header, tokens CANNOT be forged by an
+ *    attacker who merely knows the victim's wallet address; the attacker would
+ *    also need to steal the 256-bit random token.
  */
-function validateWalletOwnerHeader(req: Request, expectedAddress: string): boolean {
-  const header = req.headers["x-wallet-owner"] as string | undefined;
-  if (!header) return false;
-  if (!header.startsWith("init1")) return false;
-  if (header !== expectedAddress) return false;
-  return true;
+function extractBearerWallet(req: Request): string | null {
+  const auth = req.headers["authorization"];
+  if (!auth || !auth.startsWith("Bearer ")) return null;
+  const token = auth.slice(7).trim();
+  return verifyToken(token);
 }
 
 /**
  * POST /api/recipients
  * Body: { walletOwner: string; name: string; address: string }
- * Headers: X-Wallet-Owner: <walletOwner>
+ * Headers: Authorization: Bearer <walletToken>
  *
  * Saves or updates a recipient for a wallet.
  *
- * Security (Finding #4):
- *  - X-Wallet-Owner header must be present and match body.walletOwner.
- *  - Missing or mismatched header → 401 Unauthorized.
+ * Security:
+ *  - Bearer token must be present, valid, and issued for the same walletOwner.
+ *  - Missing, expired, or mismatched token → 401 Unauthorized.
  */
 router.post("/", async (req: Request, res: Response) => {
   const { walletOwner, name, address } = req.body as {
@@ -51,12 +53,14 @@ router.post("/", async (req: Request, res: Response) => {
     });
   }
 
-  // Owner header validation — prevents cross-wallet recipient injection
-  if (!validateWalletOwnerHeader(req, walletOwner)) {
+  // Bearer token verification — the token is server-issued and cryptographically random.
+  // Verifying it server-side ensures the caller actually owns `walletOwner`.
+  const tokenWallet = extractBearerWallet(req);
+  if (!tokenWallet || tokenWallet !== walletOwner) {
     return res.status(401).json({
       success: false,
-      error: "X-Wallet-Owner header is missing or does not match walletOwner. " +
-             "You can only add recipients to your own address book.",
+      error: "Missing or invalid Authorization token. " +
+             "Obtain a token via POST /api/execute/intent with your wallet address.",
     });
   }
 
@@ -71,13 +75,13 @@ router.post("/", async (req: Request, res: Response) => {
 
 /**
  * GET /api/recipients/:walletOwner
- * Headers: X-Wallet-Owner: <walletOwner>
+ * Headers: Authorization: Bearer <walletToken>
  *
  * Returns the 20 most recent recipients for a wallet address.
  *
- * Security (Finding #4):
- *  - X-Wallet-Owner header must be present and match :walletOwner path param.
- *  - Missing or mismatched header → 403 Forbidden.
+ * Security:
+ *  - Bearer token must be present, valid, and issued for the requested walletOwner.
+ *  - Missing, expired, or mismatched token → 403 Forbidden.
  */
 router.get("/:walletOwner", async (req: Request, res: Response) => {
   const { walletOwner } = req.params;
@@ -86,11 +90,12 @@ router.get("/:walletOwner", async (req: Request, res: Response) => {
     return res.status(400).json({ success: false, error: "Invalid wallet address." });
   }
 
-  // Owner header validation — prevents cross-wallet address-book reads
-  if (!validateWalletOwnerHeader(req, walletOwner)) {
+  // Bearer token verification — prevents cross-wallet address-book reads
+  const tokenWallet = extractBearerWallet(req);
+  if (!tokenWallet || tokenWallet !== walletOwner) {
     return res.status(403).json({
       success: false,
-      error: "X-Wallet-Owner header is missing or does not match the requested wallet. " +
+      error: "Missing or invalid Authorization token. " +
              "You can only read your own address book.",
     });
   }

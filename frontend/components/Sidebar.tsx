@@ -36,12 +36,14 @@ const InstagramIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 import { readAutopilotState } from "@/lib/autopilotState";
 import { IntentOSLogo } from "@/components/IntentOSLogo";
+import GlobalAutopilotToggle from "@/components/GlobalAutopilotToggle";
+import { useLocale } from "@/components/LocaleProvider";
 
 // Consolidated nav — Strategy/Execute are steps in a flow, not top-level pages
 const NAV_ITEMS = [
-  { href: "/app/intent",    icon: BrainCircuit, label: "Chat" },
-  { href: "/app/portfolio", icon: PieChart,     label: "Portfolio" },
-  { href: "/app/activity",  icon: History,      label: "Activity" },
+  { href: "/app/intent",    icon: BrainCircuit, labelKey: "chat" },
+  { href: "/app/portfolio", icon: PieChart,     labelKey: "portfolio" },
+  { href: "/app/activity",  icon: History,      labelKey: "activity" },
 ];
 
 function shortenAddress(addr: string) {
@@ -52,6 +54,7 @@ function shortenAddress(addr: string) {
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname          = usePathname();
   const { address }       = useInterwovenKit();
+  const { t } = useLocale();
   const [autopilotOn, setAutopilotOn] = useState(false);
 
   // React to autopilot state changes (same-tab via custom storage events)
@@ -98,7 +101,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
               )}
             >
               <item.icon className="w-[18px] h-[18px]" strokeWidth={2} />
-              {item.label}
+              {t(item.labelKey)}
               {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00F5D4] shadow-[0_0_6px_#00F5D4]" />}
             </Link>
           );
@@ -116,7 +119,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-elevated transition-all duration-150 group"
           >
             <BookOpen className="w-[18px] h-[18px] text-text-secondary group-hover:text-[#00F5D4] transition-colors" strokeWidth={2} />
-            <span className="flex-1">Docs</span>
+            <span className="flex-1">{t("docs")}</span>
             <ExternalLink className="w-3 h-3 opacity-30 group-hover:opacity-100 transition-opacity" />
           </a>
           
@@ -129,6 +132,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* ── Bottom Section ─────────────────────────────────── */}
       <div className="mt-auto px-4 pb-4 flex flex-col gap-4">
+        {address && (
+          <div className="px-2 pt-2">
+            <GlobalAutopilotToggle inline />
+          </div>
+        )}
         {/* Social Dock */}
         <div className="pt-4 border-t border-white/5 flex items-center justify-center gap-6">
           <a href={socialLinks.discord} target="_blank" rel="noopener noreferrer">

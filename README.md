@@ -148,6 +148,8 @@ Follow these steps to test the full system end-to-end:
 | Feature | Description |
 |---|---|
 | **Natural Language DeFi** | Chat interface understands plain-English financial commands |
+| **Multilingual i18n Support** | Near-zero latency parsing across English, Spanish, French, Portuguese, and Chinese via local keyword routing + Gemini Flash LLM fallback |
+| **Social Login Onboarding** | InterwovenKit integration allows rapid frictionless email/social signups alongside native wallets |
 | **AI Strategy Generator** | Maps goals to structured multi-step DeFi strategies |
 | **Pre-flight Validation** | Checks real wallet balance before generating strategies — no fake transactions |
 | **Agent Timeline UX** | Animated pipeline visualizes each AI decision step: Parse → Build → Simulate → Execute |

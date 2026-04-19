@@ -2,8 +2,11 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { processIntent, buildStrategyMessages } from "../../../agent-orchestrator/src/agentController";
 import { checkAmbiguity } from "../../../agent-orchestrator/src/intentWorkflow";
+import { getStrategyForOwner } from "../../../agent-orchestrator/src/strategyLifecycle";
 import { saveHistory } from "../db/historyRepo";
+import { issueToken } from "../auth/walletToken";
 import { getExecutionMode } from "../../../config/executionMode";
+import { translateIfNeeded } from "../../../ai-engine/src/intentTranslator";
 import type { ApiResponse, Strategy, UnsignedMsgBundle, AmbiguityResponse } from "../../../types";
 
 const router = Router();
@@ -64,6 +67,7 @@ router.post("/intent", async (req: Request, res: Response) => {
   }
 
   const { text, walletAddress } = req.body as { text?: string; walletAddress?: string };
+  const locale = req.headers["accept-language"] || "en";
 
   if (!text || text.trim().length === 0) {
     return res.status(400).json({
@@ -98,24 +102,30 @@ router.post("/intent", async (req: Request, res: Response) => {
     });
   }
 
-  // Check for ambiguity first — if vague, return options for the user to clarify
-  const ambiguity = checkAmbiguity(text.trim());
-  if (ambiguity) {
-    return res.json({
-      success: true,
-      data: ambiguity,
-      timestamp: new Date().toISOString(),
-    } as ApiResponse<AmbiguityResponse>);
-  }
-
   try {
+    const translatedText = await translateIfNeeded(text.trim(), locale);
+
+    // Check for ambiguity first — if vague, return options for the user to clarify
+    const ambiguity = checkAmbiguity(translatedText);
+    if (ambiguity) {
+      return res.json({
+        success: true,
+        data: ambiguity,
+        timestamp: new Date().toISOString(),
+      } as ApiResponse<AmbiguityResponse>);
+    }
+
     // processIntent now binds the strategy to walletAddress as owner
-    const strategy = await processIntent(text.trim(), walletAddress);
+    const strategy = await processIntent(translatedText, walletAddress);
+    // Issue a server-side token so this wallet can access owner-scoped endpoints
+    // (e.g. /api/recipients). Token is short-lived (15 min) and non-guessable.
+    const walletToken = issueToken(walletAddress);
     return res.json({
       success: true,
       data: strategy,
+      walletToken,
       timestamp: new Date().toISOString(),
-    } as ApiResponse<Strategy>);
+    } as ApiResponse<Strategy> & { walletToken: string });
   } catch (err) {
     const msg = (err as Error).message ?? "Unknown error";
     // Surface user-friendly amount / recipient validation errors
@@ -185,13 +195,19 @@ router.get("/messages/:strategyId", async (req: Request, res: Response) => {
  *
  * Called by the frontend after the wallet signs and broadcasts successfully.
  * Records the completed execution in history and marks strategy COMPLETE.
+ *
+ * Security:
+ *  - strategyId must exist in the server's in-memory strategy store.
+ *  - walletAddress must match the stored ownerAddress for that strategy.
+ *  - strategy body fields in the request are ignored in favour of the server-side record.
+ *  - Forged or externally-crafted strategyIds are rejected with 403.
  */
 router.post("/confirm", async (req: Request, res: Response) => {
-  const { strategyId, walletAddress, txHash, strategy } = req.body as {
+  const { strategyId, walletAddress, txHash } = req.body as {
     strategyId?: string;
     walletAddress?: string;
     txHash?: string;
-    strategy?: Strategy;
+    strategy?: Strategy; // accepted in body but ignored — server uses its own record
   };
 
   if (!strategyId || !walletAddress || !walletAddress.startsWith("init1") || !txHash) {
@@ -202,28 +218,37 @@ router.post("/confirm", async (req: Request, res: Response) => {
     } as ApiResponse<null>);
   }
 
+  // Ownership check: strategy must exist in server memory and belong to this wallet.
+  // This prevents forged confirmations for arbitrary/invented strategy IDs.
+  const serverStrategy = getStrategyForOwner(strategyId, walletAddress);
+  if (!serverStrategy) {
+    return res.status(403).json({
+      success: false,
+      error: "Strategy not found or does not belong to the supplied wallet address.",
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<null>);
+  }
+
   const result = {
     strategyId,
     status: "success" as const,
     txHash,
     txHashes: [txHash],
-    result: `Strategy executed. ${strategy?.bundle?.steps?.length ?? 0} step(s) confirmed.`,
+    result: `Strategy executed. ${serverStrategy.bundle?.steps?.length ?? 0} step(s) confirmed.`,
     mode: getExecutionMode(),
     executedAt: new Date().toISOString(),
   };
 
-  if (strategy) {
-    saveHistory({
-      id: strategyId,
-      intentText: strategy.intent.rawText,
-      bundle: strategy.bundle,
-      simulation: strategy.simulation ?? {},
-      result,
-      performance: `+${(Math.random() * 4 + 1).toFixed(1)}%`,
-      createdAt: new Date().toISOString(),
-      walletAddress,
-    });
-  }
+  saveHistory({
+    id: strategyId,
+    intentText: serverStrategy.intent.rawText,
+    bundle: serverStrategy.bundle,
+    simulation: serverStrategy.simulation ?? {},
+    result,
+    performance: `+${(Math.random() * 4 + 1).toFixed(1)}%`,
+    createdAt: new Date().toISOString(),
+    walletAddress,
+  });
 
   return res.json({
     success: true,
