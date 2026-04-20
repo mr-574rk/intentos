@@ -56,7 +56,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname          = usePathname();
   const { address }       = useInterwovenKit();
   const { t } = useLocale();
-  const [autopilotOn, setAutopilotOn] = useState(false);
+  const [, setAutopilotOn] = useState(false);
 
   // React to autopilot state changes (same-tab via custom storage events)
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   }, []);
 
   // Derive display name — use .init username if known, else shorten address
-  const displayName = address ? shortenAddress(address) : "Not connected";
+  const _displayName = address ? shortenAddress(address) : "Not connected";
 
   const socialLinks = {
     discord: process.env.NEXT_PUBLIC_SOCIAL_DISCORD || "https://discord.com",

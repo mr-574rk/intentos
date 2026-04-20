@@ -16,7 +16,7 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
   const [loading, setLoading] = useState(!entries);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedShare, setSelectedShare] = useState<any>(null);
+  const [selectedShare, setSelectedShare] = useState<ActivityEntry | null>(null);
   const { t } = useLocale();
   const itemsPerPage = 8;
 
@@ -55,7 +55,7 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
         }
       });
     return () => { cancelled = true; };
-  }, [entries, address]);
+  }, [entries, address, list.length]);
 
   if (loading) {
     return (
@@ -192,8 +192,8 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
           onClose={() => setSelectedShare(null)}
           result={{
             intentText: selectedShare.intentText,
-            returnPct: (selectedShare.simulation as any)?.projectedAPY ?? undefined,
-            riskLevel: (selectedShare.simulation as any)?.riskLabel ?? "Medium",
+            returnPct: selectedShare.simulation?.projectedAPY ?? undefined,
+            riskLevel: selectedShare.simulation?.riskScore ?? "Medium",
             executedAt: selectedShare.createdAt,
             txHash: selectedShare.result?.txHash,
           }}
