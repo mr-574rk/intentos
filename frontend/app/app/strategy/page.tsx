@@ -142,8 +142,7 @@ export default function StrategyPage() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  // Consider it a social login if it's the Privy connector
-  const isSocialLogin = connector?.id === "cmbq1ozyc006al70lx4uciz0q" || connector?.name.toLowerCase().includes("privy");
+
 
   useEffect(() => {
     const stored = sessionStorage.getItem("intentos_strategy");
@@ -193,7 +192,7 @@ export default function StrategyPage() {
   }
 
   const handleExecute = async () => {
-    if (!strategy || blocked || isSocialLogin) return;
+    if (!strategy || blocked) return;
     setErrorReason(null);
     setBalanceError(null);
     setExecState("executing");
@@ -490,32 +489,7 @@ export default function StrategyPage() {
           style={{ background: "linear-gradient(to top, #000 60%, transparent)" }}>
           <div className="max-w-2xl mx-auto space-y-2">
 
-            {/* ── Social Login Error Banner ───────────────────────── */}
-            <AnimatePresence>
-              {isSocialLogin && !blocked && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                  className="rounded-2xl border px-5 py-4 space-y-3 mb-1 bg-[#13161D]/90 backdrop-blur-xl border-white/10"
-                >
-                  <p className="text-sm font-semibold text-white flex items-center gap-2">
-                    ⚡ {t("email_needs_wallet")}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-text-muted">
-                      {t("email_needs_wallet_desc")}
-                    </p>
-                    <button
-                      onClick={() => setShowWalletModal(true)}
-                      className="text-xs font-bold text-[#00F5D4] hover:text-[#00F5D4]/80 transition-colors bg-[#00F5D4]/10 hover:bg-[#00F5D4]/20 px-3 py-1.5 rounded-full"
-                    >
-                      {t("connect_wallet_arrow")}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+
 
             {/* ── Insufficient balance error ───────────────────────── */}
             <AnimatePresence>
@@ -539,19 +513,30 @@ export default function StrategyPage() {
                     <p className="text-sm font-bold text-red-400">{t("insufficient_balance")}</p>
                   </div>
                   <p className="text-xs text-red-400/70 leading-relaxed pl-8">{balanceError}</p>
-                  <button
-                    onClick={() => setBalanceError(null)}
-                    className="pl-8 text-xs text-red-400/50 hover:text-red-400 transition-colors underline"
-                  >
-                    {t("dismiss")}
-                  </button>
+                  <div className="pl-8 flex items-center gap-4">
+                    <button
+                      onClick={() => setBalanceError(null)}
+                      className="text-xs text-red-400/50 hover:text-red-400 transition-colors underline"
+                    >
+                      {t("dismiss")}
+                    </button>
+                    <a
+                      href="https://faucet.testnet.initia.xyz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#00F5D4]/60 hover:text-[#00F5D4] transition-colors underline"
+                    >
+                      Get testnet INIT →
+                    </a>
+                  </div>
                 </motion.div>
+
               )}
             </AnimatePresence>
 
             <ExecuteButton
               onExecute={handleExecute}
-              disabled={!!blocked || isSocialLogin || execState === "success" || !isOnline}
+              disabled={!!blocked || execState === "success" || !isOnline}
               execState={execState}
             />
 
