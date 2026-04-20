@@ -172,11 +172,6 @@ type SystemResponse = {
 function getSystemResponse(text: string, address?: string, walletBalance: number = 0): SystemResponse | null {
   const lower = text.toLowerCase().trim();
 
-  const financialIntents = ["stake", "delegate", "swap", "unstake", "claim", "grow", "invest", "yield", "buy", "sell", "portfolio", "transfer", "send"];
-  if (financialIntents.some(f => lower.includes(f)) || HAS_AMOUNT.test(lower)) {
-    return null;
-  }
-
   const greetings = ["hello", "hi", "hey", "gm", "good morning", "good evening", "howdy", "sup", "how are you"];
   if (greetings.some(g => lower === g || lower.startsWith(g + " "))) {
     logSystemEvent("Greeting", text, address);
@@ -211,8 +206,8 @@ function getSystemResponse(text: string, address?: string, walletBalance: number
     return { icon: <Download className="w-5 h-5 text-purple-400" />, message: "Your Initia wallet address", sub: address ?? "Connect wallet to see address", type: "receive", address };
   }
 
-  logSystemEvent("Unknown", text, address);
-  return { icon: <AlertTriangle className="w-5 h-5 text-amber-400" />, message: "I couldn't understand that command.", type: "unknown" };
+  // If it's not a local system command, return null so it gets sent to the AI backend
+  return null;
 }
 
 function logSystemEvent(label: string, raw: string, address?: string) {
