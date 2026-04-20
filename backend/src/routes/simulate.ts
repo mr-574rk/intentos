@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { simulateStrategy } from "../../../simulation-engine/src/strategySimulator";
+import { simulateStrategyRemote } from "../coreClient";
 import type { ApiResponse, SimulationResult, StrategyBundle } from "../../../types";
 
 const router = Router();
@@ -10,7 +10,7 @@ const router = Router();
  * Body: { bundle: StrategyBundle }
  * Returns: SimulationResult
  */
-router.post("/", (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   const { bundle } = req.body as { bundle?: StrategyBundle };
 
   if (!bundle || !bundle.id || !Array.isArray(bundle.steps)) {
@@ -22,15 +22,21 @@ router.post("/", (req: Request, res: Response) => {
     return res.status(400).json(response);
   }
 
-  const simulation = simulateStrategy(bundle);
-
-  const response: ApiResponse<SimulationResult> = {
-    success: true,
-    data: simulation,
-    timestamp: new Date().toISOString(),
-  };
-
-  return res.json(response);
+  try {
+    const simulation = await simulateStrategyRemote(bundle);
+    const response: ApiResponse<SimulationResult> = {
+      success: true,
+      data: simulation,
+      timestamp: new Date().toISOString(),
+    };
+    return res.json(response);
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: (err as Error).message,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<null>);
+  }
 });
 
 export default router;

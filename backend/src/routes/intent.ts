@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
-import { interpretIntent } from "../../../ai-engine/src/intentInterpreter";
+import { interpretIntentRemote } from "../coreClient";
 import type { ApiResponse, StructuredIntent } from "../../../types";
 
 const router = Router();
@@ -10,7 +10,7 @@ const router = Router();
  * Body: { text: string }
  * Returns: StructuredIntent
  */
-router.post("/parse", (req: Request, res: Response) => {
+router.post("/parse", async (req: Request, res: Response) => {
   const { text } = req.body as { text?: string };
 
   if (!text || typeof text !== "string" || text.trim().length === 0) {
@@ -22,15 +22,21 @@ router.post("/parse", (req: Request, res: Response) => {
     return res.status(400).json(response);
   }
 
-  const intent = interpretIntent(text.trim());
-
-  const response: ApiResponse<StructuredIntent> = {
-    success: true,
-    data: intent,
-    timestamp: new Date().toISOString(),
-  };
-
-  return res.json(response);
+  try {
+    const intent = await interpretIntentRemote(text.trim());
+    const response: ApiResponse<StructuredIntent> = {
+      success: true,
+      data: intent,
+      timestamp: new Date().toISOString(),
+    };
+    return res.json(response);
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: (err as Error).message,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse<null>);
+  }
 });
 
 export default router;
