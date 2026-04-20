@@ -142,6 +142,9 @@ export default function StrategyPage() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
+  // Privy embedded wallets don't support the autoSign session-key flow.
+  // Detect this so we can skip autoSign.enable() for them.
+  const isPrivyWallet = connector?.id === "cmbq1ozyc006al70lx4uciz0q" || !!connector?.name?.toLowerCase().includes("privy");
 
 
   useEffect(() => {
@@ -244,16 +247,17 @@ export default function StrategyPage() {
 
         // Activate session key if not already granted — wallet prompts once,
         // then all subsequent transactions in this session auto-sign.
-        if (!autoSign.isEnabledByChain[CHAIN_ID]) {
+        // Skip for Privy embedded wallets: they don't support the autoSign session-key flow.
+        if (!isPrivyWallet && !autoSign.isEnabledByChain[CHAIN_ID]) {
           await autoSign.enable(CHAIN_ID);
         }
         // Real mode: sign + broadcast via InterwovenKit.
         // MsgExecute args arrive from the backend as base64 strings (JSON-safe).
         // InterwovenKit's BinaryWriter.bytes() expects Uint8Array (needs .byteLength),
         // so we must decode them before handing off to the wallet.
-                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const processedMsgs = (msgs as any[]).map(msg => {
-        if (msg.value?.args && Array.isArray(msg.value.args)) {
+        if (!isPrivyWallet && msg.value?.args && Array.isArray(msg.value.args)) {
           return {
             ...msg,
             value: {
@@ -305,6 +309,7 @@ export default function StrategyPage() {
         // Silently ignore referral tracking errors
       }
     } catch (err) {
+      console.error("Execution error trace:", err);
       setErrorReason((err as Error).message);
       setExecState("failed");
     }
