@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Target, Shield, Activity, Zap } from "lucide-react";
+import { useLocale } from "@/components/LocaleProvider";
 
 interface AmbiguityModalProps {
   question: string;
@@ -10,31 +11,32 @@ interface AmbiguityModalProps {
   onDismiss: () => void;
 }
 
-// Map option index to a premium icon + label + subtext
-const OPTION_META = [
-  {
-    Icon: Shield,
-    label: "Low Risk",
-    subtext: "Single-sided INIT staking",
-  },
-  {
-    Icon: Activity,
-    label: "Moderate Yield",
-    subtext: "Balanced staking & liquidity",
-  },
-  {
-    Icon: Zap,
-    label: "Aggressive",
-    subtext: "Max yield, higher exposure",
-  },
-];
-
 export default function AmbiguityModal({
   question,
   options,
   onSelect,
   onDismiss,
 }: AmbiguityModalProps) {
+  const { t } = useLocale();
+  
+  // Use translations inside the component so they respond to language switches
+  const OPTION_META = [
+    {
+      Icon: Shield,
+      label: t("modal_strat_low_risk") || "Low Risk",
+      subtext: t("modal_strat_low_risk_sub") || "Single-sided INIT staking",
+    },
+    {
+      Icon: Activity,
+      label: t("modal_strat_mod_yield") || "Moderate Yield",
+      subtext: t("modal_strat_mod_yield_sub") || "Balanced staking & liquidity",
+    },
+    {
+      Icon: Zap,
+      label: t("modal_strat_agg") || "Aggressive",
+      subtext: t("modal_strat_agg_sub") || "Max yield, higher exposure",
+    },
+  ];
   return (
     <AnimatePresence>
       {/* Backdrop */}
@@ -71,10 +73,10 @@ export default function AmbiguityModal({
               <Target className="w-6 h-6 text-[#00F5D4]" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">
-              Select Strategy
+              {t("modal_select_strategy") || "Select Strategy"}
             </h2>
             <p className="text-gray-400 text-sm leading-relaxed">
-              {question || "How would you like the AI to optimize this intent?"}
+              {question || (t("modal_ambiguity_subtitle") || "How would you like the AI to optimize this intent?")}
             </p>
           </div>
 
@@ -122,7 +124,7 @@ export default function AmbiguityModal({
             className="mt-4 w-full py-3 rounded-xl border border-dashed border-white/20 text-gray-400 text-sm flex items-center justify-center gap-2 hover:border-[#00F5D4]/50 hover:text-[#00F5D4] transition-colors duration-200"
           >
             <Zap className="w-3.5 h-3.5" />
-            Auto-Select Best Strategy
+            {t("modal_auto_select") || "Auto-Select Best Strategy"}
           </button>
         </motion.div>
       </motion.div>

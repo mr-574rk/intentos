@@ -428,19 +428,19 @@ export default function StrategyPage() {
             transition={{ delay: 0.1 }}
           >
             <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
-              Simulation
+              {t("strategy_simulation") || "Simulation"}
             </p>
 
             {/* Before / After derived from projectedAPY */}
             {sim && (
               <div className="flex items-center justify-between text-sm">
                 <div className="text-center space-y-0.5">
-                  <p className="text-xs text-text-muted">Input</p>
+                  <p className="text-xs text-text-muted">{t("strategy_input") || "Input"}</p>
                   <p className="text-lg font-black text-text-primary">$1,000</p>
                 </div>
                 <span className="text-[#00F5D4] text-xl">→</span>
                 <div className="text-center space-y-0.5">
-                  <p className="text-xs text-text-muted">Projected</p>
+                  <p className="text-xs text-text-muted">{t("strategy_projected") || "Projected"}</p>
                   <p className="text-lg font-black text-emerald-400">
                     ${(1000 * (1 + projectedApy / 100)).toLocaleString("en-US", { maximumFractionDigits: 0 })}
                   </p>
@@ -453,7 +453,7 @@ export default function StrategyPage() {
               <RingChart
                 pct={apyPct}
                 label={`${projectedApy.toFixed(1)}%`}
-                sublabel="Proj. APY"
+                sublabel={t("strategy_proj_apy") || "Proj. APY"}
                 color="#00F5D4"
               />
             </div>

@@ -93,6 +93,9 @@ export const fr = {
   hud_discovery_id: "Adresse vérifiée",
   hud_prep_send: "Préparation de la transaction de transfert...",
   hud_action_gen: "Interprétation de l'intention...",
+  hud_build_strat: "Élaboration du plan de stratégie...",
+  hud_analyzing_paths: "Analyse du portefeuille actuel...",
+  hud_sim_outcomes: "Simulation des résultats possibles...",
 
   verify_trail: "Vérifier la Trace sur la Blockchain",
   // Validation
@@ -146,4 +149,25 @@ export const fr = {
   powered_by_initia: "Propulsé par Initia",
   powered_by_intentos: "Propulsé par IntentOS — parlez votre intention, l'IA l'exécute.",
   copied_exclamation: "Copié !",
+
+  // Ambiguity Modal
+  modal_select_strategy: "Sélectionner une Stratégie",
+  modal_ambiguity_subtitle: "Comment souhaitez-vous que l'IA optimise cette intention ?",
+  modal_auto_select: "Auto-Sélection de la Meilleure Stratégie",
+  modal_strat_low_risk: "Risque Faible",
+  modal_strat_low_risk_sub: "Staking INIT unilatéral",
+  modal_strat_mod_yield: "Rendement Modéré",
+  modal_strat_mod_yield_sub: "Staking équilibré & liquidité",
+  modal_strat_agg: "Agressif",
+  modal_strat_agg_sub: "Rendement max, exposition plus élevée",
+
+  // Strategy Panel
+  strategy_simulation: "Simulation",
+  strategy_input: "Entrée",
+  strategy_projected: "Projeté",
+  strategy_proj_apy: "APY Proj.",
+  strategy_risk_level: "Niveau de Risque",
+  strategy_safe: "Sûr",
+  strategy_risky: "Risqué",
+  strategy_why: "Pourquoi cette Stratégie ?",
 };

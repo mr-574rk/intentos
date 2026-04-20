@@ -94,6 +94,9 @@ export const en = {
   hud_discovery_id: "Address verified",
   hud_prep_send: "Preparing transfer transaction...",
   hud_action_gen: "Interpreting intent...",
+  hud_build_strat: "Building strategy plan...",
+  hud_analyzing_paths: "Analyzing current portfolio...",
+  hud_sim_outcomes: "Simulating possible outcomes...",
 
   verify_trail: "Verify AI Trail On-Chain",
   // Validation
@@ -147,4 +150,25 @@ export const en = {
   powered_by_initia: "Powered by Initia",
   powered_by_intentos: "Powered by IntentOS — speak your intent, AI executes.",
   copied_exclamation: "Copied!",
+
+  // Ambiguity Modal
+  modal_select_strategy: "Select Strategy",
+  modal_ambiguity_subtitle: "How would you like the AI to optimize this intent?",
+  modal_auto_select: "Auto-Select Best Strategy",
+  modal_strat_low_risk: "Low Risk",
+  modal_strat_low_risk_sub: "Single-sided INIT staking",
+  modal_strat_mod_yield: "Moderate Yield",
+  modal_strat_mod_yield_sub: "Balanced staking & liquidity",
+  modal_strat_agg: "Aggressive",
+  modal_strat_agg_sub: "Max yield, higher exposure",
+
+  // Strategy Panel
+  strategy_simulation: "Simulation",
+  strategy_input: "Input",
+  strategy_projected: "Projected",
+  strategy_proj_apy: "Proj. APY",
+  strategy_risk_level: "Risk Level",
+  strategy_safe: "Safe",
+  strategy_risky: "Risky",
+  strategy_why: "Why This Strategy?",
 };

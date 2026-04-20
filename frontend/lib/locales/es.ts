@@ -93,6 +93,9 @@ export const es = {
   hud_discovery_id: "Dirección verificada",
   hud_prep_send: "Preparando transferencia...",
   hud_action_gen: "Interpretando intención...",
+  hud_build_strat: "Construyendo plan de estrategia...",
+  hud_analyzing_paths: "Analizando la cartera actual...",
+  hud_sim_outcomes: "Simulando posibles resultados...",
 
   verify_trail: "Verificar Rastro en la Cadena",
   // Validation
@@ -146,4 +149,25 @@ export const es = {
   powered_by_initia: "Con la tecnología de Initia",
   powered_by_intentos: "Impulsado por IntentOS — habla tu intención, la IA ejecuta.",
   copied_exclamation: "¡Copiado!",
+
+  // Ambiguity Modal
+  modal_select_strategy: "Seleccionar Estrategia",
+  modal_ambiguity_subtitle: "¿Cómo te gustaría que la IA optimice esta intención?",
+  modal_auto_select: "Auto-Seleccionar Mejor Estrategia",
+  modal_strat_low_risk: "Bajo Riesgo",
+  modal_strat_low_risk_sub: "Staking de INIT unilateral",
+  modal_strat_mod_yield: "Rendimiento Moderado",
+  modal_strat_mod_yield_sub: "Staking equilibrado y liquidez",
+  modal_strat_agg: "Agresivo",
+  modal_strat_agg_sub: "Rendimiento máximo, mayor exposición",
+
+  // Strategy Panel
+  strategy_simulation: "Simulación",
+  strategy_input: "Entrada",
+  strategy_projected: "Proyectado",
+  strategy_proj_apy: "APY Proj.",
+  strategy_risk_level: "Nivel de Riesgo",
+  strategy_safe: "Seguro",
+  strategy_risky: "Riesgoso",
+  strategy_why: "¿Por qué esta Estrategia?",
 };

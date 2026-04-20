@@ -1,13 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain, Check } from "lucide-react";
+import { Brain, Check } from "lucide-react"
+import { useLocale } from "@/components/LocaleProvider";
 
 interface StrategyReasoningProps {
   reasoning: string[];
 }
 
 export default function StrategyReasoning({ reasoning }: StrategyReasoningProps) {
+  const { t } = useLocale();
   if (!reasoning || reasoning.length === 0) return null;
 
   return (
@@ -27,7 +29,7 @@ export default function StrategyReasoning({ reasoning }: StrategyReasoningProps)
         >
           <Brain className="w-4 h-4" style={{ color: "#00F5D4" }} />
         </span>
-        <h2 className="font-semibold text-text-primary">Why This Strategy?</h2>
+        <h2 className="font-semibold text-text-primary">{t("strategy_why") || "Why This Strategy?"}</h2>
       </div>
 
       <ul className="space-y-2 relative z-10">

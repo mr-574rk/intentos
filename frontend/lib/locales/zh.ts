@@ -93,6 +93,9 @@ export const zh = {
   hud_discovery_id: "地址已验证",
   hud_prep_send: "正在准备转账交易...",
   hud_action_gen: "正在解析意图...",
+  hud_build_strat: "正在制定策略计划...",
+  hud_analyzing_paths: "正在分析当前投资组合...",
+  hud_sim_outcomes: "正在模拟可能的结果...",
 
   verify_trail: "在链上验证 AI 轨迹",
   // Validation
@@ -146,4 +149,25 @@ export const zh = {
   powered_by_initia: "由 Initia 提供技术支持",
   powered_by_intentos: "由 IntentOS 提供技术支持 — 说出您的意图，AI 执行。",
   copied_exclamation: "已复制！",
+
+  // Ambiguity Modal
+  modal_select_strategy: "选择策略",
+  modal_ambiguity_subtitle: "您希望 AI 如何优化此意图？",
+  modal_auto_select: "自动选择最佳策略",
+  modal_strat_low_risk: "低风险",
+  modal_strat_low_risk_sub: "单边 INIT 质押",
+  modal_strat_mod_yield: "中等收益",
+  modal_strat_mod_yield_sub: "平衡质押和流动性",
+  modal_strat_agg: "进取",
+  modal_strat_agg_sub: "最大收益，较高风险曝光",
+
+  // Strategy Panel
+  strategy_simulation: "模拟",
+  strategy_input: "投入",
+  strategy_projected: "预测",
+  strategy_proj_apy: "预测年化",
+  strategy_risk_level: "风险等级",
+  strategy_safe: "安全",
+  strategy_risky: "高风险",
+  strategy_why: "为什么选择此策略？",
 };
