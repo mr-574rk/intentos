@@ -404,7 +404,7 @@ export default function StrategyPage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-text-primary capitalize">
-                    {step.action === "stake" ? `Stake ${step.from || "INIT"}` : step.action.replace(/_/g, " ")}
+                    {t(`action_${step.action}`) || (step.action === "stake" ? `Stake ${step.from || "INIT"}` : step.action.replace(/_/g, " "))}
                   </p>
                   <p className="text-xs text-text-muted">
                     {step.action === "stake"
