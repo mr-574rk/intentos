@@ -4,6 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2020", "dom"],
     "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,13 +13,7 @@
     "sourceMap": true
   },
   "include": [
-    "src/**/*",
-    "../types/**/*",
-    "../config/**/*",
-    "../ai-engine/src/**/*",
-    "../simulation-engine/src/**/*",
-    "../agent-orchestrator/src/**/*",
-    "../execution-engine/src/**/*"
+    "src/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }
