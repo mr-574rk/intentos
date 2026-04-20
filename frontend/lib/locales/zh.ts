@@ -129,5 +129,21 @@ export const zh = {
   tier_elite_label: "精英",
   next_tier_at: "邀请数量达到下一等级",
   loading: "加载中…",
-  explore_desc: "与顶级表现者竞争，分享您的结果，共同成长。"
+  explore_desc: "与顶尖表现者竞争，分享您的结果，共同成长。",
+
+  // Execution Modals
+  all_steps_confirmed: "链上所有步骤均已确认",
+  what_happened: "执行记录",
+  via_protocol: "通过",
+  view_on_explorer: "在浏览器中查看",
+  back_to_portfolio: "返回投资组合",
+  intent_execution_result: "IntentOS 执行结果",
+  intent_goal: "目标",
+  intent_return: "回报",
+  intent_risk: "风险",
+  intent_date: "日期",
+  intent_execution_receipt: "IntentOS 执行回执",
+  powered_by_initia: "由 Initia 提供技术支持",
+  powered_by_intentos: "由 IntentOS 提供技术支持 — 说出您的意图，AI 执行。",
+  copied_exclamation: "已复制！",
 };

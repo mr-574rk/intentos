@@ -54,7 +54,7 @@ export const en = {
   type_intent_placeholder: "e.g., Stake 50 INIT and swap 100 USDC to ETH",
   generating_strategy: "Generating strategy…",
   generate_strategy: "Generate Strategy",
-  
+
   // HUD Timeline & Actions
   sug_stake: "stake 1 init",
   sug_swap: "swap 0.5 init to usdc",
@@ -94,7 +94,7 @@ export const en = {
   hud_discovery_id: "Address verified",
   hud_prep_send: "Preparing transfer transaction...",
   hud_action_gen: "Interpreting intent...",
-  
+
   verify_trail: "Verify AI Trail On-Chain",
   // Validation
   err_no_init: "You don't have enough INIT. Required: ",
@@ -130,5 +130,21 @@ export const en = {
   tier_elite_label: "Elite",
   next_tier_at: "invites to next tier",
   loading: "Loading…",
-  explore_desc: "Compete with top performers, share your results, and grow together."
+  explore_desc: "Compete with top performers, share your results, and grow together.",
+
+  // Execution Modals
+  all_steps_confirmed: "All steps confirmed on-chain",
+  what_happened: "What happened",
+  via_protocol: "via",
+  view_on_explorer: "View on Explorer",
+  back_to_portfolio: "Back to Portfolio",
+  intent_execution_result: "IntentOS Execution Result",
+  intent_goal: "Goal",
+  intent_return: "Return",
+  intent_risk: "Risk",
+  intent_date: "Date",
+  intent_execution_receipt: "IntentOS Execution Receipt",
+  powered_by_initia: "Powered by Initia",
+  powered_by_intentos: "Powered by IntentOS — speak your intent, AI executes.",
+  copied_exclamation: "Copied!",
 };

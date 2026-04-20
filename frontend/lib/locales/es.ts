@@ -129,5 +129,21 @@ export const es = {
   tier_elite_label: "Élite",
   next_tier_at: "invitaciones para el siguiente nivel",
   loading: "Cargando…",
-  explore_desc: "Compite con los mejores, comparte tus resultados y crece juntos."
+  explore_desc: "Compite con los mejores, comparte tus resultados y crece juntos.",
+
+  // Execution Modals
+  all_steps_confirmed: "Todos los pasos confirmados en cadena",
+  what_happened: "Qué ha pasado",
+  via_protocol: "a través de",
+  view_on_explorer: "Ver en el Explorador",
+  back_to_portfolio: "Volver a la Cartera",
+  intent_execution_result: "Resultado de ejecución IntentOS",
+  intent_goal: "Meta",
+  intent_return: "Retorno",
+  intent_risk: "Riesgo",
+  intent_date: "Fecha",
+  intent_execution_receipt: "Recibo de ejecución IntentOS",
+  powered_by_initia: "Con la tecnología de Initia",
+  powered_by_intentos: "Impulsado por IntentOS — habla tu intención, la IA ejecuta.",
+  copied_exclamation: "¡Copiado!",
 };

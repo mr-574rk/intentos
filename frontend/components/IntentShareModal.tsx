@@ -46,16 +46,16 @@ function formatDate(iso?: string): string {
   });
 }
 
-function buildShareText(result: ShareableResult): string {
+function buildShareText(result: ShareableResult, t: (key: string) => string): string {
   const lines: string[] = [
-    `IntentOS Execution Result`,
+    t("intent_execution_result"),
     ``,
-    `Goal: "${result.intentText}"`,
-    result.returnPct ? `Return: ${formatReturn(result.returnPct)} APY` : "",
-    result.riskLevel ? `Risk: ${formatRisk(result.riskLevel)}` : "",
-    result.executedAt ? `Date: ${formatDate(result.executedAt)}` : "",
+    `${t("intent_goal")}: "${result.intentText}"`,
+    result.returnPct ? `${t("intent_return")}: ${formatReturn(result.returnPct)} APY` : "",
+    result.riskLevel ? `${t("intent_risk")}: ${formatRisk(result.riskLevel)}` : "",
+    result.executedAt ? `${t("intent_date")}: ${formatDate(result.executedAt)}` : "",
     ``,
-    `Powered by IntentOS — speak your intent, AI executes.`,
+    t("powered_by_intentos"),
     `https://intentos.app`,
   ].filter((l) => l !== undefined && !(l === "" && false));
 
@@ -67,7 +67,7 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
   const [copied, setCopied] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const shareText = buildShareText(result);
+  const shareText = buildShareText(result, t);
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
 
   const handleCopy = async () => {
@@ -80,7 +80,7 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "IntentOS Execution Result",
+          title: t("intent_execution_result"),
           text: shareText,
           url: "https://intentos.app",
         });
@@ -154,14 +154,14 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
                     <span className="text-xs font-black text-[#00F5D4]">IO</span>
                   </div>
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    IntentOS Execution Receipt
+                    {t("intent_execution_receipt")}
                   </span>
                 </div>
 
                 {/* Intent */}
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                    Goal
+                    {t("intent_goal")}
                   </p>
                   <p className="text-white font-semibold leading-snug">
                     &ldquo;{result.intentText}&rdquo;
@@ -173,7 +173,7 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
                   {result.returnPct && (
                     <div className="flex flex-col gap-1">
                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                        Return
+                        {t("intent_return")}
                       </p>
                       <p
                         className="text-xl font-black"
@@ -186,7 +186,7 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
                   {result.riskLevel && (
                     <div className="flex flex-col gap-1">
                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                        Risk
+                        {t("intent_risk")}
                       </p>
                       <p className="text-sm font-bold" style={{ color: riskColor }}>
                         {formatRisk(result.riskLevel)}
@@ -196,7 +196,7 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
                   {result.executedAt && (
                     <div className="flex flex-col gap-1">
                       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                        Date
+                        {t("intent_date")}
                       </p>
                       <p className="text-sm font-semibold text-gray-300">
                         {formatDate(result.executedAt)}
@@ -210,8 +210,8 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
                   className="pt-4 border-t flex items-center justify-between"
                   style={{ borderColor: "rgba(255,255,255,0.06)" }}
                 >
-                  <p className="text-[10px] text-gray-600 font-medium">
-                    Powered by Initia · intentos.app
+                  <p className="text-[10px] text-gray-600 font-medium whitespace-pre">
+                    {t("powered_by_initia")} · intentos.app
                   </p>
                   {result.displayName && (
                     <p className="text-[10px] font-bold text-[#00F5D4]/60">
@@ -234,7 +234,7 @@ export default function IntentShareModal({ isOpen, onClose, result }: IntentShar
                 }}
               >
                 {copied ? (
-                  <><Check className="w-4 h-4" /> Copied!</>
+                  <><Check className="w-4 h-4" /> {t("copied_exclamation")}</>
                 ) : (
                   <><Copy className="w-4 h-4" /> {t("copy_card")}</>
                 )}

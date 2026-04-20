@@ -357,6 +357,7 @@ export default function StrategyPage() {
         strategy={strategy}
         txHash={txHash}
         onClose={() => { setShowSuccess(false); router.push("/app/portfolio"); }}
+        onShare={() => setShowShareModal(true)}
       />
       <div className="max-w-2xl mx-auto flex flex-col min-h-full px-1 pb-32">
         {/* Header */}
@@ -545,23 +546,7 @@ export default function StrategyPage() {
               execState={execState}
             />
 
-            <AnimatePresence>
-              {execState === "success" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: "auto", marginTop: 8 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                >
-                  <button
-                    onClick={() => setShowShareModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-bold bg-[#00F5D4]/10 hover:bg-[#00F5D4]/20 border border-[#00F5D4]/30 text-[#00F5D4] transition-all"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    {t("share_result")}
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+
 
             <AnimatePresence>
               {errorReason && execState === "failed" && (

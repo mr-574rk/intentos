@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, ExternalLink, X } from "lucide-react";
+import { CheckCircle2, ExternalLink, X, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Strategy } from "@/types";
 import { explorerTxUrl, EXPLORER_BASE } from "@/lib/config";
@@ -11,6 +11,7 @@ interface SuccessModalProps {
   strategy: Strategy | null;
   txHash?: string;
   onClose: () => void;
+  onShare?: () => void;
 }
 
 // Animated checkmark ring — Initia mint brand
@@ -38,7 +39,10 @@ function CheckRing() {
   );
 }
 
-export default function SuccessModal({ open, strategy, txHash, onClose }: SuccessModalProps) {
+import { useLocale } from "@/components/LocaleProvider";
+
+export default function SuccessModal({ open, strategy, txHash, onClose, onShare }: SuccessModalProps) {
+  const { t } = useLocale();
   const router = useRouter();
   const steps = strategy?.bundle?.steps ?? [];
 
@@ -95,9 +99,9 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                 <div className="flex flex-col items-center gap-3">
                   <CheckRing />
                   <div className="text-center">
-                    <p className="text-xl font-black text-white tracking-tight">Strategy Executed</p>
+                    <p className="text-xl font-black text-white tracking-tight">{t("strategy_executed")}</p>
                     <p className="text-sm text-text-muted mt-1">
-                      All steps confirmed on-chain
+                      {t("all_steps_confirmed")}
                     </p>
                   </div>
                 </div>
@@ -106,7 +110,7 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                 {steps.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">
-                      What happened
+                      {t("what_happened")}
                     </p>
                     <div
                       className="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5"
@@ -127,7 +131,7 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                             {step.action?.replace(/_/g, " ") ?? step.description ?? `Step ${i + 1}`}
                             {step.protocol && (
                               <span className="ml-1.5 text-text-muted text-xs">
-                                via {step.protocol}
+                                {t("via_protocol")} {step.protocol}
                               </span>
                             )}
                           </span>
@@ -148,13 +152,22 @@ export default function SuccessModal({ open, strategy, txHash, onClose }: Succes
                     onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 0 20px rgba(0,245,212,0.4)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
                   >
-                    View on Explorer <ExternalLink className="w-4 h-4" />
+                    {t("view_on_explorer")} <ExternalLink className="w-4 h-4" />
                   </a>
+                  {onShare && (
+                    <button
+                      onClick={onShare}
+                      className="w-full py-3 text-sm font-bold flex items-center justify-center gap-2 rounded-full bg-[#00F5D4]/10 hover:bg-[#00F5D4]/20 border border-[#00F5D4]/30 text-[#00F5D4] transition-all duration-200"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      {t("share_result")}
+                    </button>
+                  )}
                   <button
                     onClick={handleClose}
                     className="w-full py-3 text-sm font-semibold rounded-full border border-white/10 text-white/80 hover:bg-white/5 hover:text-white transition-all duration-200"
                   >
-                    Back to Portfolio
+                    {t("back_to_portfolio")}
                   </button>
                 </div>
               </div>
