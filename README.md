@@ -12,15 +12,15 @@
 
 IntentOS is an AI-powered financial operating system built on Initia.
 
-Users describe financial goals in natural language (e.g., `"stake 1 INIT"` or `"grow my portfolio"`), and IntentOS converts those goals into executable on-chain DeFi strategies.
+Users describe financial goals in natural language (e.g., `"stake 1 INIT"` or `"grow my portfolio safely"`), and IntentOS converts those goals into verifiable, on-chain DeFi strategies — automatically routing capital across native staking, Cabal FDN yield vaults, and simulated Echelon positions based on the user's risk profile.
 
 ```
-Intent → Strategy → Simulation → Execution → Portfolio Update
+Intent → AI Parser → Strategy → Simulation → Execution → On-Chain Receipt
 ```
 
-All transactions execute on Initia testnet using Move smart contracts and InterwovenKit wallet integration.
+All transactions execute on Initia testnet (`initiation-2`) using Move smart contracts, InterwovenKit wallet integration, and a secure private AI microservice (`intentos-core`).
 
-> Unlike traditional DeFi dashboards, IntentOS treats DeFi as an operating system — translating human intent into automated on-chain financial strategies.
+> Unlike traditional DeFi dashboards, IntentOS treats DeFi as an operating system — translating human intent into automated, multi-protocol, cryptographically-verifiable on-chain financial strategies.
 
 ---
 
@@ -147,18 +147,22 @@ Follow these steps to test the full system end-to-end:
 
 | Feature | Description |
 |---|---|
-| **Natural Language DeFi** | Chat interface understands plain-English financial commands |
-| **Multilingual i18n Support** | Near-zero latency parsing across English, Spanish, French, Portuguese, and Chinese via local keyword routing + Gemini Flash LLM fallback |
-| **Social Login Onboarding** | InterwovenKit integration allows rapid frictionless email/social signups alongside native wallets |
-| **AI Strategy Generator** | Maps goals to structured multi-step DeFi strategies |
+| **Natural Language DeFi** | Chat interface understands plain-English financial commands in 5 languages |
+| **Cabal FDN Vault Routing** | Live `deposit_init_for_xinit` + `process_xinit_stake` execution on `initiation-2` (12.4% APY sxINIT) |
+| **Risk-Aware Yield Router** | Capital is split across native staking, Cabal sxINIT, and Echelon (display) by risk profile |
+| **Verifiable AI Trail** | Every transaction memo contains the original intent, projected APY, and risk score — permanently on-chain |
+| **Multilingual i18n** | Full UI + AI intent translation across English, Spanish, French, Portuguese, and Chinese |
+| **Social Login Onboarding** | Email, Google, and X/Twitter login via Privy + InterwovenKit alongside native wallets |
+| **AI Strategy Generator** | Maps goals to structured multi-step multi-protocol DeFi strategies |
 | **Pre-flight Validation** | Checks real wallet balance before generating strategies — no fake transactions |
 | **Agent Timeline UX** | Animated pipeline visualizes each AI decision step: Parse → Build → Simulate → Execute |
 | **On-chain Execution** | Real transactions signed and submitted to Initia testnet |
+| **Explore + Leaderboard** | Hybrid leaderboard ranking users by TVL, executions, and win rate with bootstrapped activity |
+| **Viral Referral System** | `?ref=<address>` tracking with persistent localStorage and on-chain binding at first execution |
 | **Portfolio Dashboard** | Live equity, staked positions, pending rewards, and asset allocation |
-| **Rewards System** | Claim pending staking rewards with a single click |
-| **Autopilot Mode** | Enable/disable automated portfolio management strategies |
-| **Intent History** | Full log of every submitted intent and execution result |
-| **Strategy Simulation** | Risk and yield simulation before any real funds move |
+| **Strategy Receipts** | Shareable execution receipt cards with X/Twitter share integration |
+| **Autopilot Mode** | Enable/disable automated portfolio rebalancing strategies |
+| **Secure Core Microservice** | AI engines isolated in private `intentos-core` repo behind Bearer token auth |
 
 ## 🛡️ Security Model
 
@@ -207,13 +211,13 @@ IntentOS has three main layers that work together in a clear pipeline.
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      USER INTERFACE                          │
-│        Next.js + Tailwind CSS + Framer Motion               │
-│   Landing → Onboarding → Intent Chat → Portfolio Dashboard   │
+│        Next.js 14 + Tailwind CSS + Framer Motion            │
+│   Landing → Onboarding → Intent Chat → Portfolio → Explore  │
 └──────────────────────────┬──────────────────────────────────┘
                            │ HTTP / REST
 ┌──────────────────────────▼──────────────────────────────────┐
-│                      BACKEND API                             │
-│               Node.js + Express (Port 4000)                  │
+│               INTENTOS BACKEND (Port 4000)                   │
+│               Node.js + Express + TypeScript                 │
 │                                                              │
 │  /api/execute/intent  — parse + classify intent              │
 │  /api/execute/run     — build + submit transaction           │
@@ -222,6 +226,23 @@ IntentOS has three main layers that work together in a clear pipeline.
 │  /api/strategy        — retrieve generated strategies        │
 │  /api/history         — intent execution history             │
 │  /api/agent-timeline  — stream agent thought process         │
+│  /api/referrals       — referral tracking + binding          │
+│  /api/leaderboard     — user ranking by TVL + executions     │
+│                                                              │
+│  coreClient.ts ──── Bearer token proxy ──────────────────── │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ CORE_API_KEY (private)
+┌──────────────────────────▼──────────────────────────────────┐
+│          INTENTOS-CORE MICROSERVICE (Port 4001)              │
+│                  Private Repository                          │
+│                                                              │
+│  agent-orchestrator/  — intent workflow + lifecycle          │
+│  ai-engine/           — LLM parsing + strategy generation    │
+│  execution-engine/    — transaction builder + vault adapters │
+│    vaults/cabalAdapter.ts  — Cabal sxINIT (live on-chain)    │
+│    vaults/echelonAdapter.ts — Echelon (display, cross-chain) │
+│    router/yieldRouter.ts   — risk-aware capital splitting    │
+│  simulation-engine/   — risk/yield projections               │
 └──────────────────────────┬──────────────────────────────────┘
                            │ Cosmos LCD / RPC
 ┌──────────────────────────▼──────────────────────────────────┐
@@ -230,10 +251,10 @@ IntentOS has three main layers that work together in a clear pipeline.
 │                                                              │
 │  StrategyExecutor.move    — orchestrates strategy execution  │
 │  PermissionManager.move   — session key / delegation model   │
+│  Cabal FDN Module         — 0xe472ba1c… (deposit + stake)    │
 │  dex_adapter.move         — routes swap transactions         │
 │  staking_adapter.move     — handles stake/unstake/claim      │
 │  bank_adapter.move        — manages native INIT transfers    │
-│  lending_adapter.move     — interfaces with lending pools    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -442,26 +463,35 @@ This section clarifies exactly what was built during the hackathon versus what i
 
 | Feature | Status |
 |---|---|
-| Natural language intent parsing | ✅ Live |
+| Natural language intent parsing (5 languages) | ✅ Live |
+| AI intent translation (Gemini Flash 8B fallback) | ✅ Live |
+| Social login: Email, Google, X/Twitter (Privy) | ✅ Live |
 | Pre-flight balance validation | ✅ Live |
 | AI strategy generation pipeline | ✅ Live |
 | Agent Timeline animation UX | ✅ Live |
 | Strategy simulation (risk + yield) | ✅ Live |
 | On-chain execution (stake, swap, transfer, claim) | ✅ Live |
+| **Cabal FDN sxINIT vault** (`deposit_init_for_xinit` + `process_xinit_stake`) | ✅ Live |
+| **Risk-aware yield router** (low/medium/high capital splits) | ✅ Live |
+| **Verifiable AI trail** (intent + APY + risk stamped in tx memo) | ✅ Live |
+| Echelon Market strategy cards (display, cross-chain bridge noted) | ✅ Live |
 | InterwovenKit wallet connection | ✅ Live |
 | Portfolio dashboard (equity, staked, rewards) | ✅ Live |
-| Dynamic Wallet Stack UI | ✅ Live |
-| Rewards claim flow | ✅ Live |
-| Autopilot enable/disable | ✅ Live (UI + state, agent execution is MVP) |
+| Explore dashboard + hybrid leaderboard | ✅ Live |
+| Viral referral system (`?ref=` tracking + DB binding) | ✅ Live |
+| Strategy execution receipt (shareable X/Twitter card) | ✅ Live |
+| Autopilot enable/disable | ✅ Live (UI + state) |
 | Intent history log | ✅ Live |
 | Move smart contracts (StrategyExecutor, adapters) | ✅ Written |
+| **Secure `intentos-core` microservice** (private repo, Bearer auth) | ✅ Live |
 | Landing page + Onboarding gateway | ✅ Live |
 
 ### 🔮 Future Work (Post-Hackathon)
-- Fully autonomous Autopilot agent running independently
-- LLM-powered intent parsing (currently regex + rule-based)
-- Cross-rollup execution across Initia's Minitia ecosystem
+- Echelon execution via Interwoven bridge (cross-rollup IBC routing)
+- Fully autonomous Autopilot agent with on-chain scheduler
+- Cabal USDC-INIT LP vault integration
 - Agent marketplace for community-built strategies
+- MiniMove dedicated appchain deployment
 
 ---
 
@@ -471,7 +501,6 @@ This section clarifies exactly what was built during the hackathon versus what i
 |---|---|
 | **Q2 2026** | IntentOS Launch — natural language DeFi on Initia testnet |
 | **Q3 2026** | Smart Portfolio Agents — autopilot yield, risk-aware rebalancing, reward compounding |
-| **Q4 2026** | Autonomous Finance — AI financial agents, cross-rollup routing, self-optimizing portfolios, agent marketplace |
 
 ---
 
