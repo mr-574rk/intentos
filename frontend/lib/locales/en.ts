@@ -95,6 +95,7 @@ export const en = {
   hud_prep_send: "Preparing transfer transaction...",
   hud_action_gen: "Interpreting intent...",
   
+  verify_trail: "Verify AI Trail On-Chain",
   // Validation
   err_no_init: "You don't have enough INIT. Required: ",
   err_no_usdc: "You don't have enough USDC. Required: ",

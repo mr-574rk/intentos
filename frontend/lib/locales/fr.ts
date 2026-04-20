@@ -94,6 +94,7 @@ export const fr = {
   hud_prep_send: "Préparation de la transaction de transfert...",
   hud_action_gen: "Interprétation de l'intention...",
 
+  verify_trail: "Vérifier la Trace sur la Blockchain",
   // Validation
   err_no_init: "Vous n'avez pas assez de INIT. Requis : ",
   err_no_usdc: "Vous n'avez pas assez d'USDC. Requis : ",

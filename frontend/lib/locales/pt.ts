@@ -94,6 +94,7 @@ export const pt = {
   hud_prep_send: "Preparando transação de transferência...",
   hud_action_gen: "Interpretando intenção...",
 
+  verify_trail: "Verificar Rastro na Cadeia",
   // Validation
   err_no_init: "Você não tem INIT suficiente. Necessário: ",
   err_no_usdc: "Você não tem USDC suficiente. Necessário: ",

@@ -94,6 +94,7 @@ export const zh = {
   hud_prep_send: "正在准备转账交易...",
   hud_action_gen: "正在解析意图...",
 
+  verify_trail: "在链上验证 AI 轨迹",
   // Validation
   err_no_init: "您的 INIT 余额不足。需要：",
   err_no_usdc: "您的 USDC 余额不足。需要：",

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Share2, Search } from "lucide-react";
 import { Pagination } from "./Pagination";
 import IntentShareModal from "./IntentShareModal";
 import { useLocale } from "@/components/LocaleProvider";
@@ -162,9 +162,9 @@ export default function StrategyActivity({ entries, address }: { entries?: Activ
                     href={explorerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-full text-xs border border-[#00F5D4]/30 text-[#00F5D4] hover:bg-[#00F5D4]/10 px-4 py-1.5 transition-colors whitespace-nowrap text-center"
+                    className="rounded-full flex items-center justify-center gap-1.5 text-xs border border-[#00F5D4]/30 text-[#00F5D4] hover:bg-[#00F5D4]/10 px-4 py-1.5 transition-colors whitespace-nowrap text-center"
                  >
-                    View on Explorer
+                    <Search className="w-3 h-3" /> {t("verify_trail")}
                  </a>
                )}
                {success && (
