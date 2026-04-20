@@ -85,3 +85,14 @@ frontend/patch_fetch.js
 backend/out.json
 backend/check_types.ts
 backend/check_fromData.js
+
+# ── Private AI / Execution engine folders ─────────────────────
+# These live in the private intentos-core repo.
+# Listed here so they can be present locally but are never committed
+# to the public intentos repository.
+agent-orchestrator/
+ai-engine/
+execution-engine/
+simulation-engine/
+config/
+types/

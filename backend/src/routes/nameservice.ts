@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { RESTClient, bcs } from "@initia/initia.js";
-import { NETWORK_CONFIG } from "../../../config/networkConfig";
+import { NETWORK_CONFIG } from "../config/networkConfig";
 import { toBech32 } from "@cosmjs/encoding";
 
 const router = Router();

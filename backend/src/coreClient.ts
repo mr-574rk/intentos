@@ -51,7 +51,7 @@ import type {
   StrategyBundle,
   SimulationResult,
   AgentTimeline,
-} from "../../types";
+} from "./types";
 
 interface AmbiguityCheck {
   ambiguous: boolean;

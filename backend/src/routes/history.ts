@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { getHistoryByAddress, type HistoryRow } from "../db/historyRepo";
-import type { ApiResponse, HistoryEntry } from "../../../types";
+import type { ApiResponse, HistoryEntry } from "../types";
 
 const router = Router();
 

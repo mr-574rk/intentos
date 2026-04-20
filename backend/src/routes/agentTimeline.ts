@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { getTimelineRemote, getAllTimelinesRemote } from "../coreClient";
-import type { ApiResponse, AgentTimeline } from "../../../types";
+import type { ApiResponse, AgentTimeline } from "../types";
 
 const router = Router();
 

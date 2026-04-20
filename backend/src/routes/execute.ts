@@ -7,9 +7,9 @@ import {
 } from "../coreClient";
 import { saveHistory } from "../db/historyRepo";
 import { issueToken } from "../auth/walletToken";
-import { getExecutionMode } from "../../../config/executionMode";
+import { getExecutionMode } from "../config/executionMode";
 import { translateIfNeeded } from "../intentTranslator";
-import type { ApiResponse, Strategy, UnsignedMsgBundle, AmbiguityResponse } from "../../../types";
+import type { ApiResponse, Strategy, UnsignedMsgBundle, AmbiguityResponse } from "../types";
 
 const router = Router();
 

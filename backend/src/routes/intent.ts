@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { interpretIntentRemote } from "../coreClient";
-import type { ApiResponse, StructuredIntent } from "../../../types";
+import type { ApiResponse, StructuredIntent } from "../types";
 
 const router = Router();
 
