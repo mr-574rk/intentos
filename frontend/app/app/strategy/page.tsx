@@ -130,7 +130,7 @@ export default function StrategyPage() {
   const { address, requestTx,autoSign } = useWalletGuard();
   const isOnline = useOnlineStatus();
   const { connector } = useAccount();
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
 
   const [strategy, setStrategy] = useState<Strategy | null>(null);
   const [execState, setExecState] = useState<ExecState>("idle");
@@ -302,7 +302,7 @@ export default function StrategyPage() {
           });
           localStorage.removeItem("intentos_referrer");
         }
-      } catch (e) {
+      } catch (_e) {
         // Silently ignore referral tracking errors
       }
     } catch (err) {
@@ -595,8 +595,8 @@ export default function StrategyPage() {
           onClose={() => setShowShareModal(false)}
           result={{
             intentText: strategy.intent.rawText,
-            returnPct: (strategy.simulation as any)?.projectedAPY ?? undefined,
-            riskLevel: (strategy.simulation as any)?.riskLabel ?? "Medium",
+            returnPct: strategy.simulation?.projectedAPY ?? undefined,
+            riskLevel: strategy.simulation?.riskScore ?? "Medium",
             executedAt: new Date().toISOString(),
             txHash,
           }}
