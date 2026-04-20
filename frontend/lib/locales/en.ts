@@ -1,5 +1,5 @@
 export const en = {
-  connect_to_intentos: "Connect to IntentOS",
+  connect_to_intentos: "Connect to IntentOs",
   security_first: "Security First",
   security_desc: "IntentOS never controls your funds. All strategies are executed through your wallet and confirmed on-chain.",
   sign_in_email: "Continue with Email",
