@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # sync-to-core.sh
-# Syncs intentos/ai-engine → intentos-core/ai-engine and auto-commits both repos.
+# Syncs intentos/ai-engine → intentos-core/ai-engine, commits, and pushes
+# both repos so Render automatically redeploys intentos-core.
 # Usage: ./scripts/sync-to-core.sh [optional commit message]
 
 set -e
@@ -27,16 +28,21 @@ else
   echo "   ✅  intentos-core committed."
 fi
 
+echo "🚀  Pushing intentos-core → origin (triggers Render redeploy)..."
+git push origin main
+echo "   ✅  intentos-core pushed. Render will redeploy automatically."
+
 echo ""
 echo "📦  Committing intentos (ai-engine source)..."
 cd "$INTENTOS_DIR"
-git add ai-engine/src/
+git add ai-engine/src/ scripts/
 if git diff --cached --quiet; then
   echo "   No changes in intentos — nothing to commit."
 else
   git commit -m "$MSG"
-  echo "   ✅  intentos committed."
+  git push origin main
+  echo "   ✅  intentos committed and pushed."
 fi
 
 echo ""
-echo "✅  Sync complete. intentos-core is up to date."
+echo "✅  Sync complete."
