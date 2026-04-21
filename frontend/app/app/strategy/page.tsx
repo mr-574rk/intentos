@@ -401,35 +401,60 @@ export default function StrategyPage() {
             <p className="text-xs font-medium uppercase tracking-widest text-text-muted">
               {t("execution_plan")} · {strategy.bundle.steps.length} {strategy.bundle.steps.length === 1 ? t("step") : t("steps")}
             </p>
-            {strategy.bundle.steps.map((step, i) => (
-              <motion.div
-                key={step.action}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.07 }}
-                className="flex items-start gap-3 p-3 rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
-              >
-                <span className="w-6 h-6 rounded-full bg-[rgba(0,245,212,0.1)] text-[#00F5D4]
-                               text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-text-primary capitalize">
-                    {t(`action_${step.action}`) || (step.action === "stake" ? `Stake ${step.from || "INIT"}` : step.action.replace(/_/g, " "))}
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    {step.action === "stake"
-                      ? (step.protocol || "Initia Network Staking")
-                      : step.action === "transfer" || step.action === "batch_transfer"
-                        ? `${step.protocol ?? "Initia Bank"} · ${step.from ?? "INIT"} → recipient`
-                        : step.from && step.to
-                          ? `${step.protocol ? `${step.protocol} · ` : ""}${step.from} → ${step.to}`
-                          : `${step.protocol ? `${step.protocol} · ` : ""}${step.description}`}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+            {strategy.bundle.steps.map((step, i) => {
+              const isCabal = step.action === "cabal_deposit" || step.protocol === "Cabal FDN";
+              return (
+                <motion.div
+                  key={`${step.action}-${i}`}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="flex items-start gap-3 p-3 rounded-2xl"
+                  style={isCabal ? {
+                    background: "rgba(0,245,212,0.04)",
+                    border: "1px solid rgba(0,245,212,0.15)",
+                  } : {
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.04)",
+                  }}
+                >
+                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                    isCabal
+                      ? "bg-[rgba(0,245,212,0.18)] text-[#00F5D4]"
+                      : "bg-[rgba(0,245,212,0.1)] text-[#00F5D4]"
+                  }`}>
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-text-primary capitalize">
+                        {t(`action_${step.action}`) || (step.action === "stake" ? `Stake ${step.from || "INIT"}` : step.action.replace(/_/g, " "))}
+                      </p>
+                      {isCabal && (
+                        <span
+                          className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: "rgba(0,245,212,0.12)", color: "#00F5D4", border: "1px solid rgba(0,245,212,0.25)" }}
+                        >
+                          Cabal FDN · sxINIT
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-text-muted">
+                      {isCabal
+                        ? `Automated yield vault · ${step.from ?? "INIT"} → sxINIT`
+                        : step.action === "stake"
+                          ? (step.protocol || "Initia Network Staking")
+                          : step.action === "transfer" || step.action === "batch_transfer"
+                            ? `${step.protocol ?? "Initia Bank"} · ${step.from ?? "INIT"} → recipient`
+                            : step.from && step.to
+                              ? `${step.protocol ? `${step.protocol} · ` : ""}${step.from} → ${step.to}`
+                              : `${step.protocol ? `${step.protocol} · ` : ""}${step.description}`}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+
           </motion.div>
 
           {/* Before → After Simulation */}
