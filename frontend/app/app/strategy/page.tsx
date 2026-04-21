@@ -257,16 +257,25 @@ export default function StrategyPage() {
         // so we must decode them before handing off to the wallet.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const processedMsgs = (msgs as any[]).map(msg => {
-        if (!isPrivyWallet && msg.value?.args && Array.isArray(msg.value.args)) {
+        // We MUST ensure args are Uint8Array instances before requestTx.
+        // Plain objects/strings in 'args' (repeated bytes) will cause "invalid uint32" errors.
+        if (msg.value?.args && Array.isArray(msg.value.args)) {
           return {
             ...msg,
             value: {
               ...msg.value,
-              args: msg.value.args.map((arg: unknown) =>
-                typeof arg === "string"
-                  ? Uint8Array.from(atob(arg), c => c.charCodeAt(0))
-                  : arg
-              ),
+              args: msg.value.args.map((arg: any) => {
+                if (typeof arg === "string") {
+                  return Uint8Array.from(atob(arg), c => c.charCodeAt(0));
+                }
+                if (arg && typeof arg === "object" && arg.type === "Buffer" && Array.isArray(arg.data)) {
+                  return new Uint8Array(arg.data);
+                }
+                if (Array.isArray(arg)) {
+                  return new Uint8Array(arg);
+                }
+                return arg;
+              }),
             },
           };
         }
