@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain, AlertTriangle, Share2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, Brain, AlertTriangle } from "lucide-react";
 import { useWalletGuard } from "@/hooks/useWalletGuard";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { Strategy } from "@/types";
@@ -264,12 +264,15 @@ export default function StrategyPage() {
             ...msg,
             value: {
               ...msg.value,
-              args: msg.value.args.map((arg: any) => {
+              args: msg.value.args.map((arg: unknown) => {
                 if (typeof arg === "string") {
                   return Uint8Array.from(atob(arg), c => c.charCodeAt(0));
                 }
-                if (arg && typeof arg === "object" && arg.type === "Buffer" && Array.isArray(arg.data)) {
-                  return new Uint8Array(arg.data);
+                if (arg && typeof arg === "object") {
+                  const obj = arg as Record<string, unknown>;
+                  if (obj.type === "Buffer" && Array.isArray(obj.data)) {
+                    return new Uint8Array(obj.data as number[]);
+                  }
                 }
                 if (Array.isArray(arg)) {
                   return new Uint8Array(arg);

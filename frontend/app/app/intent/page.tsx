@@ -844,16 +844,28 @@ export default function IntentPage() {
         // Decode base64 args → Uint8Array for any MsgExecute messages
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const processedMsgs = (msgs as any[]).map(msg => {
+          // We MUST ensure args are Uint8Array instances before requestTx.
+          // Plain objects/strings in 'args' (repeated bytes) will cause "invalid uint32" errors.
           if (msg.value?.args && Array.isArray(msg.value.args)) {
             return {
               ...msg,
               value: {
                 ...msg.value,
-                args: msg.value.args.map((arg: unknown) =>
-                  typeof arg === "string"
-                    ? Uint8Array.from(atob(arg), c => c.charCodeAt(0))
-                    : arg
-                ),
+                args: msg.value.args.map((arg: unknown) => {
+                  if (typeof arg === "string") {
+                    return Uint8Array.from(atob(arg), c => c.charCodeAt(0));
+                  }
+                  if (arg && typeof arg === "object") {
+                    const obj = arg as Record<string, unknown>;
+                    if (obj.type === "Buffer" && Array.isArray(obj.data)) {
+                      return new Uint8Array(obj.data as number[]);
+                    }
+                  }
+                  if (Array.isArray(arg)) {
+                    return new Uint8Array(arg);
+                  }
+                  return arg;
+                }),
               },
             };
           }
