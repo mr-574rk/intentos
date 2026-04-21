@@ -1,12 +1,10 @@
 [package]
-name = "intentos_contracts"
+name = "mock_cabal"
 version = "0.0.0"
 
 [dependencies]
 MinitiaStdlib = { git = "https://github.com/initia-labs/move-natives.git", subdir = "minitia_stdlib", rev = "main" }
-mock_cabal = { local = "./mock_cabal" }
 
 [addresses]
 std = "0x1"
-intentos = "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3"
-cabal_addr = "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3"
+mock_cabal = "0x3dd7b889be628c573c8a46b0f7657ae8483ebec3"

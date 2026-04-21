@@ -148,7 +148,7 @@ Follow these steps to test the full system end-to-end:
 | Feature | Description |
 |---|---|
 | **Natural Language DeFi** | Chat interface understands plain-English financial commands in 5 languages |
-| **Cabal FDN Vault Routing** | Live `deposit_init_for_xinit` + `process_xinit_stake` execution on `initiation-2` (12.4% APY sxINIT) |
+| **Cabal FDN Vault Routing** | Routed through `StrategyExecutor.move` via `cabal_adapter` — `deposit_init_for_xinit` + `process_xinit_stake` bundled atomically with other strategy steps (12.4% APY sxINIT) |
 | **Risk-Aware Yield Router** | Capital is split across native staking, Cabal sxINIT, and Echelon (display) by risk profile |
 | **Verifiable AI Trail** | Every transaction memo contains the original intent, projected APY, and risk score — permanently on-chain |
 | **Multilingual i18n** | Full UI + AI intent translation across English, Spanish, French, Portuguese, and Chinese |
@@ -251,7 +251,8 @@ IntentOS has three main layers that work together in a clear pipeline.
 │                                                              │
 │  StrategyExecutor.move    — orchestrates strategy execution  │
 │  PermissionManager.move   — session key / delegation model   │
-│  Cabal FDN Module         — 0xe472ba1c… (deposit + stake)    │
+│  cabal_adapter.move       — proxies Cabal vault calls        │
+│  mock_cabal::cabal        — on-chain Cabal interface (0x3dd…)│
 │  dex_adapter.move         — routes swap transactions         │
 │  staking_adapter.move     — handles stake/unstake/claim      │
 │  bank_adapter.move        — manages native INIT transfers    │
@@ -306,12 +307,28 @@ All contracts are written in **Move** and located in `/contracts/`.
 
 | Contract | Purpose |
 |---|---|
-| `StrategyExecutor.move` | Central orchestrator — receives strategy payloads and dispatches execution across adapters |
+| `StrategyExecutor.move` | Central orchestrator — receives strategy payloads and dispatches execution across adapters. Supports action enum 9 (`CABAL_DEPOSIT`) |
 | `PermissionManager.move` | Manages session keys and delegation permissions for Autopilot mode |
+| `adapters/cabal_adapter.move` | **New** — proxies Cabal `deposit_init_for_xinit` + `process_xinit_stake` calls through the `StrategyExecutor`, keeping them inside the session-key authorization boundary |
+| `mock_cabal/cabal.move` | **New** — on-chain shim at `0x3dd7b889…` implementing the Cabal vault interface. Serves as the live dependency for `cabal_adapter` today; will be replaced with a direct import of Cabal's published module once their ABI is publicly available |
 | `adapters/dex_adapter.move` | Handles all DEX swap routing through Initia's native AMM |
 | `adapters/staking_adapter.move` | Wraps Cosmos staking `MsgDelegate`, `MsgUndelegate`, `MsgWithdrawDelegatorReward` |
 | `adapters/bank_adapter.move` | Handles native INIT token transfers (`MsgSend`) |
 | `adapters/lending_adapter.move` | Interfaces with Initia lending pool protocols |
+
+**Cabal Integration Architecture:**
+
+Cabal vault calls are routed through `StrategyExecutor` rather than sent as raw `MsgExecute` messages. This is necessary because Initia's session-key (`autoSign`) model scopes authorization to specific module addresses — sending a direct `MsgExecute` to a third-party module like Cabal triggers a `0x60001` permission error from the `permission_manager`. By proxying through our `StrategyExecutor`, the user's session key only needs to authorize a single trusted contract, which internally calls the vault on their behalf. All steps remain atomic — if any adapter fails, the entire bundle reverts.
+
+```
+User Session Key
+      ↓  (authorized call)
+StrategyExecutor::execute_bundle  (0x3dd7b889...)
+      ↓  (action == 9)
+cabal_adapter::deposit
+      ↓
+mock_cabal::cabal::deposit_init_for_xinit  →  process_xinit_stake
+```
 
 **Session Key Security Model:**
 `PermissionManager.move` implements scoped permission delegation. Users can grant limited signing authority to the Autopilot agent for specific actions (e.g., "only claim rewards, never move principal") without exposing their primary private key.
@@ -471,7 +488,10 @@ This section clarifies exactly what was built during the hackathon versus what i
 | Agent Timeline animation UX | ✅ Live |
 | Strategy simulation (risk + yield) | ✅ Live |
 | On-chain execution (stake, swap, transfer, claim) | ✅ Live |
-| **Cabal FDN sxINIT vault** (`deposit_init_for_xinit` + `process_xinit_stake`) | ✅ Live |
+| **Cabal FDN sxINIT vault — enterprise integration** | ✅ Live |
+| &nbsp;&nbsp;↳ `cabal_adapter.move` proxies vault calls through `StrategyExecutor` | ✅ Deployed |
+| &nbsp;&nbsp;↳ `mock_cabal::cabal` shim deployed at `0x3dd7b889…` | ✅ On-chain |
+| &nbsp;&nbsp;↳ `ACTION_CABAL_DEPOSIT = 9` wired into `execute_bundle` dispatch | ✅ Live |
 | **Risk-aware yield router** (low/medium/high capital splits) | ✅ Live |
 | **Verifiable AI trail** (intent + APY + risk stamped in tx memo) | ✅ Live |
 | Echelon Market strategy cards (display, cross-chain bridge noted) | ✅ Live |
@@ -487,11 +507,20 @@ This section clarifies exactly what was built during the hackathon versus what i
 | Landing page + Onboarding gateway | ✅ Live |
 
 ### 🔮 Future Work (Post-Hackathon)
+
+**Cabal FDN — Full Production Integration**
+- Replace `mock_cabal::cabal` shim with a direct `use` import of Cabal's official published Move module once their ABI is publicly available on-chain
+- Wire `cabal_adapter::deposit` to the real `0xe472ba1c00b2ee2b007b4c5788839d6fb7371c6::cabal` module — the `cabal_adapter.move` interface is already ABI-compatible, so this is a one-line address swap
+- Integrate Cabal USDC-INIT LP vault (`CABAL_LP_DEPOSIT` action enum 10) for the medium-risk allocation tier
+- Add real-time Cabal APY fetching from their on-chain view functions rather than the static 12.4% constant
+- Enable Cabal vault position tracking in the Portfolio dashboard (xINIT and sxINIT balances)
+
+**AI + Execution**
 - Echelon execution via Interwoven bridge (cross-rollup IBC routing)
 - Fully autonomous Autopilot agent with on-chain scheduler
-- Cabal USDC-INIT LP vault integration
 - Agent marketplace for community-built strategies
 - MiniMove dedicated appchain deployment
+- Dynamic slippage protection based on real-time DEX liquidity depth
 
 ---
 
@@ -500,7 +529,10 @@ This section clarifies exactly what was built during the hackathon versus what i
 | Quarter | Milestone |
 |---|---|
 | **Q2 2026** | IntentOS Launch — natural language DeFi on Initia testnet |
+| **Q3 2026** | Cabal Production Integration — replace mock shim with live Cabal module; add LP vault tier |
 | **Q3 2026** | Smart Portfolio Agents — autopilot yield, risk-aware rebalancing, reward compounding |
+| **Q4 2026** | Echelon cross-rollup execution via Interwoven IBC bridge |
+| **Q4 2026** | Agent marketplace — community-built strategy templates |
 
 ---
 
@@ -546,9 +578,17 @@ intentos/
 │   └── src/
 │       └── routes/    # intent, execute, portfolio, strategy, simulate…
 ├── contracts/         # Move smart contracts
-│   ├── StrategyExecutor.move
-│   ├── PermissionManager.move
-│   └── adapters/      # dex, staking, bank, lending
+│   ├── sources/
+│   │   ├── StrategyExecutor.move
+│   │   ├── PermissionManager.move
+│   │   └── adapters/
+│   │       ├── cabal_adapter.move   # Cabal vault proxy (new)
+│   │       ├── dex_adapter.move
+│   │       ├── staking_adapter.move
+│   │       ├── bank_adapter.move
+│   │       └── lending_adapter.move
+│   └── mock_cabal/    # On-chain Cabal interface shim (new)
+│       └── sources/cabal.move
 ├── ai-engine/         # Intent classification logic
 ├── execution-engine/  # Transaction builder
 └── simulation-engine/ # Risk/yield projection engine

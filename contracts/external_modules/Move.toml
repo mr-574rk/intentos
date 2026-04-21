@@ -1,0 +1,6 @@
+[package]
+name = "cabal_stub"
+version = "0.0.0"
+
+[addresses]
+cabal_addr = "0xe472ba1c00b2ee2b007b4c5788839d6fb7371c6"

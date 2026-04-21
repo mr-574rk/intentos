@@ -61,6 +61,7 @@ module intentos::strategy_executor {
     use intentos::staking_adapter;
     use intentos::dex_adapter;
     use intentos::lending_adapter;
+    use intentos::cabal_adapter;
 
     // -- Action Enum Constants ---------------------------------
     // u8 values - cheaper than string comparison, eliminates typo risk.
@@ -71,6 +72,7 @@ module intentos::strategy_executor {
     const ACTION_STAKE:             u8 = 4;
     const ACTION_PROVIDE_LIQUIDITY: u8 = 5;
     const ACTION_LEND:              u8 = 6;
+    const ACTION_CABAL_DEPOSIT:     u8 = 9;
 
     // -- Errors ------------------------------------------------
 
@@ -222,6 +224,10 @@ module intentos::strategy_executor {
                 // Currently a no-op pending lending protocol deployment.
                 lending_adapter::lend(executor, from_denom, amount);
 
+            } else if (action == ACTION_CABAL_DEPOSIT) {
+                // Deposit `amount` of INIT into the Cabal sxINIT vault.
+                cabal_adapter::deposit(executor, amount);
+
             } else {
                 // Unknown action - abort entire bundle.
                 abort error::invalid_argument(E_UNKNOWN_ACTION)
@@ -291,4 +297,6 @@ module intentos::strategy_executor {
     public fun action_provide_liquidity(): u8 { ACTION_PROVIDE_LIQUIDITY }
     #[view]
     public fun action_lend(): u8              { ACTION_LEND }
+    #[view]
+    public fun action_cabal_deposit(): u8     { ACTION_CABAL_DEPOSIT }
 }
